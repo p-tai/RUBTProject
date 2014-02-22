@@ -64,6 +64,7 @@ public class RUBTClient {
         TorrentInfo torrentFile = parseTorrentInfo(args[0]);
 
 		Tracker tracker = new Tracker(torrentFile);
+		tracker.create();
         
         
         
