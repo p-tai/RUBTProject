@@ -40,7 +40,7 @@ import edu.rutgers.cs.cs352.bt.util.Bencoder2;
  */
 public class TorrentInfo
 {
-	/**
+        /**
      * Key used to retrieve the info dictionary from the torrent metainfo file.
      */
     public final static ByteBuffer KEY_INFO = ByteBuffer.wrap(new byte[]
