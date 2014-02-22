@@ -42,7 +42,7 @@ public class RUBTClient {
         try {
             FileWriter fileStream = new FileWriter(outputFileName);
             BufferedWriter bFileStream = new BufferedWriter(fileStream);
-            bFileStream.write(""); //Put the downloaded byte array here
+            bFileStream.write("testing"); //Put the downloaded byte array here
             bFileStream.flush();
             bFileStream.close();
             return true;
