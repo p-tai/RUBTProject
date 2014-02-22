@@ -2,12 +2,13 @@ import edu.rutgers.cs.cs352.bt.util.*;
 import edu.rutgers.cs.cs352.bt.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.DataInputStream;
 
 public class Tracker{
 
 	private URL url;
-	private URLConnection 
-	
 
 	/**
 	 * takes a TorrentInfo
@@ -26,8 +27,22 @@ public class Tracker{
 	 * -- also takes a tracker!!!
 	 * send HTTP GET --> tracker thru ^^ 
 	 */
-	private void create(String IPAddr, int port, File f){
-		URLConnection connection;
+	public void create(){
+		URL url = this.url;
+		URLConnection connection = null;
+		InputStream getStream = null;
+		DataInputStream dataStream = new DataInputStream(getStream);
+		try{
+			connection = url.openConnection();
+			System.out.println(connection.toString());
+			getStream = connection.getInputStream();
+			System.out.println(getStream.toString());
+
+			//dataStream = dataStream.
+		}//end of try
+		catch(IOException e){
+			System.out.println(e.getMessage());
+		}//endo f catch
 		
 	}//end create
 
