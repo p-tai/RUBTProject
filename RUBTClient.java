@@ -63,7 +63,7 @@ public class RUBTClient {
         //Attempt to open the .torrent file and create a buffered reader from the file stream
         TorrentInfo torrentFile = parseTorrentInfo(args[0]);
 
-
+		Tracker tracker = new Tracker(torrentFile);
         
         
         

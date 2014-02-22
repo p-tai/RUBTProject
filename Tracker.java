@@ -5,6 +5,21 @@ import java.net.URLConnection;
 
 public class Tracker{
 
+	private URL url;
+	private URLConnection 
+	
+
+	/**
+	 * takes a TorrentInfo
+	 * and makes a tracker
+	 * and gets the IP addresses ands tuff
+	 */
+	public Tracker(TorrentInfo torrentFile){
+		this.url = torrentFile.announce_url;
+
+	}//end of Tracker constructor :3
+
+
 	/**
 	 * creates connection to tracker
 	 * takes ipaddress and port <-- taken from the torrentfile obj
