@@ -7,6 +7,35 @@ import edu.rutgers.cs.cs352.bt.exceptions.*;
 
 public class RUBTClient {
     
+    private static void performHandshake() {
+        byte[] handshake = new Byte[65];
+        handshake[0] = 19;
+        System.arraycopy(P_STRING,0,handshake,1,P_STRING.length);
+        //array copy the infohash
+        //array copy the peerID
+        //check the handshake
+        //check protocolstring
+        //check infohash
+        //check peerID against tracker peerID
+        return;
+    }
+    
+    private static boolean connect() {
+    //check if the socket is "alive"
+        if(this.connection != null) {
+            if(this.connection.isConnected) {
+                try{
+                    this.connection = new Socket...
+                    //do the echo socket stuff
+                    //make a peer output stream
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    
     private static TorrentInfo parseTorrentInfo(String filename) {
         try {
             //Create input streams and file streams
@@ -42,7 +71,7 @@ public class RUBTClient {
         try {
             FileWriter fileStream = new FileWriter(outputFileName);
             BufferedWriter bFileStream = new BufferedWriter(fileStream);
-            bFileStream.write(""); //Put the downloaded byte array here
+            bFileStream.write("testing"); //Put the downloaded byte array here
             bFileStream.flush();
             bFileStream.close();
             return true;
@@ -74,6 +103,8 @@ public class RUBTClient {
             return;
         }
         //System.out.println(torrentFile);
+        
+        //
         
         //Write output to file
         if(!writeFile(args[1])) {
