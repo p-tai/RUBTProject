@@ -58,6 +58,7 @@ public class RUBTClient {
             bFileStream.write("testing"); //Put the downloaded byte array here
             bFileStream.flush();
             bFileStream.close();
+            fileStream.close();
             return true;
         } catch (IOException e){
             System.err.println("Error: " + e.getMessage());
@@ -76,10 +77,12 @@ public class RUBTClient {
         //Attempt to open the .torrent file and create a buffered reader from the file stream
         TorrentInfo torrentFile = parseTorrentInfo(args[0]);
 
+        //Create client instance which will hold file information
+        Client torrentClient = null;
+        torrentClient = new Client(torrentFile, args[1]);
+
 		Tracker tracker = new Tracker(torrentFile);
 		tracker.create();
-        
-        
         
         //Checks if the torrentfile was correctly made
         if(torrentFile == null) {
@@ -87,13 +90,6 @@ public class RUBTClient {
             return;
         }
         //System.out.println(torrentFile);
-        
-        //
-        
-        //Write output to file
-        if(!writeFile(args[1])) {
-            System.err.println("Error: Could not write to file.");
-        }
         
         //Exit gracefully
         return;
