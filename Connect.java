@@ -3,7 +3,7 @@ import edu.rutgers.cs.cs352.bt.*;
 import java.net.URL;
 import java.net.URLConnection;
 
-public class Connection{
+public class Connect{
 
 	/**
 	 * creates connection to tracker
