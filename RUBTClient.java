@@ -6,20 +6,7 @@ import edu.rutgers.cs.cs352.bt.exceptions.*;
 
 
 public class RUBTClient {
-    
-    private static void performHandshake() {
-        byte[] handshake = new byte[65];
-        handshake[0] = 19;
-        //System.arraycopy(P_STRING,0,handshake,1,P_STRING.length);
-        //array copy the infohash
-        //array copy the peerID
-        //check the handshake
-        //check protocolstring
-        //check infohash
-        //check peerID against tracker peerID
-        return;
-    }
-    
+        
     private static TorrentInfo parseTorrentInfo(String filename) {
         try {
             //Create input streams and file streams
@@ -76,7 +63,15 @@ public class RUBTClient {
         
         //Attempt to open the .torrent file and create a buffered reader from the file stream
         TorrentInfo torrentFile = parseTorrentInfo(args[0]);
-
+        
+        try {
+            String decoded = new String(torrentFile.info_hash.array(), "UTF-8");
+            System.out.println(decoded);
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Error: Could not read torrent info.");
+            return;
+        }
+        
         //Create client instance which will hold file information
         Client torrentClient = null;
         torrentClient = new Client(torrentFile, args[1]);
