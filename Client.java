@@ -42,6 +42,49 @@ public class Client {
         return false;
     }
     
+    private static void performHandshake(TorrentInfo torrentFile) {
+        byte[] handshake = new byte[65];
+        handshake[0] = 19;
+        handshake[1] = 'B';
+        handshake[2] = 'i';
+        handshake[3] = 't';
+        handshake[4] = 'T';
+        handshake[5] = 'o';
+        handshake[6] = 'r';
+        handshake[7] = 'r';
+        handshake[8] = 'e';
+        handshake[9] = 'n';
+        handshake[10] = 't';
+        handshake[11] = ' ';
+        handshake[12] = 'p';
+        handshake[13] = 'r';
+        handshake[14] = 'o';
+        handshake[15] = 't';
+        handshake[16] = 'o';
+        handshake[17] = 'c';
+        handshake[18] = 'o';
+        handshake[19] = 'l';
+        
+        for(int i = 1; i < 9; i++){
+        	handshake[19 + i] = 0;
+        }
+        
+        byte[] infoHash = torrentFile.info_hash.array();
+        for(int i = 0; i < 20; i++){
+        	handshake[28+i] = infoHash[i];
+        }
+        
+        
+         //System.arraycopy(P_STRING,0,handshake,1,P_STRING.length);
+        //array copy the infohash
+        //array copy the peerID
+        //check the handshake
+        //check protocolstring
+        //check infohash
+        //check peerID against tracker peerID
+        return;
+    }
+    
     /*
      * Getter for torrentInfo;
      */
@@ -64,8 +107,5 @@ public class Client {
                 return false;
             }
         }
-    }
-    
-    
+    }   
 }
-
