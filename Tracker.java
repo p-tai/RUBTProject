@@ -1,16 +1,26 @@
 import edu.rutgers.cs.cs352.bt.util.*;
 import edu.rutgers.cs.cs352.bt.*;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.net.URLConnection;
 import java.net.HttpURLConnection;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.DataInputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.util.Random;
+
 
 public class Tracker{
 
 	private URL url;
         private byte[] hash;
+        private int bytesLeft;
+        private int bytesDownloaded;
+        private int bytesUploaded;
+        private String peer_id;
+        
 
 	/**
 	 * takes a TorrentInfo
@@ -20,9 +30,19 @@ public class Tracker{
 	public Tracker(TorrentInfo torrentFile){
 		this.url = torrentFile.announce_url;
                 this.hash = torrentFile.info_hash.array();
+                this.bytesLeft = torrentFile.file_length;
+                this.bytesDownloaded = 0;
+                this.bytesUploaded = 0;
+                this.peer_id = Tracker.genPeerID();
 		System.out.println("HASH: " + torrentFile.info_hash);
 	}//end of Tracker constructor :3
 
+        
+        private static String genPeerID() {
+                Random randGen = new Random();
+                int suffix = randGen.nextInt(9)*100+randGen.nextInt(9)*10+randGen.nextInt(9);
+                return new String("AAA"+Integer.toString(suffix));
+        }
         
 	/**
 	 * creates connection to tracker
@@ -31,18 +51,27 @@ public class Tracker{
 	 * send HTTP GET --> tracker thru ^^ 
 	 */
 	public void create(){
+                
 		URL url = this.url;
+                byte[] hash = this.hash;
+                String query = null;
+
                 
-                URLify(this.hash);
-                
-		System.out.println("URL: " + url.getPath());
 		URLConnection connection = null;
 		InputStream getStream = null;
 		HttpURLConnection httpConnection = null;
-		DataInputStream dataStream = new DataInputStream(getStream);
+		DataInputStream dataStream = null;
 		byte[] getStreamBytes;
 
-		try{
+		try{    
+                        query = URLify(query,"announce?info_hash",new String(hash,"UTF-8"));
+                        query = URLify(query,"&peer_id",this.peer_id);
+                        query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
+                        query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
+                        query = URLify(query,"&left", Integer.toString(this.bytesLeft));
+                        System.out.println(query);
+                        url = new URL(url, query);
+                        
 			httpConnection = (HttpURLConnection)url.openConnection();
 			System.out.println("1");
 			httpConnection.setRequestMethod("GET");
@@ -50,17 +79,24 @@ public class Tracker{
 			System.out.println("RESPONSE: " + responseCode);
 			System.out.println("2");
 			getStream = httpConnection.getInputStream();
-
+                        dataStream = new DataInputStream(getStream);
+                        
 			System.out.println("3");
 
 			//getStream = connection.getInputStream();
 
 			int byteAvailLen = getStream.available();
-			System.out.println("CONNECTION: " + connection.toString());
+			//System.out.println("CONNECTION: " + connection.toString());
 			System.out.println("GETSTREAM: " + getStream.toString());
 			System.out.println("bytes: " + byteAvailLen);
-//			getStreamBytes = new byte[byteAvailLen];
-//			dataStream = dataStream.readFully(getStreamBytes);
+			getStreamBytes = new byte[byteAvailLen];
+			dataStream.readFully(getStreamBytes);
+                        
+                        
+                        
+                        getStream.close();
+                        dataStream.close();
+                        
 
 		}//end of try
 		catch(IOException e){
@@ -84,32 +120,20 @@ public class Tracker{
 	}//end of main
         
         
-        /*
-         * Helper functin that translates byte data to a hex string
-         * need to test
+        /**
+         * Helper function - will convert a query and append it to the current URL
          */
-        
-        final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
-        
-        private static char[] convertToHex(byte raw) {
-                char[] hexChars = new char[2];
-                hexChars[0] = hexArray[(raw & 0xF0) >>> 4]; //Bitmask upper 4 bits and use as index
-                hexChars[1] = hexArray[raw & 0x0F]; //bitmask lower 4 bits and use as index
-                return hexChars;
-        }        
-        
-        private static String URLify(byte[] data) {
-                String query = "";
-                for(int i = 0; i < data.length; i++) {
-                        if(Character.isLetter((char)data[i]) || Character.isDigit((char)data[i])) {
-                                query=query+(char)data[i];
-                        } else {
-                                query=query+"%";
-                                query=query+convertToHex(data[i]);
-                        }
+        private String URLify(String base, String queryID, String query) {
+                if(base==null) {
+                        base = "";
                 }
-                System.out.printf("Query: %s", query);
-                return query;
+                try{
+                        query = URLEncoder.encode(query, "UTF-8");
+                        return (base+queryID+"?"+query);
+                } catch (UnsupportedEncodingException e) {
+                        System.out.println("URL formation error:" + e.getMessage());
+                }
+                return null;
         }
 
 }//end of connection class
