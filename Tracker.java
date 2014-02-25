@@ -10,6 +10,7 @@ import java.io.DataInputStream;
 public class Tracker{
 
 	private URL url;
+        private byte[] hash;
 
 	/**
 	 * takes a TorrentInfo
@@ -18,11 +19,11 @@ public class Tracker{
 	 */
 	public Tracker(TorrentInfo torrentFile){
 		this.url = torrentFile.announce_url;
-
+                this.hash = torrentFile.info_hash.array();
 		System.out.println("HASH: " + torrentFile.info_hash);
 	}//end of Tracker constructor :3
 
-
+        
 	/**
 	 * creates connection to tracker
 	 * takes ipaddress and port <-- taken from the torrentfile obj
@@ -31,7 +32,9 @@ public class Tracker{
 	 */
 	public void create(){
 		URL url = this.url;
-		
+                
+                URLify(this.hash);
+                
 		System.out.println("URL: " + url.getPath());
 		URLConnection connection = null;
 		InputStream getStream = null;
@@ -73,11 +76,40 @@ public class Tracker{
 	private void captureResponse(){
 
 
-	}//end of cpatureresponse
+	}//end of captureresponse
 
 	public static void main(){
 
 
 	}//end of main
+        
+        
+        /*
+         * Helper functin that translates byte data to a hex string
+         * need to test
+         */
+        
+        final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
+        
+        private static char[] convertToHex(byte raw) {
+                char[] hexChars = new char[2];
+                hexChars[0] = hexArray[(raw & 0xF0) >>> 4]; //Bitmask upper 4 bits and use as index
+                hexChars[1] = hexArray[raw & 0x0F]; //bitmask lower 4 bits and use as index
+                return hexChars;
+        }        
+        
+        private static String URLify(byte[] data) {
+                String query = "";
+                for(int i = 0; i < data.length; i++) {
+                        if(Character.isLetter((char)data[i]) || Character.isDigit((char)data[i])) {
+                                query=query+(char)data[i];
+                        } else {
+                                query=query+"%";
+                                query=query+convertToHex(data[i]);
+                        }
+                }
+                System.out.printf("Query: %s", query);
+                return query;
+        }
 
 }//end of connection class
