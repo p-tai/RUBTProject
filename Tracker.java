@@ -70,7 +70,7 @@ public class Tracker{
 		byte[] getStreamBytes;
 
 		try{    
-                        query = URLify(query,"announce?info_hash", new String(hash,"UTF-8"));
+                        query = URLify(query,"announce?info_hash", hash);
                         query = URLify(query,"&peer_id",this.peer_id);
                         query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
                         query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
@@ -150,6 +150,30 @@ public class Tracker{
                         System.out.println("URL formation error:" + e.getMessage());
                 }
                 return null;
+        }
+
+
+        final private static char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
+        //SHA-1 is 155187125F2CE9E45F1D09729D75C35F2E83DBF3
+        
+        private String URLify(String base, String queryID, byte[] query) {
+                if(base==null) {
+                        base = "";
+                }
+                String reply = base+queryID+"=";
+                for(int i = 0; i<query.length; i++) {
+                        if(query[i] < 0) { //if the byte data has the most significant byte set (e.g. it is negative)
+                                reply = reply+"%";
+                                reply = reply + HEXCHARS[(query[i]&0xF0)>>>4]+HEXCHARS[query[i]&0x0F];
+                        }else{
+                                try{
+                                        reply = reply + URLEncoder.encode(new String(new byte[] {query[i]}),"UTF-8");
+                                 }catch(UnsupportedEncodingException e){
+                                         System.out.println("URL formation error:" + e.getMessage());
+                                 }
+                        }
+                }
+                return reply;
         }
 
 }//end of connection class
