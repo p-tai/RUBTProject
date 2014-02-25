@@ -14,7 +14,7 @@ import java.util.Random;
 import java.util.HashMap;
 
 public class Tracker{
-
+    
 	private URL url;
         private byte[] hash;
         private int bytesLeft;
@@ -102,6 +102,11 @@ public class Tracker{
                         
                         //HashMap<String,String> key = new HashMap<String,String>();
                         Object peers = Bencoder2.decode(getStreamBytes);
+                        
+                        if(peers instanceof HashMap){
+                                captureResponse((HashMap<String,Object>)peers);
+                        }
+                        
                         ToolKit.print(peers);
                         
                         getStream.close();
@@ -122,8 +127,8 @@ public class Tracker{
 	 * args: tracker <-- invisible for now
 	 * return a list of peers 
 	 */
-	private void captureResponse(){
-
+	private void captureResponse(HashMap<String,Object> response){
+                //Object peers = response.get("peers");
 
 	}//end of captureresponse
 
@@ -149,6 +154,7 @@ public class Tracker{
                 } catch (UnsupportedEncodingException e) {
                         System.out.println("URL formation error:" + e.getMessage());
                 }
+                
                 return null;
         }
 
@@ -157,22 +163,27 @@ public class Tracker{
         //SHA-1 is 155187125F2CE9E45F1D09729D75C35F2E83DBF3
         
         private String URLify(String base, String queryID, byte[] query) {
+                
                 if(base==null) {
                         base = "";
                 }
+                
                 String reply = base+queryID+"=";
+                
                 for(int i = 0; i<query.length; i++) {
                         if(query[i] < 0) { //if the byte data has the most significant byte set (e.g. it is negative)
                                 reply = reply+"%";
+                                //Mask the upper byte and lower byte and turn them into the correct chars
                                 reply = reply + HEXCHARS[(query[i]&0xF0)>>>4]+HEXCHARS[query[i]&0x0F];
                         }else{
-                                try{
+                                try{ //If the byte is a valid ascii character, use URLEncoder
                                         reply = reply + URLEncoder.encode(new String(new byte[] {query[i]}),"UTF-8");
                                  }catch(UnsupportedEncodingException e){
                                          System.out.println("URL formation error:" + e.getMessage());
                                  }
                         }
                 }
+                
                 return reply;
         }
 
