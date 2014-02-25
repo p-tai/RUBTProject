@@ -5,6 +5,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.net.URLConnection;
 import java.net.HttpURLConnection;
+import java.nio.ByteBuffer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.DataInputStream;
@@ -12,9 +13,24 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.util.Random;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.ArrayList;
 
 public class Tracker{
     
+    
+        public final static ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
+        { 'p', 'e', 'e', 'r', 's' });
+        
+        public final static ByteBuffer IP = ByteBuffer.wrap(new byte[]
+        { 'i', 'p' });
+        
+        public final static ByteBuffer PEERID = ByteBuffer.wrap(new byte[]
+        { 'p', 'e', 'e', 'r', ' ', 'i', 'd' });
+        
+        public final static ByteBuffer PORT = ByteBuffer.wrap(new byte[]
+        { 'p', 'o', 'r', 't', });
+        
 	private URL url;
         private byte[] hash;
         private int bytesLeft;
@@ -100,14 +116,12 @@ public class Tracker{
 			getStreamBytes = new byte[byteAvailLen];
 			dataStream.readFully(getStreamBytes);
                         
-                        //HashMap<String,String> key = new HashMap<String,String>();
+                        Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
                         Object peers = Bencoder2.decode(getStreamBytes);
                         
-                        if(peers instanceof HashMap){
-                                captureResponse((HashMap<String,Object>)peers);
-                        }
+                        captureResponse(response);
                         
-                        ToolKit.print(peers);
+                        //ToolKit.print(peers);
                         
                         getStream.close();
                         dataStream.close();
@@ -127,9 +141,18 @@ public class Tracker{
 	 * args: tracker <-- invisible for now
 	 * return a list of peers 
 	 */
-	private void captureResponse(HashMap<String,Object> response){
-                //Object peers = response.get("peers");
-
+	private void captureResponse(Map<ByteBuffer,Object> response){
+                ArrayList peers = (ArrayList)response.get(PEERS);
+                ToolKit.print(peers);
+                //for loop, iterate through all peers
+                
+                ToolKit.print(peers.get(0));
+                Map<ByteBuffer,Object> aPeer = (Map<ByteBuffer,Object>)peers.get(0);
+                String ip = new String(((ByteBuffer)aPeer.get(IP)).array());
+                String remotePeer = new String(((ByteBuffer)aPeer.get(PEERID)).array());
+                int port = (int)(aPeer.get(PORT));
+                
+                System.out.printf("%s %s %d\n", ip, remotePeer, port);
 	}//end of captureresponse
 
 	public static void main(){
@@ -141,7 +164,7 @@ public class Tracker{
         /**
          * Helper function - will convert a query and append it to the current URL
          */
-        private String URLify(String base, String queryID, String query) {
+        private static String URLify(String base, String queryID, String query) {
                 
                 if(base==null) {
                         base = "";
@@ -162,7 +185,7 @@ public class Tracker{
         final private static char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
         //SHA-1 is 155187125F2CE9E45F1D09729D75C35F2E83DBF3
         
-        private String URLify(String base, String queryID, byte[] query) {
+        private static String URLify(String base, String queryID, byte[] query) {
                 
                 if(base==null) {
                         base = "";
