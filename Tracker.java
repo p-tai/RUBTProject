@@ -15,6 +15,7 @@ import java.util.Random;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.ListIterator;
 
 public class Tracker{
     
@@ -97,22 +98,22 @@ public class Tracker{
                         System.out.println(url);
                         
 			httpConnection = (HttpURLConnection)url.openConnection();
-			System.out.println("1");
+			//System.out.println("1");
 			httpConnection.setRequestMethod("GET");
 			int responseCode = httpConnection.getResponseCode();
-			System.out.println("2");
-			System.out.println("RESPONSE: " + responseCode);
+			//System.out.println("2");
+			//System.out.println("RESPONSE: " + responseCode);
 			getStream = httpConnection.getInputStream();
                         dataStream = new DataInputStream(getStream);
                         
-			System.out.println("3");
+			//System.out.println("3");
 
 			//getStream = connection.getInputStream();
 
 			int byteAvailLen = getStream.available();
 			//System.out.println("CONNECTION: " + connection.toString());
-			System.out.println("GETSTREAM: " + getStream.toString());
-			System.out.println("bytes: " + byteAvailLen);
+			//System.out.println("GETSTREAM: " + getStream.toString());
+			//System.out.println("bytes: " + byteAvailLen);
 			getStreamBytes = new byte[byteAvailLen];
 			dataStream.readFully(getStreamBytes);
                         
@@ -133,7 +134,7 @@ public class Tracker{
 		} catch(BencodingException e) {
                 	System.out.println("ERRORRR" + e.getMessage());
                 }
-                //endo f catch
+                //end of catch
 		
 	}//end create
 
@@ -142,17 +143,26 @@ public class Tracker{
 	 * return a list of peers 
 	 */
 	private void captureResponse(Map<ByteBuffer,Object> response){
-                ArrayList peers = (ArrayList)response.get(PEERS);
-                ToolKit.print(peers);
-                //for loop, iterate through all peers
                 
-                ToolKit.print(peers.get(0));
+                //Get Peers from the Bencoded HTTP Get response
+                ArrayList<Map<ByteBuffer,Object>> peers = (ArrayList<Map<ByteBuffer,Object>>)response.get(PEERS);
+                //ToolKit.print(peers);
+                 
+                //Creates an iterator of all the peers returned by the tracker
+                ListIterator<Map<ByteBuffer,Object>> iter = peers.listIterator();
+                for(int i = 0; i < peers.size(); i++) {
+                        ToolKit.print(iter.next());
+                }
+                
+                //ToolKit.print(peers.get(0));
+                
+                //Parse the peer's IP, PeerID, and Port
                 Map<ByteBuffer,Object> aPeer = (Map<ByteBuffer,Object>)peers.get(0);
                 String ip = new String(((ByteBuffer)aPeer.get(IP)).array());
-                String remotePeer = new String(((ByteBuffer)aPeer.get(PEERID)).array());
+                String remotePeerID = new String(((ByteBuffer)aPeer.get(PEERID)).array());
                 int port = (int)(aPeer.get(PORT));
                 
-                System.out.printf("%s %s %d\n", ip, remotePeer, port);
+                System.out.printf("%s %s %d\n", ip, remotePeerID, port);
 	}//end of captureresponse
 
 	public static void main(){
