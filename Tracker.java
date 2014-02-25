@@ -1,4 +1,5 @@
 import edu.rutgers.cs.cs352.bt.util.*;
+import edu.rutgers.cs.cs352.bt.exceptions.*;
 import edu.rutgers.cs.cs352.bt.*;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -10,7 +11,7 @@ import java.io.DataInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.util.Random;
-
+import java.util.HashMap;
 
 public class Tracker{
 
@@ -34,14 +35,19 @@ public class Tracker{
                 this.bytesDownloaded = 0;
                 this.bytesUploaded = 0;
                 this.peer_id = Tracker.genPeerID();
-		System.out.println("HASH: " + torrentFile.info_hash);
 	}//end of Tracker constructor :3
 
         
+        final private static char[] intArray = "0123456789".toCharArray();
+        
         private static String genPeerID() {
+                String peerID = "AAA";
                 Random randGen = new Random();
-                int suffix = randGen.nextInt(9)*100+randGen.nextInt(9)*10+randGen.nextInt(9);
-                return new String("AAA"+Integer.toString(suffix));
+                for(int i = 0; i<17;i++) {
+                        peerID = peerID + intArray[randGen.nextInt(9)];
+                        
+                }
+                return peerID;
         }
         
 	/**
@@ -54,8 +60,8 @@ public class Tracker{
                 
 		URL url = this.url;
                 byte[] hash = this.hash;
-                String query = null;
-
+                
+                String query = "";
                 
 		URLConnection connection = null;
 		InputStream getStream = null;
@@ -64,20 +70,22 @@ public class Tracker{
 		byte[] getStreamBytes;
 
 		try{    
-                        query = URLify(query,"announce?info_hash",new String(hash,"UTF-8"));
+                        query = URLify(query,"announce?info_hash", new String(hash,"UTF-8"));
                         query = URLify(query,"&peer_id",this.peer_id);
                         query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
                         query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
                         query = URLify(query,"&left", Integer.toString(this.bytesLeft));
-                        System.out.println(query);
+                        
                         url = new URL(url, query);
+                        
+                        System.out.println(url);
                         
 			httpConnection = (HttpURLConnection)url.openConnection();
 			System.out.println("1");
 			httpConnection.setRequestMethod("GET");
 			int responseCode = httpConnection.getResponseCode();
-			System.out.println("RESPONSE: " + responseCode);
 			System.out.println("2");
+			System.out.println("RESPONSE: " + responseCode);
 			getStream = httpConnection.getInputStream();
                         dataStream = new DataInputStream(getStream);
                         
@@ -92,7 +100,9 @@ public class Tracker{
 			getStreamBytes = new byte[byteAvailLen];
 			dataStream.readFully(getStreamBytes);
                         
-                        
+                        //HashMap<String,String> key = new HashMap<String,String>();
+                        Object peers = Bencoder2.decode(getStreamBytes);
+                        ToolKit.print(peers);
                         
                         getStream.close();
                         dataStream.close();
@@ -101,7 +111,10 @@ public class Tracker{
 		}//end of try
 		catch(IOException e){
 			System.out.println("ERRORRR" + e.getMessage());
-		}//endo f catch
+		} catch(BencodingException e) {
+                	System.out.println("ERRORRR" + e.getMessage());
+                }
+                //endo f catch
 		
 	}//end create
 
@@ -124,12 +137,15 @@ public class Tracker{
          * Helper function - will convert a query and append it to the current URL
          */
         private String URLify(String base, String queryID, String query) {
+                
                 if(base==null) {
                         base = "";
                 }
+                
                 try{
+                        //This messes up for char values over 127 in base 10. Need to fix.
                         query = URLEncoder.encode(query, "UTF-8");
-                        return (base+queryID+"?"+query);
+                        return (base+queryID+"="+query);
                 } catch (UnsupportedEncodingException e) {
                         System.out.println("URL formation error:" + e.getMessage());
                 }

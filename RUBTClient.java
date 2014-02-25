@@ -64,14 +64,6 @@ public class RUBTClient {
         //Attempt to open the .torrent file and create a buffered reader from the file stream
         TorrentInfo torrentFile = parseTorrentInfo(args[0]);
         
-        try {
-            String decoded = new String(torrentFile.info_hash.array(), "UTF-8");
-            System.out.println(decoded);
-        } catch (UnsupportedEncodingException e) {
-            System.err.println("Error: Could not read torrent info.");
-            return;
-        }
-        
         //Create client instance which will hold file information
         Client torrentClient = null;
         torrentClient = new Client(torrentFile, args[1]);
