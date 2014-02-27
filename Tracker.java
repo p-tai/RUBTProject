@@ -1,6 +1,7 @@
 import edu.rutgers.cs.cs352.bt.util.*;
 import edu.rutgers.cs.cs352.bt.exceptions.*;
 import edu.rutgers.cs.cs352.bt.*;
+
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.URLConnection;
@@ -38,6 +39,9 @@ public class Tracker{
         private int bytesDownloaded;
         private int bytesUploaded;
         private String peer_id;
+        private String hostIP;
+        private int port;
+        private String hostID;
         
 
 	/**
@@ -57,14 +61,14 @@ public class Tracker{
         
         final private static char[] intArray = "0123456789".toCharArray();
         
-        private static String genPeerID() {
-                String peerID = "AAA";
+        public static String genPeerID() {
+              String peerID = "AAA";
                 Random randGen = new Random();
                 for(int i = 0; i<17;i++) {
                         peerID = peerID + intArray[randGen.nextInt(9)];
                         
                 }
-                return peerID;
+                return peerID; 
         }
         
 	/**
@@ -138,6 +142,41 @@ public class Tracker{
 		
 	}//end create
 
+	public void started(){
+		URL url = this.url;
+        byte[] hash = this.hash;
+        
+        String query = "";
+		        
+		URLConnection connection = null;
+		InputStream getStream = null;
+		HttpURLConnection httpConnection = null;
+		DataInputStream dataStream = null;
+		byte[] getStreamBytes;
+
+try{    
+                query = URLify(query,"announce?info_hash", hash);
+                query = URLify(query,"&peer_id",this.peer_id);
+                query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
+                query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
+                query = URLify(query,"&left", Integer.toString(this.bytesLeft));
+                query = URLify(query,"&event", "started");
+                
+                url = new URL(url, query);
+                
+                System.out.println(url);
+                
+	httpConnection = (HttpURLConnection)url.openConnection();
+	//System.out.println("1");
+	httpConnection.setRequestMethod("GET");
+	int responseCode = httpConnection.getResponseCode();
+	//System.out.println("2");
+	System.out.println("RESPONSE: " + responseCode);
+	}catch(IOException e){
+		
+	
+	}
+}
 	/**
 	 * args: tracker <-- invisible for now
 	 * return a list of peers 
@@ -161,10 +200,26 @@ public class Tracker{
                 String ip = new String(((ByteBuffer)aPeer.get(IP)).array());
                 String remotePeerID = new String(((ByteBuffer)aPeer.get(PEERID)).array());
                 int port = (int)(aPeer.get(PORT));
+                this.hostIP = ip;
+                this.hostID = remotePeerID;
+                this.port = port;
                 
                 System.out.printf("%s %s %d\n", ip, remotePeerID, port);
 	}//end of captureresponse
 
+	
+	public String getHostIP(){
+		return this.hostIP;
+	}
+	
+	public String getHostID(){
+		return this.hostID;
+	}
+	
+	public int getPort(){
+		return this.port;
+	}
+	
 	public static void main(){
 
 
@@ -220,4 +275,12 @@ public class Tracker{
                 return reply;
         }
 
+        
+        public byte[] getSHA1(){
+        	return this.hash;
+        }
+        
+        public String peerID(){
+        	return this.peer_id;
+        }
 }//end of connection class

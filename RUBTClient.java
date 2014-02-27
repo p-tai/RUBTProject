@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
+
 import edu.rutgers.cs.cs352.bt.util.*;
 import edu.rutgers.cs.cs352.bt.*;
 import edu.rutgers.cs.cs352.bt.exceptions.*;
@@ -7,6 +9,9 @@ import edu.rutgers.cs.cs352.bt.exceptions.*;
 
 public class RUBTClient {
         
+	private static TorrentInfo torrent;
+	private static Tracker tracker;
+	
     private static TorrentInfo parseTorrentInfo(String filename) {
         try {
             //Create input streams and file streams
@@ -53,33 +58,143 @@ public class RUBTClient {
         }
     }
     
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException, BencodingException, InterruptedException {
     
         //Check for correct number parameters
-        if(args == null || args.length != 2) {
+     /*   if(args == null || args.length != 2) {
             System.err.println("Error: Incorrect number of paramaters");
             return;
-        }
-        
+        } */
+    	
+    	String filePath = "project1.torrent";
+        String picture = "picture.jpg";
         //Attempt to open the .torrent file and create a buffered reader from the file stream
-        TorrentInfo torrentFile = parseTorrentInfo(args[0]);
-        
+        TorrentInfo torrentFile = parseTorrentInfo(filePath);
+        torrent = torrentFile;
         //Create client instance which will hold file information
         Client torrentClient = null;
-        torrentClient = new Client(torrentFile, args[1]);
+        torrentClient = new Client(torrentFile, picture);
 
-		Tracker tracker = new Tracker(torrentFile);
+		tracker = new Tracker(torrentFile);
 		tracker.create();
-        
+
         //Checks if the torrentfile was correctly made
         if(torrentFile == null) {
             System.err.println("Error: Could not read torrent info.");
             return;
         }
+		byte[] message = handshakeMessage(19, "BitTorrent protocol", 8, tracker.getSHA1(), tracker.peerID());
+		String ip = tracker.getHostIP();
+		String id = tracker.getHostID();
+		int port = tracker.getPort();
+		connect(message, id, ip, port);
         //System.out.println(torrentFile);
         
         //Exit gracefully
         return;
+    }
+    
+    @SuppressWarnings("deprecation")
+	public static void connect(byte[] handshake, String peerID, String peerIP, int peerPort) throws IOException, BencodingException, InterruptedException{
+    	try{
+    		//TODO REMOVE HARD CODE
+    		String IP = "128.6.171.130";
+    		int PORT = 30164;
+    		/* We DON'T HAVE TO ENCODE BEFORE WE SEND THE MESSAGE */
+    		Socket socket = new Socket(IP, PORT);
+    		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+    		DataInputStream is = new DataInputStream(socket.getInputStream());
+    		
+    		if(socket != null && os != null && is != null){
+    			os.write(handshake);
+ 
+    			
+    			byte[] temp = new byte[68];
+    			byte[] varify = new byte[20];
+    			is.readFully(temp);
+
+    			for(int i = 0; i < 20; i++){
+    				varify[i] = temp[28 + i];
+    			}
+    		
+    			//TODO : DO NOT COMPARE SHA1 via Strings
+    			if(readByteArray(varify).equals(readByteArray(tracker.getSHA1()))){
+    				
+    				os.flush();
+    				//1. Send a Interested Message
+    				ByteBuffer x = ByteBuffer.wrap(Message.interested);
+    				os.write(Bencoder2.encode(x));
+    				System.out.println(readByteArray(temp));
+    				//2. Send a unchoke Message
+    				
+    				//3. Send a request Message for one of the pieces
+    				
+    			}else{
+    				System.out.println("Different");
+    			}
+    		}
+    		os.close();
+    		is.close();
+    		socket.close();
+    	}catch(UnknownHostException e){
+    		System.out.println("Don't know about the host" + peerIP);
+    	}
+    }
+    
+    public static byte[] handshakeMessage(int length, String protocol, int fixedHeaders, byte[] SHA1, String peerID){
+    	byte[] handshake = new byte[68];
+        handshake[0] = 19;
+        handshake[1] = 'B';
+        handshake[2] = 'i';
+        handshake[3] = 't';
+        handshake[4] = 'T';
+        handshake[5] = 'o';
+        handshake[6] = 'r';
+        handshake[7] = 'r';
+        handshake[8] = 'e';
+        handshake[9] = 'n';
+        handshake[10] = 't';
+        handshake[11] = ' ';
+        handshake[12] = 'p';
+        handshake[13] = 'r';
+        handshake[14] = 'o';
+        handshake[15] = 't';
+        handshake[16] = 'o';
+        handshake[17] = 'c';
+        handshake[18] = 'o';
+        handshake[19] = 'l';
+        for(int i = 0; i < 8; i++){
+        	handshake[19 + i + 1] = 0;
+        }
+        //28
+        for(int i = 0; i < 20; i++){
+        	handshake[28 + i] = SHA1[i];
+        }
+        //48
+        for(int i = 0; i < 20; i++){
+        	handshake[48 + i] = (byte) peerID.charAt(i);
+        }
+        //ToolKit.print(handshake);
+        //System.out.println(handshake.length);
+    	return handshake;
+    }
+    
+    public static String readByteArray(byte[] target){
+    	String result = "";
+		for(int i = 0; i < target.length; ++i){
+			/*
+			 * Return: 19, BitTorrent protocol
+			 * 		   8, 0's
+			 * 		   Info Hash
+			 * 		   There PEER ID
+			 */
+			result = result + String.format("%02x, ", target[i]);
+			//System.out.print(String.format("%02x, ",target[i]));
+			if(i == 19 || i == 27 || i == 47){
+				result = result + "\n";
+			}
+		}
+		return result;
     }
     
 }
