@@ -63,7 +63,9 @@ public class Tracker{
         
     final private static char[] intArray = "0123456789".toCharArray();
         
-        
+    /*
+     * Generates a random peer ID, length of 20, with a prefix of AAA.
+     */    
     public static String genPeerID() {
 		String peerID = "AAA";
 		Random randGen = new Random();
@@ -92,7 +94,9 @@ public class Tracker{
 		DataInputStream dataStream = null;
 		byte[] getStreamBytes;
 
-		try{    
+		try{
+			
+			//Create the HTTP-get request URL
 			query = URLify(query,"announce?info_hash", hash);
 			query = URLify(query,"&peer_id",this.peer_id);
 			query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
@@ -103,39 +107,45 @@ public class Tracker{
                         
 			System.out.println(url);
                         
+            //Create the URL connection and send the GET request
 			httpConnection = (HttpURLConnection)url.openConnection();
 			//System.out.println("1");
 			httpConnection.setRequestMethod("GET");
 			int responseCode = httpConnection.getResponseCode();
 			//System.out.println("2");
+			
+			//Capture the response and save it to a byte buffer
 			System.out.println("RESPONSE: " + responseCode);
 			getStream = httpConnection.getInputStream();
             dataStream = new DataInputStream(getStream);
                         
 			//System.out.println("3");
-
-			//getStream = connection.getInputStream();
-
 			int byteAvailLen = getStream.available();
+			getStreamBytes = new byte[byteAvailLen];
+			dataStream.read(getStreamBytes); //Note: readFully causes an IOError(?)
+			
 			
 			//System.out.println("CONNECTION: " + httpConnection.toString());
 			//System.out.println("GETSTREAM: " + getStream.toString());
 			//System.out.println("bytes: " + byteAvailLen);
-			
-			getStreamBytes = new byte[byteAvailLen];
-			
 			//System.out.println("byte array length " + getStreamBytes.length);
 			
-			dataStream.read(getStreamBytes); //Note: readFully causes an IOError(?)
 			
+			//Typecast the response to a map object
             Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
             
             //ToolKit.print(response);
+            
+            //Decode the peers using Bencoder
 			Object peers = Bencoder2.decode(getStreamBytes);
 			
+			
+			//Call capture response to spin out new peers
 			captureResponse(response);
 			//ToolKit.print(peers);
 			
+			
+			//Close the datastreams
 			getStream.close();
 			dataStream.close();
 		}//end of try
