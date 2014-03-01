@@ -124,8 +124,9 @@ public class RUBTClient {
     				
     				os.flush();
     				//1. Send an Interested Message
-    				ByteBuffer interestMessage = ByteBuffer.wrap(Message.interested);
-    				os.write(Bencoder2.encode(interestMessage));
+					
+    				//ByteBuffer interestMessage = ByteBuffer.wrap(Message.interested);
+    				os.write(Message.interested);
     				System.out.println(readByteArray(temp));
     				//2. Send an unchoke Message
     				
@@ -155,11 +156,11 @@ public class RUBTClient {
         handshake[3] = 't';
         handshake[4] = 'T';
         handshake[5] = 'o';
-        handshake[6] = 'r';
-        handshake[7] = 'r';
+        handshake[6] = 'r'; 
+		handshake[7] = 'r';
         handshake[8] = 'e';
-        handshake[9] = 'n';
-        handshake[10] = 't';
+        handshake[9] = 'n'; 
+		handshake[10] = 't';
         handshake[11] = ' ';
         handshake[12] = 'p';
         handshake[13] = 'r';
