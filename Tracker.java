@@ -108,7 +108,7 @@ public class Tracker{
 			httpConnection.setRequestMethod("GET");
 			int responseCode = httpConnection.getResponseCode();
 			//System.out.println("2");
-			//System.out.println("RESPONSE: " + responseCode);
+			System.out.println("RESPONSE: " + responseCode);
 			getStream = httpConnection.getInputStream();
             dataStream = new DataInputStream(getStream);
                         
@@ -117,26 +117,33 @@ public class Tracker{
 			//getStream = connection.getInputStream();
 
 			int byteAvailLen = getStream.available();
-			//System.out.println("CONNECTION: " + connection.toString());
+			
+			//System.out.println("CONNECTION: " + httpConnection.toString());
 			//System.out.println("GETSTREAM: " + getStream.toString());
 			//System.out.println("bytes: " + byteAvailLen);
+			
 			getStreamBytes = new byte[byteAvailLen];
-			dataStream.readFully(getStreamBytes);
+			
+			//System.out.println("byte array length " + getStreamBytes.length);
+			
+			//Note: readFully causes an IOError(?)
+			dataStream.read(getStreamBytes);
 			
             Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
+            
 			Object peers = Bencoder2.decode(getStreamBytes);
 			
 			captureResponse(response);
 			//ToolKit.print(peers);
+			
 			getStream.close();
 			dataStream.close();
 		}//end of try
 		catch(IOException e){
-			System.out.println("ERROR" + e.getMessage());
+			System.out.println("IO ERROR: " + e.getMessage());
 		} catch(BencodingException e) {
-                	System.out.println("ERROR" + e.getMessage());
-                }
-                //end of catch
+            System.out.println("Bencoding ERROR:" + e.getMessage());
+        }//end of catch
 		
 	}//end create
 
@@ -219,10 +226,6 @@ public class Tracker{
 	public int getPort(){
 		return this.port;
 	}
-	
-	public static void main(){
-
-	}//end of main
         
         
     /**
