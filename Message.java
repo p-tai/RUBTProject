@@ -73,5 +73,25 @@ public class Message {
 		return null;
 	}
 
+	/*
+	 * Alex's only contribution
+	 * ;__;
+	 * i'm so sad rn
+	 */
+	public static String isAvailable(byte poop){
+		if(poop == 0)
+			return "keepAlive";
+		else if(poop == 1)
+			return "choke";
+		else if(poop == 2)
+			return "unchoke";
+		else if(poop == 3)
+			return "interested";
+		else if(poop == 4)
+			return "uninterested";
+		else
+			return null;
+	}//endo f isavailable
+
 	
 }
