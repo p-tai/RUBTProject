@@ -11,10 +11,12 @@ public class Message {
 	 */
 	public static final byte[] keepAlive = {0, 0, 0, 0};
 	
+	// NOTE TO ALEX(SELF ^__^): last element of each byte[] is the id!
+
 	/**
 	 * 
 	 */
-	public static final byte[] choke = {0, 0, 0, 1, 0};
+	public static final byte[] choke = {0, 0, 0, 1, 0}; 
 	
 	/**
 	 * 
@@ -70,5 +72,6 @@ public class Message {
 	public static byte[] encrpt(){
 		return null;
 	}
+
 	
 }

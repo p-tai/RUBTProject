@@ -3,8 +3,6 @@ import java.net.*;
 import java.nio.ByteBuffer;
 
 import edu.rutgers.cs.cs352.bt.util.*;
-import edu.rutgers.cs.cs352.bt.*;
-import edu.rutgers.cs.cs352.bt.exceptions.*;
 
 
 public class RUBTClient {
@@ -122,11 +120,11 @@ public class RUBTClient {
     			if(readByteArray(varify).equals(readByteArray(tracker.getSHA1()))){
     				
     				os.flush();
-    				//1. Send a Interested Message
+    				//1. Send an Interested Message
     				ByteBuffer x = ByteBuffer.wrap(Message.interested);
     				os.write(Bencoder2.encode(x));
     				System.out.println(readByteArray(temp));
-    				//2. Send a unchoke Message
+    				//2. Send an unchoke Message
     				
     				//3. Send a request Message for one of the pieces
     				
