@@ -42,8 +42,8 @@ public class Client {
         return false;
     }
     
-    private static void performHandshake(TorrentInfo torrentFile) {
-        byte[] handshake = new byte[65];
+    private static void performHandshake(Tracker tracker) {
+       /* byte[] handshake = new byte[65];
         handshake[0] = 19;
         handshake[1] = 'B';
         handshake[2] = 'i';
@@ -72,8 +72,7 @@ public class Client {
         byte[] infoHash = torrentFile.info_hash.array();
         for(int i = 0; i < 20; i++){
         	handshake[28+i] = infoHash[i];
-        }
-        
+        }*/
         
          //System.arraycopy(P_STRING,0,handshake,1,P_STRING.length);
         //array copy the infohash
