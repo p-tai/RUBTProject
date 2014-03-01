@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.security.MessageDigest;
 import edu.rutgers.cs.cs352.bt.util.*;
 import edu.rutgers.cs.cs352.bt.*;
 import edu.rutgers.cs.cs352.bt.exceptions.*;
@@ -12,9 +13,7 @@ public class Client {
     
     
     /**
-	 * takes a TorrentInfo
-	 * and makes a tracker
-	 * and gets the IP addresses ands tuff
+	 * takes a TorrentInfo and makes a tracker
 	 */
     
 	public Client(TorrentInfo torrentFile, String fileName) {
@@ -37,55 +36,37 @@ public class Client {
      * Returns true and updates the internal data array if the SHA-1 matches
      */
      
-    public boolean setData(byte[] dataPiece, int dataOffset) {
-        //check SHA-1
-        return false;
-    }
-    
-    private static void performHandshake(Tracker tracker) {
-       /* byte[] handshake = new byte[65];
-        handshake[0] = 19;
-        handshake[1] = 'B';
-        handshake[2] = 'i';
-        handshake[3] = 't';
-        handshake[4] = 'T';
-        handshake[5] = 'o';
-        handshake[6] = 'r';
-        handshake[7] = 'r';
-        handshake[8] = 'e';
-        handshake[9] = 'n';
-        handshake[10] = 't';
-        handshake[11] = ' ';
-        handshake[12] = 'p';
-        handshake[13] = 'r';
-        handshake[14] = 'o';
-        handshake[15] = 't';
-        handshake[16] = 'o';
-        handshake[17] = 'c';
-        handshake[18] = 'o';
-        handshake[19] = 'l';
-        
-        for(int i = 1; i < 9; i++){
-        	handshake[19 + i] = 0;
-        }
-        
-        byte[] infoHash = torrentFile.info_hash.array();
-        for(int i = 0; i < 20; i++){
-        	handshake[28+i] = infoHash[i];
-        }*/
-        
-         //System.arraycopy(P_STRING,0,handshake,1,P_STRING.length);
-        //array copy the infohash
-        //array copy the peerID
-        //check the handshake
-        //check protocolstring
-        //check infohash
-        //check peerID against tracker peerID
-        return;
+    public static boolean checkData(byte[] dataPiece, int dataOffset) {
+		MessageDigest hasher = MessageDigest.getInstance("SHA");	
+		
+		if(dataOffset > this.torrentInfo.piece_hashes.length) {
+			//illegal dataOffset value
+			System.out.println("illegal dataOffset");
+			return false;
+		}
+		
+		if(dataPiece.length > this.torrentInfo.piece_length) {
+			System.out.println("illegal piece length");
+			//ilegal piece length
+			return false;
+		}
+		
+		byte[] SHA1 = this.torrentInfo.piece_hashes[dataOffset];
+		byte[] checkSHA1 = hasher.digest(dataPiece);
+		
+		//check SHA-1
+		for(int i = 0; i < sha1.length; i++) {
+			if(SHA1[[i] != checkSHA1[i]){
+				System.out.println("fail in loop at index " + i);
+				return false;
+			}
+		}
+		
+        return true;
     }
     
     /*
-     * Getter for torrentInfo;
+     * Getter for torrentInfo
      */
     public TorrentInfo getTorrentInfo() {
         return this.torrentInfo;
