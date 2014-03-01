@@ -6,7 +6,7 @@ where alex** tries to figure out what the fuck is going on here, yep ^__^
 ## Files we created
 
 ### RUBTClient.java
-#### `private static TorrentInfo parseTorrentInfo(String filename)`
+* `private static TorrentInfo parseTorrentInfo(String filename)`
 	* **Gist**: read file `filename` into a `TorrentInfo` object
 	* **Note**: need to read into byte[] then readFully(byte[]) 
 		* because constructor for `TorrentInfo` needs a friggin readfully thingie
@@ -17,7 +17,7 @@ where alex** tries to figure out what the fuck is going on here, yep ^__^
 	* At the moment: writes "testing" 
 		* supposed to put downloaded byte array there :3 
 	* **Alex**: shouldn''t we accept a byte array as an argument too? ^__^
-#### `public static void connect(bye[] handshake, String peerID, String peerIP, int peerPort) throws a fuckton of exceptions`
+* `public static void connect(bye[] handshake, String peerID, String peerIP, int peerPort) throws a fuckton of exceptions`
 	* **Gist**: connects to given information (right now hardcoded lawlz)
 	* Basically where all our shit happens
 	* Opens a socket to ip/port
@@ -29,12 +29,12 @@ where alex** tries to figure out what the fuck is going on here, yep ^__^
 	* Send an unchoke message
 	* Send a request message for one of the pieces
 	* Close sockets and shit
-#### `public static byte[] handshakeMessage(int length, String protocol, int fixedHeaders, byte[] SHA1, String peerId)`
+* `public static byte[] handshakeMessage(int length, String protocol, int fixedHeaders, byte[] SHA1, String peerId)`
 	* **Gist**: .... fills out a bytearray?? called the handshake??
 	* Including: SHA-1 and peerID...? 
-#### `public static String readByteArray(byte[] target)`
+* `public static String readByteArray(byte[] target)`
 	* **Gist**: converts the byte[] into a string format
-#### `public static void main(String args[]) throws a fuckton of exceptions`
+* `public static void main(String args[]) throws a fuckton of exceptions`
 	* **Gist**: accepts 2 arguments (.torrent and .jpg) 
 	* Makes a torrentfile using the filepath given (.torrent)
 	* Makes new Client object using torrentfile and picture
