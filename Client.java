@@ -11,7 +11,6 @@ public class Client {
     private String fileName;
     private RandomAccessFile dataFile;
     
-    
     /**
 	 * takes a TorrentInfo and makes a tracker
 	 */
@@ -21,14 +20,7 @@ public class Client {
         this.fileName = fileName;
         createFile();
 	}
-    
-    /*
-     * Getter for data file
-     */
-    public RandomAccessFile getData() {
-        return this.dataFile;
-    }
-    
+   
     /*
      * Updater for data file
      * Takes input of a data piece and a data offset
@@ -63,6 +55,13 @@ public class Client {
 		}
 		
         return true;
+    }
+
+     /*
+     * Getter for data file
+     */
+    public RandomAccessFile getData() {
+        return this.dataFile;
     }
     
     /*

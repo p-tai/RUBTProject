@@ -6,6 +6,9 @@ where alex** tries to figure out what the fuck is going on here, yep ^__^
 ## Files we created
 
 ### RUBTClient.java
+
+#### Functions
+
 * `private static TorrentInfo parseTorrentInfo(String filename)`
 	* **Gist**: read file `filename` into a `TorrentInfo` object
 	* **Note**: need to read into byte[] then readFully(byte[]) 
@@ -48,6 +51,30 @@ where alex** tries to figure out what the fuck is going on here, yep ^__^
 
 
 ### Client.java
+
+#### Member Variables
+
+* `private TorrentInfo torrentInfo`
+* `private String filename`
+* `private RandomAccessFile dataFile`
+
+#### Functions
+
+* `public Client(TorrentInfo torrentFile, String fileName)`
+	* **Gist**: "Takes a TorrentInfo and makes a tracker"
+* `public static boolean checkData(byte[] dataPiece, int dataOffset)`
+	* Verification for the file? 
+	* SHA-1, piece lengths, and hashes? 
+* `public TorrentInfo getTorrentInfo()`
+* `public RandomAccessFile getData()`
+* `private boolean createFile()`
+	* Creates new RandomAccessFile with object''s filename
+	* If failed... create and call createFile again
+
+
+
+
+
 
 ### Message.java
 
