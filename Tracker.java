@@ -181,7 +181,6 @@ public class Tracker{
                 }
                 
                 try{
-                        //This messes up for char values over 127 in base 10. Need to fix.
                         query = URLEncoder.encode(query, "UTF-8");
                         return (base+queryID+"="+query);
                 } catch (UnsupportedEncodingException e) {
