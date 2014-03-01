@@ -249,7 +249,7 @@ public class Tracker{
 
 
 	final private static char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
-	//SHA-1 is 155187125F2CE9E45F1D09729D75C35F2E83DBF3
+	//project 1 SHA-1 is 155187125F2CE9E45F1D09729D75C35F2E83DBF3
         
 	private static String URLify(String base, String queryID, byte[] query) {
                 
@@ -272,7 +272,7 @@ public class Tracker{
                 }
             }
         }        
-                return reply;
+        return reply;
     }
 
         
@@ -283,5 +283,66 @@ public class Tracker{
     public String peerID(){
     	return this.peer_id;
     }
+    
+    
+    public void closeTracker() {
+		String query = "";
+                
+		URLConnection connection = null;
+		InputStream getStream = null;
+		HttpURLConnection httpConnection = null;
+		DataInputStream dataStream = null;
+		byte[] getStreamBytes;
+
+		try{    
+			query = URLify(query,"announce?info_hash", hash);
+			query = URLify(query,"&peer_id",this.peer_id);
+			query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
+			query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
+			query = URLify(query,"&left", Integer.toString(this.bytesLeft));
+            query = URLify(query,"&event", "completed");
+            
+                        
+			url = new URL(url, query);
+                        
+			System.out.println(url);
+                        
+			httpConnection = (HttpURLConnection)url.openConnection();
+			//System.out.println("1");
+			httpConnection.setRequestMethod("GET");
+			int responseCode = httpConnection.getResponseCode();
+			//System.out.println("2");
+			System.out.println("RESPONSE: " + responseCode);
+			getStream = httpConnection.getInputStream();
+            dataStream = new DataInputStream(getStream);
+                        
+			//System.out.println("3");
+
+			//getStream = connection.getInputStream();
+
+			int byteAvailLen = getStream.available();
+			
+			//System.out.println("CONNECTION: " + httpConnection.toString());
+			//System.out.println("GETSTREAM: " + getStream.toString());
+			//System.out.println("bytes: " + byteAvailLen);
+			
+			getStreamBytes = new byte[byteAvailLen];
+			
+			//System.out.println("byte array length " + getStreamBytes.length);
+			
+			dataStream.read(getStreamBytes); //Note: readFully causes an IOError(?)
+			
+            ToolKit.print(response);
+			
+			getStream.close();
+			dataStream.close();
+		}//end of try
+		catch(IOException e){
+			System.out.println("IO ERROR: " + e.getMessage());
+		} catch(BencodingException e) {
+            System.out.println("Bencoding ERROR:" + e.getMessage());
+        }//end of catch
+		
+	}
     
 }//end of connection class
