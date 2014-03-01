@@ -104,16 +104,12 @@ public class Tracker{
 			System.out.println(url);
                         
 			httpConnection = (HttpURLConnection)url.openConnection();
-			//System.out.println("1");
 			httpConnection.setRequestMethod("GET");
 			int responseCode = httpConnection.getResponseCode();
-			//System.out.println("2");
 			System.out.println("RESPONSE: " + responseCode);
 			getStream = httpConnection.getInputStream();
             dataStream = new DataInputStream(getStream);
                         
-			//System.out.println("3");
-
 			//getStream = connection.getInputStream();
 
 			int byteAvailLen = getStream.available();
@@ -183,6 +179,7 @@ public class Tracker{
 			
 		}
 	}
+
 	/**
 	 * args: tracker <-- invisible for now
 	 * return a list of peers 
