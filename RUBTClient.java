@@ -3,6 +3,8 @@ import java.net.*;
 import java.nio.ByteBuffer;
 
 import edu.rutgers.cs.cs352.bt.util.*;
+import edu.rutgers.cs.cs352.bt.*;
+import edu.rutgers.cs.cs352.bt.exceptions.*;
 
 
 public class RUBTClient {
@@ -137,9 +139,11 @@ public class RUBTClient {
     		is.close();
     		socket.close();
     	}catch(UnknownHostException e){
-    		System.out.println("Don't know about the host" + peerIP);
+    		System.err.println("Don't know about the host" + peerIP);
     	}catch(IOException e) {
-			
+			System.err.println("IOException in peer connection method" + e.getMessage());
+		}catch(BencodingException e) {
+			System.err.println("BencodingException in peer connection method" + e.getMessage());
 		}
     }
     

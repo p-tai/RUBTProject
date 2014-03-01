@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import edu.rutgers.cs.cs352.bt.util.*;
 import edu.rutgers.cs.cs352.bt.*;
 import edu.rutgers.cs.cs352.bt.exceptions.*;
@@ -28,28 +29,36 @@ public class Client {
      * Returns true and updates the internal data array if the SHA-1 matches
      */
      
-    public static boolean checkData(byte[] dataPiece, int dataOffset) {
-		MessageDigest hasher = MessageDigest.getInstance("SHA");	
+    public boolean checkData(byte[] dataPiece, int dataOffset) {
+		MessageDigest hasher = null;
+		try {
+			hasher = MessageDigest.getInstance("SHA");	
+		} catch (NoSuchAlgorithmException e) {
+			System.err.println("No such algorithm exception: " + e.getMessage());
+			return false;
+		}
 		
 		if(dataOffset > this.torrentInfo.piece_hashes.length) {
 			//illegal dataOffset value
-			System.out.println("illegal dataOffset");
+			System.err.println("illegal dataOffset");
 			return false;
 		}
 		
 		if(dataPiece.length > this.torrentInfo.piece_length) {
-			System.out.println("illegal piece length");
+			System.err.println("illegal piece length");
 			//ilegal piece length
 			return false;
 		}
 		
-		byte[] SHA1 = this.torrentInfo.piece_hashes[dataOffset];
+		//
+		byte[] SHA1 = new byte[20];
+		(this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
 		byte[] checkSHA1 = hasher.digest(dataPiece);
 		
 		//check SHA-1
-		for(int i = 0; i < sha1.length; i++) {
-			if(SHA1[[i] != checkSHA1[i]){
-				System.out.println("fail in loop at index " + i);
+		for(int i = 0; i < SHA1.length; i++) {
+			if(SHA1[i] != checkSHA1[i]){
+				System.err.println("fail in loop at index " + i);
 				return false;
 			}
 		}
