@@ -342,6 +342,9 @@ public class Tracker{
 			
 			dataStream.read(getStreamBytes); //Note: readFully causes an IOError(?)
 			
+			
+			Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
+			
             ToolKit.print(response);
 			
 			getStream.close();
