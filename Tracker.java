@@ -129,7 +129,6 @@ public class Tracker{
 			//System.out.println("bytes: " + byteAvailLen);
 			//System.out.println("byte array length " + getStreamBytes.length);
 			
-			
 			//Typecast the response to a map object
             Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
             
@@ -137,12 +136,9 @@ public class Tracker{
             
             //Decode the peers using Bencoder
 			Object peers = Bencoder2.decode(getStreamBytes);
-			
-			
 			//Call capture response to spin out new peers
 			captureResponse(response);
 			//ToolKit.print(peers);
-			
 			
 			//Close the datastreams
 			getStream.close();
