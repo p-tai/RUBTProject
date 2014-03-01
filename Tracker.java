@@ -19,30 +19,28 @@ import java.util.ArrayList;
 import java.util.ListIterator;
 
 public class Tracker{
-    
-    
-        public final static ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
-        { 'p', 'e', 'e', 'r', 's' });
         
-        public final static ByteBuffer IP = ByteBuffer.wrap(new byte[]
-        { 'i', 'p' });
+	public final static ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
+	{ 'p', 'e', 'e', 'r', 's' });
         
-        public final static ByteBuffer PEERID = ByteBuffer.wrap(new byte[]
-        { 'p', 'e', 'e', 'r', ' ', 'i', 'd' });
+    public final static ByteBuffer IP = ByteBuffer.wrap(new byte[]
+    { 'i', 'p' });
         
-        public final static ByteBuffer PORT = ByteBuffer.wrap(new byte[]
-        { 'p', 'o', 'r', 't', });
+    public final static ByteBuffer PEERID = ByteBuffer.wrap(new byte[]
+    { 'p', 'e', 'e', 'r', ' ', 'i', 'd' });
+        
+    public final static ByteBuffer PORT = ByteBuffer.wrap(new byte[]
+    { 'p', 'o', 'r', 't', });
         
 	private URL url;
-        private byte[] hash;
-        private int bytesLeft;
-        private int bytesDownloaded;
-        private int bytesUploaded;
-        private String peer_id;
-        private String hostIP;
-        private int port;
-        private String hostID;
-        
+    private byte[] hash;
+    private int bytesLeft;
+    private int bytesDownloaded;
+    private int bytesUploaded;
+    private String peer_id;
+    private String hostIP;
+    private int port;
+    private String hostID;
 
 	/**
 	 * takes a TorrentInfo
@@ -51,25 +49,29 @@ public class Tracker{
 	 */
 	public Tracker(TorrentInfo torrentFile){
 		this.url = torrentFile.announce_url;
-                this.hash = torrentFile.info_hash.array();
-                this.bytesLeft = torrentFile.file_length;
-                this.bytesDownloaded = 0;
-                this.bytesUploaded = 0;
-                this.peer_id = Tracker.genPeerID();
+        this.hash = torrentFile.info_hash.array();
+        this.bytesLeft = torrentFile.file_length;
+        
+        this.bytesDownloaded = 0;
+        //Needs to calcuate the number of bytes remaining
+                
+        this.bytesUploaded = 0;
+        
+        this.peer_id = Tracker.genPeerID();
 	}//end of Tracker constructor :3
 
         
-        final private static char[] intArray = "0123456789".toCharArray();
+    final private static char[] intArray = "0123456789".toCharArray();
         
-        public static String genPeerID() {
-              String peerID = "AAA";
-                Random randGen = new Random();
-                for(int i = 0; i<17;i++) {
-                        peerID = peerID + intArray[randGen.nextInt(9)];
-                        
-                }
-                return peerID; 
+        
+    public static String genPeerID() {
+		String peerID = "AAA";
+		Random randGen = new Random();
+        for(int i = 0; i<17;i++) {
+			peerID = peerID + intArray[randGen.nextInt(9)];
         }
+		return peerID; 
+    }
         
 	/**
 	 * creates connection to tracker
@@ -80,9 +82,9 @@ public class Tracker{
 	public void create(){
                 
 		URL url = this.url;
-                byte[] hash = this.hash;
+		byte[] hash = this.hash;
                 
-                String query = "";
+		String query = "";
                 
 		URLConnection connection = null;
 		InputStream getStream = null;
@@ -91,15 +93,15 @@ public class Tracker{
 		byte[] getStreamBytes;
 
 		try{    
-                        query = URLify(query,"announce?info_hash", hash);
-                        query = URLify(query,"&peer_id",this.peer_id);
-                        query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
-                        query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
-                        query = URLify(query,"&left", Integer.toString(this.bytesLeft));
+			query = URLify(query,"announce?info_hash", hash);
+			query = URLify(query,"&peer_id",this.peer_id);
+			query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
+			query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
+			query = URLify(query,"&left", Integer.toString(this.bytesLeft));
                         
-                        url = new URL(url, query);
+			url = new URL(url, query);
                         
-                        System.out.println(url);
+			System.out.println(url);
                         
 			httpConnection = (HttpURLConnection)url.openConnection();
 			//System.out.println("1");
@@ -108,7 +110,7 @@ public class Tracker{
 			//System.out.println("2");
 			//System.out.println("RESPONSE: " + responseCode);
 			getStream = httpConnection.getInputStream();
-                        dataStream = new DataInputStream(getStream);
+            dataStream = new DataInputStream(getStream);
                         
 			//System.out.println("3");
 
@@ -120,94 +122,92 @@ public class Tracker{
 			//System.out.println("bytes: " + byteAvailLen);
 			getStreamBytes = new byte[byteAvailLen];
 			dataStream.readFully(getStreamBytes);
-                        
-                        Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
-                        Object peers = Bencoder2.decode(getStreamBytes);
-                        
-                        captureResponse(response);
-                        
-                        //ToolKit.print(peers);
-                        
-                        getStream.close();
-                        dataStream.close();
-                        
-
+			
+            Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
+			Object peers = Bencoder2.decode(getStreamBytes);
+			
+			captureResponse(response);
+			//ToolKit.print(peers);
+			getStream.close();
+			dataStream.close();
 		}//end of try
 		catch(IOException e){
-			System.out.println("ERRORRR" + e.getMessage());
+			System.out.println("ERROR" + e.getMessage());
 		} catch(BencodingException e) {
-                	System.out.println("ERRORRR" + e.getMessage());
+                	System.out.println("ERROR" + e.getMessage());
                 }
                 //end of catch
 		
 	}//end create
 
 	public void started(){
-		URL url = this.url;
+        URL url = this.url;
         byte[] hash = this.hash;
         
         String query = "";
 		        
-		URLConnection connection = null;
-		InputStream getStream = null;
-		HttpURLConnection httpConnection = null;
-		DataInputStream dataStream = null;
-		byte[] getStreamBytes;
+        URLConnection connection = null;
+        InputStream getStream = null;
+        HttpURLConnection httpConnection = null;
+        DataInputStream dataStream = null;
+        byte[] getStreamBytes;
 
-try{    
-                query = URLify(query,"announce?info_hash", hash);
-                query = URLify(query,"&peer_id",this.peer_id);
-                query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
-                query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
-                query = URLify(query,"&left", Integer.toString(this.bytesLeft));
-                query = URLify(query,"&event", "started");
+        try{    
+			query = URLify(query,"announce?info_hash", hash);
+			query = URLify(query,"&peer_id",this.peer_id);
+			query = URLify(query,"&uploaded", Integer.toString(this.bytesUploaded));
+			query = URLify(query,"&downloaded", Integer.toString(this.bytesDownloaded));
+			query = URLify(query,"&left", Integer.toString(this.bytesLeft));
+			query = URLify(query,"&event", "started");
                 
-                url = new URL(url, query);
+			url = new URL(url, query);
                 
-                System.out.println(url);
+			System.out.println(url);
                 
-	httpConnection = (HttpURLConnection)url.openConnection();
-	//System.out.println("1");
-	httpConnection.setRequestMethod("GET");
-	int responseCode = httpConnection.getResponseCode();
-	//System.out.println("2");
-	System.out.println("RESPONSE: " + responseCode);
-	}catch(IOException e){
-		
-	
+			httpConnection = (HttpURLConnection)url.openConnection();
+			//System.out.println("1");
+			httpConnection.setRequestMethod("GET");
+			int responseCode = httpConnection.getResponseCode();
+			//System.out.println("2");
+			System.out.println("RESPONSE: " + responseCode);
+			
+		} catch(IOException e) {
+			System.out.println("ERROR" + e.getMessage());
+			
+		}
 	}
-}
 	/**
 	 * args: tracker <-- invisible for now
 	 * return a list of peers 
 	 */
 	private void captureResponse(Map<ByteBuffer,Object> response){
                 
-                //Get Peers from the Bencoded HTTP Get response
-                ArrayList<Map<ByteBuffer,Object>> peers = (ArrayList<Map<ByteBuffer,Object>>)response.get(PEERS);
-                //ToolKit.print(peers);
+		//Get Peers from the Bencoded HTTP Get response
+		ArrayList<Map<ByteBuffer,Object>> peers = (ArrayList<Map<ByteBuffer,Object>>)response.get(PEERS);
+		//ToolKit.print(peers);
                  
-                //Creates an iterator of all the peers returned by the tracker
-                ListIterator<Map<ByteBuffer,Object>> iter = peers.listIterator();
-                for(int i = 0; i < peers.size(); i++) {
-                        ToolKit.print(iter.next());
-                }
+		//Creates an iterator of all the peers returned by the tracker
+        ListIterator<Map<ByteBuffer,Object>> iter = peers.listIterator();
+        
+        for(int i = 0; i < peers.size(); i++) {
+			ToolKit.print(iter.next());
+        }
                 
-                //ToolKit.print(peers.get(0));
+        //ToolKit.print(peers.get(0));
                 
-                //Parse the peer's IP, PeerID, and Port
-                Map<ByteBuffer,Object> aPeer = (Map<ByteBuffer,Object>)peers.get(0);
-                String ip = new String(((ByteBuffer)aPeer.get(IP)).array());
-                String remotePeerID = new String(((ByteBuffer)aPeer.get(PEERID)).array());
-                int port = (int)(aPeer.get(PORT));
-                this.hostIP = ip;
-                this.hostID = remotePeerID;
-                this.port = port;
-                
-                System.out.printf("%s %s %d\n", ip, remotePeerID, port);
+        //Parse the peer's IP, PeerID, and Port
+        Map<ByteBuffer,Object> aPeer = (Map<ByteBuffer,Object>)peers.get(0);
+        String ip = new String(((ByteBuffer)aPeer.get(IP)).array());
+        String remotePeerID = new String(((ByteBuffer)aPeer.get(PEERID)).array());
+        int port = (int)(aPeer.get(PORT));
+        this.hostIP = ip;
+        this.hostID = remotePeerID;
+        this.port = port;
+
+        System.out.printf("%s %s %d\n", ip, remotePeerID, port);
+        
 	}//end of captureresponse
 
-	
 	public String getHostIP(){
 		return this.hostIP;
 	}
@@ -222,64 +222,63 @@ try{
 	
 	public static void main(){
 
-
 	}//end of main
         
         
-        /**
-         * Helper function - will convert a query and append it to the current URL
-         */
-        private static String URLify(String base, String queryID, String query) {
+    /**
+     * Helper function - will convert a query and append it to the current URL
+     */
+    private static String URLify(String base, String queryID, String query) {
                 
-                if(base==null) {
-                        base = "";
-                }
-                
-                try{
-                        query = URLEncoder.encode(query, "UTF-8");
-                        return (base+queryID+"="+query);
-                } catch (UnsupportedEncodingException e) {
-                        System.out.println("URL formation error:" + e.getMessage());
-                }
-                
-                return null;
+		if(base==null) {
+			base = "";
         }
+                
+        try{
+			query = URLEncoder.encode(query, "UTF-8");
+            return (base+queryID+"="+query);
+        } catch (UnsupportedEncodingException e) {
+			System.out.println("URL formation error:" + e.getMessage());
+        }
+                
+        return null;
+	}
 
 
-        final private static char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
-        //SHA-1 is 155187125F2CE9E45F1D09729D75C35F2E83DBF3
+	final private static char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
+	//SHA-1 is 155187125F2CE9E45F1D09729D75C35F2E83DBF3
         
-        private static String URLify(String base, String queryID, byte[] query) {
+	private static String URLify(String base, String queryID, byte[] query) {
                 
-                if(base==null) {
-                        base = "";
+		if(base==null) {
+			base = "";
+		}
+                
+        String reply = base+queryID+"=";
+                
+        for(int i = 0; i<query.length; i++) {
+			if(query[i] < 0) { //if the byte data has the most significant byte set (e.g. it is negative)
+				reply = reply+"%";
+                //Mask the upper byte and lower byte and turn them into the correct chars
+                reply = reply + HEXCHARS[(query[i]&0xF0)>>>4]+HEXCHARS[query[i]&0x0F];
+            }else{
+				try{ //If the byte is a valid ascii character, use URLEncoder
+					reply = reply + URLEncoder.encode(new String(new byte[] {query[i]}),"UTF-8");
+                }catch(UnsupportedEncodingException e){
+					System.out.println("URL formation error:" + e.getMessage());
                 }
-                
-                String reply = base+queryID+"=";
-                
-                for(int i = 0; i<query.length; i++) {
-                        if(query[i] < 0) { //if the byte data has the most significant byte set (e.g. it is negative)
-                                reply = reply+"%";
-                                //Mask the upper byte and lower byte and turn them into the correct chars
-                                reply = reply + HEXCHARS[(query[i]&0xF0)>>>4]+HEXCHARS[query[i]&0x0F];
-                        }else{
-                                try{ //If the byte is a valid ascii character, use URLEncoder
-                                        reply = reply + URLEncoder.encode(new String(new byte[] {query[i]}),"UTF-8");
-                                 }catch(UnsupportedEncodingException e){
-                                         System.out.println("URL formation error:" + e.getMessage());
-                                 }
-                        }
-                }
-                
+            }
+        }        
                 return reply;
-        }
+    }
 
         
-        public byte[] getSHA1(){
-        	return this.hash;
-        }
+    public byte[] getSHA1(){
+    	return this.hash;
+    }
         
-        public String peerID(){
-        	return this.peer_id;
-        }
+    public String peerID(){
+    	return this.peer_id;
+    }
+    
 }//end of connection class

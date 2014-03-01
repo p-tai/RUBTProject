@@ -10,7 +10,7 @@ import edu.rutgers.cs.cs352.bt.exceptions.*;
 public class RUBTClient {
         
 	private static TorrentInfo torrent;
-	private static Tracker tracker;
+        private static Tracker tracker;
 	
     private static TorrentInfo parseTorrentInfo(String filename) {
         try {
@@ -61,7 +61,7 @@ public class RUBTClient {
     public static void main(String args[]) throws IOException, BencodingException, InterruptedException {
     
         //Check for correct number parameters
-     /*   if(args == null || args.length != 2) {
+        /*   if(args == null || args.length != 2) {
             System.err.println("Error: Incorrect number of paramaters");
             return;
         } */
@@ -83,19 +83,20 @@ public class RUBTClient {
             System.err.println("Error: Could not read torrent info.");
             return;
         }
-		byte[] message = handshakeMessage(19, "BitTorrent protocol", 8, tracker.getSHA1(), tracker.peerID());
-		String ip = tracker.getHostIP();
-		String id = tracker.getHostID();
-		int port = tracker.getPort();
-		connect(message, id, ip, port);
+        
+        byte[] message = handshakeMessage(19, "BitTorrent protocol", 8, tracker.getSHA1(), tracker.peerID());
+        String ip = tracker.getHostIP();
+        String id = tracker.getHostID();
+        int port = tracker.getPort();
+        connect(message, id, ip, port);
         //System.out.println(torrentFile);
         
         //Exit gracefully
         return;
     }
     
-    @SuppressWarnings("deprecation")
-	public static void connect(byte[] handshake, String peerID, String peerIP, int peerPort) throws IOException, BencodingException, InterruptedException{
+    //@SuppressWarnings("deprecation")
+    public static void connect(byte[] handshake, String peerID, String peerIP, int peerPort) throws IOException, BencodingException, InterruptedException{
     	try{
     		//TODO REMOVE HARD CODE
     		String IP = "128.6.171.130";
