@@ -73,9 +73,51 @@ where alex** tries to figure out what the fuck is going on here, yep ^__^
 
 
 
+### Tracker.java
+
+#### Member Variables
+
+* `public final static ByteBuffer PEERS`
+* `public final static ByteBuffer IP`
+* `public final static ByteBuffer PEERID`
+* `public final static ByteBuffer PORT`
+* `private URL url`
+* `private byte[] hash`
+* `private int bytesLeft`
+* `private int bytesDownloaded`
+* `private String peer_id`
+* `private String hostIP`
+* `private int port`
+* `private String hostID`
+* `final private static char[] intArray = "0123456789".toCharArray()`
+
+#### Constructor(s)
+
+* `public Tracker(TorrentInfo torrentFile)`
+
+#### Functions
+
+* `public static String genPeerID()`
+	* creates a random peer ID prefixed with "AAA"
+* `public void create()`
+	* Creates connection to tracker
+	* Somehow opens an HTTP get request connection thing
+* `public void started()`
+	* URLify''s a lot of shit.....? 
+* `private void captureResponse(Map<ByteBuffer,Object> response)`
+	* "returns" a list of peers
+	* get peers from bencoded HTTP get response 
+		* put into ArrayList of Maps
+	* Iterator of all peers returned by tracker
+	* Parse the peerIP, PeerID, and Port 	 << wtf
+* `private static String URLify(String base, String queryID, String query)`
+	* ..................... convert a query and append it to the current URL 
+
+**omg, I don''t even know anymore fuck it**
+
+
+
 
 
 
 ### Message.java
-
-### Tracker.java
