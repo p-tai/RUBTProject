@@ -8,7 +8,7 @@ import edu.rutgers.cs.cs352.bt.exceptions.*;
 
 public class Client {
 	
-	private TorrentInfo torrentInfo;
+        private TorrentInfo torrentInfo;
     private String fileName;
     private RandomAccessFile dataFile;
     
@@ -16,10 +16,10 @@ public class Client {
 	 * takes a TorrentInfo and makes a tracker
 	 */
     
-	public Client(TorrentInfo torrentFile, String fileName) {
+        public Client(TorrentInfo torrentFile, String fileName) {
 		this.torrentInfo = torrentFile;
-        this.fileName = fileName;
-        createFile();
+                this.fileName = fileName;
+                createFile();
 	}
    
     /*
@@ -30,38 +30,41 @@ public class Client {
      */
      
     public boolean checkData(byte[] dataPiece, int dataOffset) {
-		MessageDigest hasher = null;
-		try {
-			hasher = MessageDigest.getInstance("SHA");	
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println("No such algorithm exception: " + e.getMessage());
-			return false;
-		}
+        
+        MessageDigest hasher = null;
+        
+        try {
+                hasher = MessageDigest.getInstance("SHA");	
+        } catch (NoSuchAlgorithmException e) {
+                System.err.println("No such algorithm exception: " + e.getMessage());
+                return false;
+        }
 		
-		if(dataOffset > this.torrentInfo.piece_hashes.length) {
-			//illegal dataOffset value
-			System.err.println("illegal dataOffset");
-			return false;
-		}
+        if(dataOffset > this.torrentInfo.piece_hashes.length) {
+                //illegal dataOffset value
+                System.err.println("illegal dataOffset");
+                return false;
+        }
 		
-		if(dataPiece.length > this.torrentInfo.piece_length) {
-			System.err.println("illegal piece length");
-			//ilegal piece length
-			return false;
-		}
-		
-		//
-		byte[] SHA1 = new byte[20];
-		(this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
-		byte[] checkSHA1 = hasher.digest(dataPiece);
-		
-		//check SHA-1
-		for(int i = 0; i < SHA1.length; i++) {
-			if(SHA1[i] != checkSHA1[i]){
-				System.err.println("fail in loop at index " + i);
-				return false;
-			}
-		}
+        if(dataPiece.length > this.torrentInfo.piece_length) {
+                System.err.println("illegal piece length");
+                //ilegal piece length
+                return false;
+        }
+        
+        
+        byte[] SHA1 = new byte[20];
+        (this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
+        
+        byte[] checkSHA1 = hasher.digest(dataPiece);
+        
+        //check SHA-1
+        for(int i = 0; i < SHA1.length; i++) {
+                if(SHA1[i] != checkSHA1[i]){
+                        System.err.println("fail in loop at index " + i);
+                return false;
+                }
+        }
 		
         return true;
     }
