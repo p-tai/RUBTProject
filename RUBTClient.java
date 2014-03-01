@@ -8,7 +8,7 @@ import edu.rutgers.cs.cs352.bt.util.*;
 public class RUBTClient {
         
 	private static TorrentInfo torrent;
-        private static Tracker tracker;
+	private static Tracker tracker;
 	
     private static TorrentInfo parseTorrentInfo(String filename) {
         try {
@@ -101,15 +101,16 @@ public class RUBTClient {
     		int PORT = 30164;
     		/* We DON'T HAVE TO ENCODE BEFORE WE SEND THE MESSAGE */
     		Socket socket = new Socket(IP, PORT);
+			// output stream (wtf man os??? operating system?)
     		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+			// input stream (dat variable naming)
     		DataInputStream is = new DataInputStream(socket.getInputStream());
     		
     		if(socket != null && os != null && is != null){
     			os.write(handshake);
- 
     			
     			byte[] temp = new byte[68];
-    			byte[] varify = new byte[20];
+    			byte[] varify = new byte[20]; // seriously? varify? verify?
     			is.readFully(temp);
 
     			for(int i = 0; i < 20; i++){
@@ -121,15 +122,15 @@ public class RUBTClient {
     				
     				os.flush();
     				//1. Send an Interested Message
-    				ByteBuffer x = ByteBuffer.wrap(Message.interested);
-    				os.write(Bencoder2.encode(x));
+    				ByteBuffer interestMessage = ByteBuffer.wrap(Message.interested);
+    				os.write(Bencoder2.encode(interestMessage));
     				System.out.println(readByteArray(temp));
     				//2. Send an unchoke Message
     				
     				//3. Send a request Message for one of the pieces
     				
     			}else{
-    				System.out.println("Different");
+    				System.out.println("Oh noez, SHA-1 y u different gawhgawhgawhgawhgawh");
     			}
     		}
     		os.close();
