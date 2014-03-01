@@ -126,11 +126,11 @@ public class Tracker{
 			
 			//System.out.println("byte array length " + getStreamBytes.length);
 			
-			//Note: readFully causes an IOError(?)
-			dataStream.read(getStreamBytes);
+			dataStream.read(getStreamBytes); //Note: readFully causes an IOError(?)
 			
             Map<ByteBuffer,Object> response = (Map<ByteBuffer,Object>)Bencoder2.decode(getStreamBytes);
             
+            //ToolKit.print(response);
 			Object peers = Bencoder2.decode(getStreamBytes);
 			
 			captureResponse(response);

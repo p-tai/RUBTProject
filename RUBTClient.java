@@ -96,7 +96,7 @@ public class RUBTClient {
     }
     
     //@SuppressWarnings("deprecation")
-    public static void connect(byte[] handshake, String peerID, String peerIP, int peerPort) throws IOException, BencodingException, InterruptedException{
+    public static void connect(byte[] handshake, String peerID, String peerIP, int peerPort) throws InterruptedException{
     	try{
     		//TODO REMOVE HARD CODE
     		String IP = "128.6.171.130";
@@ -139,7 +139,9 @@ public class RUBTClient {
     		socket.close();
     	}catch(UnknownHostException e){
     		System.out.println("Don't know about the host" + peerIP);
-    	}
+    	}catch(IOException e) {
+			
+		}
     }
     
     public static byte[] handshakeMessage(int length, String protocol, int fixedHeaders, byte[] SHA1, String peerID){
