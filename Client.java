@@ -2,6 +2,7 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.security.*;
 
 import edu.rutgers.cs.cs352.bt.*;
 import edu.rutgers.cs.cs352.bt.exceptions.*;
@@ -27,6 +28,7 @@ public class Client {
     
     private String filePath;
 	private String saveName;
+	private RandomAccessFile dataFile;
 	
 	private final int MAXIMUMLIMT = 16384;
 	private boolean[] blocks;
@@ -357,21 +359,8 @@ public class Client {
         handshake[16] = 'o';
         handshake[17] = 'c';
         handshake[18] = 'o';
-        handshake[19] = 'l';    private boolean createFile(){
-        try {
-            this.dataFile = new RandomAccessFile(this.fileName,"rw");
-            return true;
-        } catch( FileNotFoundException e) {
-            try { //If the file does not exist, create it and call createFile again
-                FileWriter fileStream = new FileWriter(this.fileName);
-                createFile();
-                return true;
-            } catch (IOException IOe) {
-                System.err.println("Error: " + IOe.getMessage());
-                return false;
-            }
-        }
-    }  
+        handshake[19] = 'l';    
+		
         for(int i = 0; i < 8; i++){
         	handshake[19 + i + 1] = 0;
         }
@@ -473,12 +462,12 @@ public class Client {
     
 	private boolean createFile(){
         try {
-            this.dataFile = new RandomAccessFile(this.fileName,"rw");
+            this.dataFile = new RandomAccessFile(this.saveName,"rw");
             return true;
         } catch( FileNotFoundException e) {
             
             try { //If the file does not exist, create it and call createFile again
-                FileWriter fileStream = new FileWriter(this.fileName);
+                FileWriter fileStream = new FileWriter(this.saveName);
                 createFile();
                 return true;
             } catch (IOException IOe) {
