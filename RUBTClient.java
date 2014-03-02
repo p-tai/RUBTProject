@@ -1,15 +1,11 @@
-<<<<<<< HEAD
-=======
-
 /*
  * RUBTClient.java
  * Group 05:
- * Paul Tai Tai
- * Anthony Wong Wong
+ * Paul Tai
+ * Anthony Wong
  * Alex Zhangoose
  */
 
->>>>>>> a4a3c501de7f7ccc9875b533caf3b1eab880166b
 import java.io.*;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
@@ -24,7 +20,6 @@ public class RUBTClient {
 	public static void main(String[] args){
     	String filePath = "project1.torrent";
         String picture = "picture.jpg";
-<<<<<<< HEAD
         
         Client client = new Client(filePath, picture);
         client.HTTPGET();
@@ -33,165 +28,3 @@ public class RUBTClient {
         client.connect("RUBT11UCWQNPODEKNJZK");
 	}
 }
-=======
-        //Attempt to open the .torrent file and create a buffered reader from the file stream
-        TorrentInfo torrentFile = parseTorrentInfo(filePath);
-        torrent = torrentFile;
-        //Create client instance which will hold file information
-        Client torrentClient = new Client(torrentFile, picture);
-		
-		//Checks if the torrentfile was correctly made
-        if(torrentFile == null) {
-            System.err.println("Error: Could not read torrent info.");
-            return;
-        }
-        
-		tracker = new Tracker(torrentFile);
-		tracker.create();
-
-        
-        byte[] message = handshakeMessage(19, "BitTorrent protocol", 8, tracker.getSHA1(), tracker.peerID());
-        String ip = tracker.getHostIP();
-        String id = tracker.getHostID();
-        int port = tracker.getPort();
-        connect(message, id, ip, port);
-        //System.out.println(torrentFile);
-        
-        //Exit gracefully
-        return;
-    }
-    
-    //@SuppressWarnings("deprecation")
-    public static void connect(byte[] handshake, String peerID, String peerIP, int peerPort) throws InterruptedException{
-    	try{
-    		//TODO REMOVE HARD CODE
-    		String IP = "128.6.171.130";
-    		int PORT = 30164;
-    		/* We DON'T HAVE TO ENCODE BEFORE WE SEND THE MESSAGE */
-    		Socket socket = new Socket(IP, PORT);
-			// output stream (wtf man os??? operating system?)
-    		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
-			// input stream (dat variable naming)
-    		DataInputStream is = new DataInputStream(socket.getInputStream());
-    		
-    		if(socket != null && os != null && is != null){
-    			os.write(handshake);
-    			
-    			byte[] temp = new byte[68];
-    			byte[] varify = new byte[20]; // seriously? varify? verify?
-    			is.readFully(temp);
-
-    			for(int i = 0; i < 20; i++){
-    				varify[i] = temp[28 + i];
-    			}
-    		
-    			//TODO : DO NOT COMPARE SHA1 via Strings
-    			if(readByteArray(varify).equals(readByteArray(tracker.getSHA1()))){
-    				
-    				os.flush();
-					
-					byte[] read_five = new byte[5];
-					is.readFully(read_five);
-					System.out.println("#####################" + readByteArray(read_five));
-
-					//0. Getting bitchfields
-					byte[]  bitfield1 = new byte[1];
-					is.readFully(bitfield1);
-					boolean[] bitfield = Client.getBitfield(bitfield1);
-
-    				//1. Send an Interested Message
-					os.write(Message.interested);
-					
-    				//ByteBuffer interestMessage = ByteBuffer.wrap(Message.interested);
-    				//System.out.println(readByteArray(temp));
-    				//2. Send an unchoke Message
-					is.readFully(read_five);
-					System.out.println("\t\t\t" + readByteArray(read_five));
-    				
-					os.flush();
-					os.write(Message.request(0, 0, torrent.piece_length));
-					is.readFully(read_five);
-					System.out.println(readByteArray(read_five));
-    				//3. Send a request Message for one of the pieces
-    				
-    			}else{
-    				System.out.println("Oh noez, SHA-1 y u different gawhgawhgawhgawhgawh");
-    			}
-    		}
-    		os.close();
-    		is.close();
-    		socket.close();
-    	}catch(UnknownHostException e){
-    		System.err.println("Don't know about the host" + peerIP);
-    	}catch(IOException e) {
-			System.err.println("IOException in peer connection method" + e.getMessage());
-		}
-		/*
-		catch(BencodingException e) {
-			System.err.println("BencodingException in peer connection method" + e.getMessage());
-		}
-		*/
-    }
-    
-    public final static byte[] PROTOCOL = ['B','i','t','T','o','r','r','e','n','t',' ','p','r','o','t','o','c','o','l'];
-    
-    public static byte[] handshakeMessage(int length, String protocol, int fixedHeaders, byte[] SHA1, String peerID){
-    	byte[] handshake = new byte[68];
-        handshake[0] = 19;
-        handshake[1] = 'B';
-        handshake[2] = 'i';
-        handshake[3] = 't';
-        handshake[4] = 'T';
-        handshake[5] = 'o';
-        handshake[6] = 'r'; 
-		handshake[7] = 'r';
-        handshake[8] = 'e';
-        handshake[9] = 'n'; 
-		handshake[10] = 't';
-        handshake[11] = ' ';
-        handshake[12] = 'p';
-        handshake[13] = 'r';
-        handshake[14] = 'o';
-        handshake[15] = 't';
-        handshake[16] = 'o';
-        handshake[17] = 'c';
-        handshake[18] = 'o';
-        handshake[19] = 'l';
-        for(int i = 0; i < 8; i++){
-        	handshake[19 + i + 1] = 0;
-        }
-        //28
-        for(int i = 0; i < 20; i++){
-        	handshake[28 + i] = SHA1[i];
-        }
-        //48
-        for(int i = 0; i < 20; i++){
-        	handshake[48 + i] = (byte) peerID.charAt(i);
-        }
-        //ToolKit.print(handshake);
-        //System.out.println(handshake.length);
-    	return handshake;
-    }
-    
-    public static String readByteArray(byte[] target){
-    	String result = "";
-		for(int i = 0; i < target.length; ++i){
-			/*
-			 * Return: 19, BitTorrent protocol
-			 * 		   8, 0's
-			 * 		   Info Hash
-			 * 		   There PEER ID
-			 */
-			result = result + String.format("%02x, ", target[i]);
-			//System.out.print(String.format("%02x, ",target[i]));
-			if(i == 19 || i == 27 || i == 47){
-				result = result + "\n";
-			}
-		}
-		return result;
-    }
-
-}//end of class :3 
-
-
->>>>>>> a4a3c501de7f7ccc9875b533caf3b1eab880166b

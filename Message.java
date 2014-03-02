@@ -1,3 +1,4 @@
+
 import java.nio.ByteBuffer;
 
 //TODO Add Cancel Function
@@ -11,16 +12,6 @@ public class Message {
 	public static final byte[] unchoke = {0, 0, 0, 1, 1};
 	
 	public static final byte[] interested = {0, 0, 0, 1, 2};
-<<<<<<< HEAD
-=======
-	/**
-	 * ALEX'S AWESOME CONTRIBUTION ^__^
-	 * ANTHONY IS A RETARD
-	 * HEHEHEHEHEH
-	 * JK
-	 */
-	public static final String[] responses = {"choke", "unchoke", "interested", "uninterested", "have", "bitfield", "request", "pieces"};
->>>>>>> a4a3c501de7f7ccc9875b533caf3b1eab880166b
 	
 	public static final byte[] uninterested = {0, 0, 0, 1, 3};
 	
@@ -116,15 +107,10 @@ public class Message {
 		return piece;
 	}
 	
-<<<<<<< HEAD
+	
 	public static String getMessageID(byte x){
 		int y = (int)x;
 		return responses[y];
-=======
-	//fuck this
-	public static byte[] encrpt(){
-		return null;
->>>>>>> a4a3c501de7f7ccc9875b533caf3b1eab880166b
 	}
 	
 }
