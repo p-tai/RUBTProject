@@ -2,6 +2,7 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.security.*;
 
 import edu.rutgers.cs.cs352.bt.*;
 import edu.rutgers.cs.cs352.bt.exceptions.*;
@@ -27,6 +28,7 @@ public class Client {
     
     private String filePath;
 	private String saveName;
+	private RandomAccessFile dataFile;
 	
 	private final int MAXIMUMLIMT = 16384;
 	private boolean[] blocks;
@@ -89,6 +91,23 @@ public class Client {
 			String peer = iter.next();
 			System.out.println(this.peerList.get(peer).toString());
 		}
+	}
+	
+	public String[] getPeerList(){
+		if(this.peerList == null){
+			//WHEN THE TRACKER IS DOWN
+			return null;
+		}
+		String[] peerList = new String[this.peerList.size()];
+		Set<String> keys = this.peerList.keySet();
+		Iterator<String> iter = keys.iterator();
+		System.out.println("Peer Lists:");
+		int i = 0;
+		while(iter.hasNext()){
+			peerList[i] = iter.next();
+			i++;
+		}
+		return peerList;
 	}
 	
 	public void connect(String peerID){
@@ -154,7 +173,7 @@ public class Client {
 			byte[] message = new byte[5];
 			this.response.readFully(message);
 			if(Message.getMessageID(message[4]).equals("unchoke")){
-				System.out.println("RESPONSE: UNCHOCKE");
+				System.out.println("RESPONSE: UNCHOKED");
 				return true;
 			}
 			
@@ -187,6 +206,7 @@ public class Client {
 				//Needs to be verified for correctness
 				this.request.write(Message.request(i, i * this.MAXIMUMLIMT, this.MAXIMUMLIMT));
 				this.response.readFully(messagePeer);
+				System.out.println("Reading Packet #: " + i);
 				if(Message.getMessageID(messagePeer[4]).equals("pieces")){
 					messagePeer = reducedSize(messagePeer,0,4);
 					int bytes = byteArrayToInt(messagePeer) - 9;
@@ -357,7 +377,8 @@ public class Client {
         handshake[16] = 'o';
         handshake[17] = 'c';
         handshake[18] = 'o';
-        handshake[19] = 'l';
+        handshake[19] = 'l';    
+		
         for(int i = 0; i < 8; i++){
         	handshake[19 + i + 1] = 0;
         }
@@ -456,4 +477,64 @@ public class Client {
         }        
         return reply;
     }
+    
+	private boolean createFile(){
+        try {
+            this.dataFile = new RandomAccessFile(this.saveName,"rw");
+            return true;
+        } catch( FileNotFoundException e) {
+            
+            try { //If the file does not exist, create it and call createFile again
+                FileWriter fileStream = new FileWriter(this.saveName);
+                createFile();
+                return true;
+            } catch (IOException IOe) {
+                System.err.println("Error: " + IOe.getMessage());
+                return false;
+            }
+            
+        }
+    }
+    
+    
+    public boolean checkData(byte[] dataPiece, int dataOffset) {
+        
+        MessageDigest hasher = null;
+        
+        try {
+                hasher = MessageDigest.getInstance("SHA");	
+        } catch (NoSuchAlgorithmException e) {
+                System.err.println("No such algorithm exception: " + e.getMessage());
+                return false;
+        }
+
+        if(dataOffset > this.torrentInfo.piece_hashes.length) {
+                //illegal dataOffset value
+                System.err.println("illegal dataOffset");
+                return false;
+        }
+
+        if(dataPiece.length > this.torrentInfo.piece_length) {
+                System.err.println("illegal piece length");
+                //ilegal piece length
+                return false;
+        }
+        
+        
+        byte[] SHA1 = new byte[20];
+        (this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
+        
+        byte[] checkSHA1 = hasher.digest(dataPiece);
+        
+        //check SHA-1
+        for(int i = 0; i < SHA1.length; i++) {
+                if(SHA1[i] != checkSHA1[i]){
+                        System.err.println("fail in loop at index " + i);
+                return false;
+                }
+        }
+
+        return true;
+    }
+	
 }
