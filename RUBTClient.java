@@ -16,6 +16,9 @@ import edu.rutgers.cs.cs352.bt.util.ToolKit;
 import java.net.*;
 import java.lang.*;
 
+/**
+ * For le error checking
+ */
 public class RUBTClient {
 	public static void main(String[] args){
     	String filePath = "project1.torrent";
