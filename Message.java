@@ -80,4 +80,5 @@ public class Message {
 		return null;
 	}
 
-}
+}//end of class don't write past here ok
+
