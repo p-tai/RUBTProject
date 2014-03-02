@@ -173,7 +173,7 @@ public class Client {
 			byte[] message = new byte[5];
 			this.response.readFully(message);
 			if(Message.getMessageID(message[4]).equals("unchoke")){
-				System.out.println("RESPONSE: UNCHOCKE");
+				System.out.println("RESPONSE: UNCHOKED");
 				return true;
 			}
 			
@@ -206,6 +206,7 @@ public class Client {
 				//Needs to be verified for correctness
 				this.request.write(Message.request(i, i * this.MAXIMUMLIMT, this.MAXIMUMLIMT));
 				this.response.readFully(messagePeer);
+				System.out.println("Reading Packet #: " + i);
 				if(Message.getMessageID(messagePeer[4]).equals("pieces")){
 					messagePeer = reducedSize(messagePeer,0,4);
 					int bytes = byteArrayToInt(messagePeer) - 9;

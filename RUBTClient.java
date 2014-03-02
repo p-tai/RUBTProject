@@ -34,7 +34,8 @@ public class RUBTClient {
         	}
         }
         //TODO FIX THIS!
-        client.connect("RUBT11UCWQNPODEKNJZK");
+        client.connect(peer);
+        return;
 	}
 	
 }
