@@ -36,7 +36,7 @@ public class Message {
 	 * HEHEHEHEHEH
 	 * JK
 	 */
-	public static final String[] responses = {"choke", "unchoke", "interested", "uninterested", "have", "bitfield", "request", "pisece"};
+	public static final String[] responses = {"choke", "unchoke", "interested", "uninterested", "have", "bitfield", "request", "pieces"};
 	
 	/**
 	 * 
@@ -140,6 +140,7 @@ public class Message {
 		return piece;
 	}
 	
+	//fuck this
 	public static byte[] encrpt(){
 		return null;
 	}
