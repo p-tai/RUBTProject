@@ -154,7 +154,7 @@ public class Client {
 		}else{
 			System.out.println("THE USER DOES NOT EXIST!");
 		}
-	}
+	}//end of connect()
 	
 	private static final char[] intArray = "0123456789".toCharArray();
 	

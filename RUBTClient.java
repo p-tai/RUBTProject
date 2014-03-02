@@ -31,21 +31,37 @@ public class RUBTClient {
 			/*
 			 * for the teddy bear: 
 			 * http://www.chris.com/ascii/index.php?art=animals/bears+(teddybears)
+			 * for the armadillo:
+			 * http://www.retrojunkie.com/asciiart/animals/armadill.htm
 			 * for the music notes:
 			 * http://1lineart.kulaone.com/
 			 */
 			public void run(){
+				double whichpic = Math.random()*10;
+				int whichpicint = (int)whichpic;
+
 				System.out.println();
 				System.out.println();
+
+				if(whichpicint % 2 == 0){
+					System.out.println("      ('-^-/')     /-----------------\\");
+					System.out.println("      `o__o' ]     |    byebye <3    |");
+					System.out.println("      (_Y_) _/     |  ♬·¯·♩¸¸♪·¯·♫ ♪ |");
+					System.out.println("    _..`--'-.`,	  /,_________________| ");
+					System.out.println("   (__)_,--(__)    ");
+					System.out.println("       7:   ; 1");
+					System.out.println("     _/,`-.-' :");
+					System.out.println("    (_,)-~~(_,)");
+				}//end of if even
+				else{
+					System.out.println("          .::7777::-.             /-----------------\\");
+					System.out.println("          /:'////' `::>/|/       |      byebye <3    |");
+					System.out.println("        .',  ||||   `/( e\\       |   ♬·¯·♩¸¸♪·¯·♫ ♪  |");
+					System.out.println("    -==~-'`-Xm````-mr' `-_\\      /,__________________|");
+
+				}//end of else odd
+
 				System.out.println();
-				System.out.println("      ('-^-/')     /-----------------\\");
-				System.out.println("      `o__o' ]     |    byebye <3    |");
-				System.out.println("      (_Y_) _/     |  ♬·¯·♩¸¸♪·¯·♫ ♪ |");
-				System.out.println("    _..`--'-.`,	  /,_________________| ");
-				System.out.println("   (__)_,--(__)    ");
-				System.out.println("       7:   ; 1");
-				System.out.println("     _/,`-.-' :");
-				System.out.println("    (_,)-~~(_,)");
 
 			}//end of run
 		});//end of new thread runtime thingie :3
