@@ -10,14 +10,9 @@ import edu.rutgers.cs.cs352.bt.util.*;
 //DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
-/**
- * 
- * @author Anthony
- *
- */
 public class Client {
 	//TODO PUT MOST OF THIS STUFF IN TRACKER!
-	private static final String clientID = "ALEXANDRA ARMADILLOS";
+	private static String clientID;
 	
 /*	private static final byte[] handshake = 
 	{19, 'B', 'i', 'T', 'o', 'r', 'r', 'n', 't', ' ', 'p', 'r', 'o', 't', 'o', 'c', 'o', 'l',
@@ -41,10 +36,6 @@ public class Client {
 	private DataOutputStream request;
 	private DataInputStream  response;
 	
-	/**
-	 * @param filePath
-	 * @param saveName
-	 */
 	public Client(String filePath, String saveName){
 		System.out.println("Booting");
 		this.filePath = filePath;
@@ -53,12 +44,9 @@ public class Client {
 		this.url = this.torrentInfo.announce_url;
 	}
 	
-	/**
-	 * 
-	 * @return
-	 */
 	public boolean HTTPGET(){
 		String query = "";
+		genClientID();
 		query = URLify(query,"announce?info_hash", this.torrentInfo.info_hash.array());
 		query = URLify(query,"&peer_id",this.clientID);
 		query = URLify(query,"&uploaded", Integer.toString(0));
@@ -76,7 +64,11 @@ public class Client {
 			//e.printStackTrace();
 			System.out.println("FAILURE: WEBSITE NOT FOUND!");
 		}
-		
+		if(this.peerList  == null){
+			//IF TRACKER IS DOWN RETURN FALSE!
+			System.out.println("THE TRACKER IS DOWN!");
+			return false;
+		}
 		if(!this.peerList.isEmpty()){
 			System.out.println("FOUND " + this.peerList.size() + " USERS!");
 			return true;
@@ -86,6 +78,10 @@ public class Client {
 	
 	//TODO Make this shorter
 	public void printPeerList(){
+		if(this.peerList == null){
+			//WHEN THE TRACKER IS DOWN
+			return;
+		}
 		Set<String> keys = this.peerList.keySet();
 		Iterator<String> iter = keys.iterator();
 		System.out.println("Peer Lists:");
@@ -141,6 +137,16 @@ public class Client {
 		}
 	}
 	
+	private static final char[] intArray = "0123456789".toCharArray();
+	
+	private void genClientID(){
+		this.clientID = "Alexandras";
+		Random randGen = new Random();
+		for(int i = 0; i < 10; i++){
+			this.clientID = this.clientID + intArray[randGen.nextInt(9)];
+		}
+	}
+	
 	private boolean interested(){
 		try {
 			System.out.println("SENDING INTERESTED MESSAGE");
@@ -168,65 +174,61 @@ public class Client {
 		/* DETERMING HOW MANY PACKETS WILL THERE BE */
 		this.numPackets = Math.ceil(((double)torrentInfo.file_length / (double)this.MAXIMUMLIMT));
 		System.out.println("THE TOTAL NUMBER OF PACKETS WILL WE DOWNLOAD IS " + this.numPackets);
+		ArrayList<Packet> packetArray = new ArrayList<Packet>();
 		
-		try {
-			this.request.flush();
-			this.request.write(Message.request(0, 0, this.MAXIMUMLIMT));
-			byte[] messagePeer = new byte[5];
-			this.response.readFully(messagePeer);
-			
-			if(Message.getMessageID(messagePeer[4]).equals("piece")){
-				messagePeer = reducedSize(messagePeer,0,4);
-				int bytes = byteArrayToInt(messagePeer) - 9;
-				
-				byte[] packetID = new byte[8];
-				this.response.readFully(packetID);
-				int blockNum = this.byteArrayToInt(this.reducedSize(packetID, 0, 4));
-				int packetNum = this.byteArrayToInt(this.reducedSize(packetID, 4, 4));
-				byte[] data = new byte[bytes];
-				this.response.readFully(data);
-				Packet packet = new Packet(blockNum, packetNum, data);
-				packet.toString();
-			}
-		}catch (IOException e) {
-				// TODO Auto-generated catch block
-				//e.printStackTrace();
-				System.out.println("FAILURE FOR REQUEST A PACKET");
-				return false;
-			}
-		
-		/*int index;
+		int index;
 		boolean flag = true;
-		for(int i = 0; i < 14; i++){
-			try {
-				this.request.flush();
-				index = flag == true ? 0 : 1;
-				this.request.write(Message.request(i, index, this.MAXIMUMLIMT));
-				byte[] messagePeer = new byte[5];
+		try {
+			byte[] messagePeer = new byte[5];
+			byte[] packetID = new byte[8];
+			byte[] data;
+			
+			for(int i = 0; i < this.numPackets - 1; i++){
+				//Needs to be verified for correctness
+				this.request.write(Message.request(i, i * this.MAXIMUMLIMT, this.MAXIMUMLIMT));
 				this.response.readFully(messagePeer);
-				
-				if(Message.getMessageID(messagePeer[4]).equals("piece")){
+				if(Message.getMessageID(messagePeer[4]).equals("pieces")){
 					messagePeer = reducedSize(messagePeer,0,4);
 					int bytes = byteArrayToInt(messagePeer) - 9;
+					data  = new byte[bytes];
 					
-					byte[] packetID = new byte[8];
 					this.response.readFully(packetID);
 					int blockNum = this.byteArrayToInt(this.reducedSize(packetID, 0, 4));
 					int packetNum = this.byteArrayToInt(this.reducedSize(packetID, 4, 4));
-					byte[] data = new byte[bytes];
+					
 					this.response.readFully(data);
 					Packet packet = new Packet(blockNum, packetNum, data);
+					packetArray.add(packet);
+					this.request.flush();
+				}
+			}
+			//If the file length is NOT evenly divided into max_packet size
+			int packetSize; 
+			if((packetSize = this.torrentInfo.file_length % this.MAXIMUMLIMT) != 0 ) {
+				this.request.write(Message.request((int)this.numPackets, ((int)this.numPackets - 1) * this.MAXIMUMLIMT, packetSize));
+				this.response.readFully(messagePeer);
+				if(Message.getMessageID(messagePeer[4]).equals("pieces")){
+					messagePeer = reducedSize(messagePeer,0,4);
+					int bytes = byteArrayToInt(messagePeer) - 9;
+					data  = new byte[bytes];
 					
+					this.response.readFully(packetID);
+					int blockNum = this.byteArrayToInt(this.reducedSize(packetID, 0, 4));
+					int packetNum = this.byteArrayToInt(this.reducedSize(packetID, 4, 4));
+					
+					this.response.readFully(data);
+					Packet packet = new Packet(blockNum, packetNum, data);
+					packetArray.add(packet);
+					this.request.flush();
 				}
 				
-				flag = flag == true ? false : true;
-			} catch (IOException e) {
+			}
+		} catch (IOException e) {
 				// TODO Auto-generated catch block
 				//e.printStackTrace();
 				System.out.println("FAILURE FOR REQUEST A PACKET");
 				return false;
-			}
-		}*/
+		}
 		
 		return true;
 	}
@@ -454,7 +456,4 @@ public class Client {
         }        
         return reply;
     }
-
-	
-	
 }
