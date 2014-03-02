@@ -99,4 +99,20 @@ public class Client {
             }
         }
     }   
-}
+
+	/**
+	 * returns boolean array of what bytes in toparse are set or not set
+	 */
+	public boolean[] getBitfield(byte[] toparse){
+		int bytelen = toparse.length;
+		boolean[] ret = new boolean[bytelen];
+		for(int i = 0 ; i < bytelen ; i++){
+			if(toparse[i] != 0)
+				ret[i] = true;
+			else
+				ret[i] = false;
+		}//end of for 
+		return ret;
+	}//endo f getBitfield
+
+}//end of class
