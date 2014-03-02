@@ -1,4 +1,3 @@
-
 import java.nio.ByteBuffer;
 
 //TODO Add Cancel Function
@@ -106,7 +105,6 @@ public class Message {
 		}
 		return piece;
 	}
-	
 	
 	public static String getMessageID(byte x){
 		int y = (int)x;
