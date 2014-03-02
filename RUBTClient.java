@@ -151,7 +151,10 @@ public class RUBTClient {
 					is.readFully(read_five);
 					System.out.println("\t\t\t" + readByteArray(read_five));
     				
-					System.out.println(readByteArray(Message.piece(1, 3, 2, torrent.piece_length)));
+					os.flush();
+					os.write(Message.request(0, 0, torrent.piece_length));
+					is.readFully(read_five);
+					System.out.println(readByteArray(read_five));
     				//3. Send a request Message for one of the pieces
     				
     			}else{
