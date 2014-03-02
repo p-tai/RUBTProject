@@ -1,3 +1,12 @@
+
+/*
+ * RUBTClient.java
+ * Group 05:
+ * Paul Tai
+ * Anthony Wong
+ * Alex Zhang
+ */
+
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
