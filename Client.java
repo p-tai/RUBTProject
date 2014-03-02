@@ -93,6 +93,23 @@ public class Client {
 		}
 	}
 	
+	public String[] getPeerList(){
+		if(this.peerList == null){
+			//WHEN THE TRACKER IS DOWN
+			return null;
+		}
+		String[] peerList = new String[this.peerList.size()];
+		Set<String> keys = this.peerList.keySet();
+		Iterator<String> iter = keys.iterator();
+		System.out.println("Peer Lists:");
+		int i = 0;
+		while(iter.hasNext()){
+			peerList[i] = iter.next();
+			i++;
+		}
+		return peerList;
+	}
+	
 	public void connect(String peerID){
 		if(this.peerList.containsKey(peerID)){
 			Peer peer = this.peerList.get(peerID);

@@ -24,6 +24,15 @@ public class RUBTClient {
         Client client = new Client(filePath, picture);
         client.HTTPGET();
         client.printPeerList();
+        String[] getPeerList = client.getPeerList();
+        String peer = "";
+        if(getPeerList != null){
+        	for(int i = 0; i < getPeerList.length; i++){
+        		if(getPeerList[i].contains("RUBT11")){
+        			peer = getPeerList[i];
+        		}
+        	}
+        }
         //TODO FIX THIS!
         client.connect("RUBT11UCWQNPODEKNJZK");
 	}
