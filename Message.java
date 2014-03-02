@@ -1,4 +1,5 @@
 import java.nio.ByteBuffer;
+import edu.rutgers.cs.cs352.bt.util.*;
 
 //TODO Add Cancel Function
 
@@ -40,10 +41,19 @@ public class Message {
 	}
 	
 	public static byte[] request(int index, int begin, int length){
+		
+		
+		ByteBuffer values = ByteBuffer.allocateDirect(4*4);
+		
+		values.putInt(index);
+		
+		values.putInt(begin);
+		
+		values.putInt(length);
+		
+		ToolKit.print(values);
+		
 		byte[] request = new byte[17];
-		byte[] indexByte = ByteBuffer.allocate(4).putInt(index).array();
-		byte[] beginByte = ByteBuffer.allocate(4).putInt(begin).array();
-		byte[] lengthByte = ByteBuffer.allocate(4).putInt(length).array();
 		
 		int a = 0;
 		int b = 0;
@@ -58,18 +68,19 @@ public class Message {
 		request[4] = 6;
 		
 		for(int i = 5; i < 17; i++){
+			System.out.print(request[i]);
 			if(i < 9){
-				request[i] = indexByte[a]; 
+				request[i] = values.get();
 				a++;
 			}else if(i < 13){
-				request[i] = beginByte[b];
+				request[i] = values.get();
 				b++;
 			}else{
-				request[i] = lengthByte[c];
+				request[i] = values.get();
 				c++;
 			}
 		}
-		
+		System.out.print('\n');
 		return request;
 	}
 	

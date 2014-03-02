@@ -205,7 +205,7 @@ public class Client {
 			for(int i = 0; i < this.numPackets - 1; i++){
 				//Needs to be verified for correctness
 				this.request.write(Message.request(i, i * this.MAXIMUMLIMT, this.MAXIMUMLIMT));
-				this.response.readFully(messagePeer);
+				this.response.read(messagePeer);
 				System.out.println("Reading Packet #: " + i);
 				if(Message.getMessageID(messagePeer[4]).equals("pieces")){
 					messagePeer = reducedSize(messagePeer,0,4);
@@ -252,6 +252,40 @@ public class Client {
 		
 		return true;
 	}
+	
+	//Read a message from the socket input stream
+	private byte[] readSocketOutputStream() throws IOException {
+		int length = this.response.readInt();
+		byte classID;
+		if(length == 0) {
+			//keep alive, do nothing
+		} else if(length > 0) {
+			classID = this.response.readByte();
+			//choke, unchoke, interested, or not interested
+			if(classID==7){
+				//Piece message
+				try {
+					int pieceIndex = this.response.readInt();
+					int blockOffset = this.response.readInt();
+					int blockLength = this.response.readInt();
+					
+					length = length-1-4-4-4; //Remove the length of the indexes and class ID
+					
+					byte[] payload = new byte[length];
+					this.response.read(payload);
+				
+					return payload;
+					
+				} catch(IOException e) {
+					System.err.println("Received an incorrect input from peer");
+				}
+			}
+		
+		}
+		return null;
+	}
+	
+	
 	
 	private boolean sendHandShakeMessaage(){
 		try {
