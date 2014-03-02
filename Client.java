@@ -355,7 +355,21 @@ public class Client {
         handshake[16] = 'o';
         handshake[17] = 'c';
         handshake[18] = 'o';
-        handshake[19] = 'l';
+        handshake[19] = 'l';    private boolean createFile(){
+        try {
+            this.dataFile = new RandomAccessFile(this.fileName,"rw");
+            return true;
+        } catch( FileNotFoundException e) {
+            try { //If the file does not exist, create it and call createFile again
+                FileWriter fileStream = new FileWriter(this.fileName);
+                createFile();
+                return true;
+            } catch (IOException IOe) {
+                System.err.println("Error: " + IOe.getMessage());
+                return false;
+            }
+        }
+    }  
         for(int i = 0; i < 8; i++){
         	handshake[19 + i + 1] = 0;
         }
@@ -455,6 +469,63 @@ public class Client {
         return reply;
     }
 
-	
+	private boolean createFile(){
+        try {
+            this.dataFile = new RandomAccessFile(this.fileName,"rw");
+            return true;
+        } catch( FileNotFoundException e) {
+            
+            try { //If the file does not exist, create it and call createFile again
+                FileWriter fileStream = new FileWriter(this.fileName);
+                createFile();
+                return true;
+            } catch (IOException IOe) {
+                System.err.println("Error: " + IOe.getMessage());
+                return false;
+            }
+            
+        }
+    }
+    
+    
+    public boolean checkData(byte[] dataPiece, int dataOffset) {
+        
+        MessageDigest hasher = null;
+        
+        try {
+                hasher = MessageDigest.getInstance("SHA");	
+        } catch (NoSuchAlgorithmException e) {
+                System.err.println("No such algorithm exception: " + e.getMessage());
+                return false;
+        }
+
+        if(dataOffset > this.torrentInfo.piece_hashes.length) {
+                //illegal dataOffset value
+                System.err.println("illegal dataOffset");
+                return false;
+        }
+
+        if(dataPiece.length > this.torrentInfo.piece_length) {
+                System.err.println("illegal piece length");
+                //ilegal piece length
+                return false;
+        }
+        
+        
+        byte[] SHA1 = new byte[20];
+        (this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
+        
+        byte[] checkSHA1 = hasher.digest(dataPiece);
+        
+        //check SHA-1
+        for(int i = 0; i < SHA1.length; i++) {
+                if(SHA1[i] != checkSHA1[i]){
+                        System.err.println("fail in loop at index " + i);
+                return false;
+                }
+        }
+
+        return true;
+    }
 	
 }
