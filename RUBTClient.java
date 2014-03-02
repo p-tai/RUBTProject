@@ -23,7 +23,7 @@ import java.lang.*;
 public class RUBTClient {
 	public static void main(String[] args) throws InterruptedException{
     	
-    		/*
+		/*
 		 * "how to gracefully handle sigkill"
 		 * http://stackoverflow.com/questions/2541597/how-to-gracefully-handle-the-sigkill-signal-in-java
 		 */
@@ -69,8 +69,10 @@ public class RUBTClient {
   					}//end of if 
 				}//end of for 
 			}//end of if 
+
             //TODO FIX THIS!
 			client.connect(peer);
+			return;
 
 		}//end ofw hile 
 	}//end of public static void main
