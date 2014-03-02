@@ -253,6 +253,21 @@ public class Client {
 		return true;
 	}
 	
+	 private boolean sendRequest(){
+		 try{
+			 for(int i = 0; i < (int)numPackets - 1; i++){
+				 this.request.write(Message.request(i, i * this.MAXIMUMLIMT, this.MAXIMUMLIMT));
+	             this.request.flush();
+	         }
+	         // When the last piece is not equal to the MAXIMUMLIMT.
+	         int packetSize = this.torrentInfo.file_length % this.MAXIMUMLIMT;
+	         this.request.write(Message.request((int)this.numPackets, ((int)this.numPackets - 1) * this.MAXIMUMLIMT, packetSize));
+	         return true;
+	        }catch(IOException e){
+	            return false;
+	        }
+	    }
+	
 	//Read a message from the socket input stream
 	private byte[] readSocketOutputStream() throws IOException {
 		int length = this.response.readInt();
