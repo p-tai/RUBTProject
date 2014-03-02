@@ -1,68 +1,45 @@
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+
+//TODO Add Cancel Function
 
 public class Message {
 
-	/**
-	 * When doing for special characters do:
-	 * 10 = A, 11 = B, 12 = C
-	 * 13 = D, 14 = E, 15 = F
-	 */
-	
-	/**
-	 * 
-	 */
 	public static final byte[] keepAlive = {0, 0, 0, 0};
 	
-	// NOTE TO ALEX(SELF ^__^): last element of each byte[] is the id!
-
-	/**
-	 * 
-	 */
 	public static final byte[] choke = {0, 0, 0, 1, 0}; 
 	
-	/**
-	 * 
-	 */
 	public static final byte[] unchoke = {0, 0, 0, 1, 1};
 	
-	/**
-	 * 
-	 */
 	public static final byte[] interested = {0, 0, 0, 1, 2};
-	/**
-	 * ALEX'S AWESOME CONTRIBUTION ^__^
-	 * ANTHONY IS A RETARD
-	 * HEHEHEHEHEH
-	 * JK
-	 */
-	public static final String[] responses = {"choke", "unchoke", "interested", "uninterested", "have", "bitfield", "request", "pisece"};
 	
-	/**
-	 * 
-	 */
 	public static final byte[] uninterested = {0, 0, 0, 1, 3};
-
-	/**
-	 * The payload is a zero-based index of the piece that
-	 * has just been downloaded and verified
-	 * @param piece int
-	 * @return byte[] have
-	 */
+	
+	public static final String[] responses = {"choke", "unchoke", "interested", 
+											  "uninterested", "have", "bitfield", 
+											  "request", "pieces", "cancel"};
+	
 	public static byte[] have(int piece){
-		byte[] have = {0, 0, 0, 5, 4, (byte) piece};
+		byte[] have = new byte[9];
+		byte[] pieceByte = ByteBuffer.allocate(4).putInt(piece).array();
+		
+		/* Length Prefix */
+		have[0] = 0;
+		have[1] = 0;
+		have[2] = 0;
+		have[3] = 5;
+		
+		/* Message ID */
+		have[4] = 4;
+		
+		/* Read in the pieceByte */
+		for(int i = 5; i < 9; i++){
+			have[i] = pieceByte[i-5];
+		}
+		
 		return have;
 	}
 	
-	/**
-	 * 
-	 * @param index
-	 * @param begin
-	 * @param length
-	 * @return
-	 */
 	public static byte[] request(int index, int begin, int length){
-		//ByteBuffer request = ByteBuffer.wrap(new byte[] {0, 0, 0, 13, 6, (byte)index, (byte)begin, length});
 		byte[] request = new byte[17];
 		byte[] indexByte = ByteBuffer.allocate(4).putInt(index).array();
 		byte[] beginByte = ByteBuffer.allocate(4).putInt(begin).array();
@@ -93,18 +70,9 @@ public class Message {
 			}
 		}
 		
-		//byte[] request = {0, 0, 0, 13, 6, (byte) index, (byte) begin, (byte) length};
 		return request;
 	}
 	
-	/**
-	 * 
-	 * @param x
-	 * @param index
-	 * @param begin
-	 * @param block
-	 * @return
-	 */
 	public static byte[] piece(int x, int index, int begin, int block){
 		byte[] piece = new byte[17];
 		byte[] prefixByte = ByteBuffer.allocate(4).putInt(9 + x).array();
@@ -135,14 +103,12 @@ public class Message {
 				c++;
 			}
 		}
-		
-		//byte[] request = {0, 0, 0, 13, 6, (byte) index, (byte) begin, (byte) length};
 		return piece;
 	}
 	
-	public static byte[] encrpt(){
-		return null;
+	public static String getMessageID(byte x){
+		int y = (int)x;
+		return responses[y];
 	}
-
-}//end of class don't write past here ok
-
+	
+}
