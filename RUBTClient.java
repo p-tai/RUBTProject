@@ -123,12 +123,23 @@ public class RUBTClient {
     			if(readByteArray(varify).equals(readByteArray(tracker.getSHA1()))){
     				
     				os.flush();
+					
+					byte[] read_five = new byte[5];
+					is.readFully(read_five);
+					System.out.println("#####################" + readByteArray(read_five));
+
+					//0. Getting bitchfields
+					boolean[] bitfield = Client.getBitfield(read_five);
+
     				//1. Send an Interested Message
+					os.write(Message.interested);
 					
     				//ByteBuffer interestMessage = ByteBuffer.wrap(Message.interested);
     				os.write(Message.interested);
-    				System.out.println(readByteArray(temp));
+    				//System.out.println(readByteArray(temp));
     				//2. Send an unchoke Message
+					is.readFully(read_five);
+					System.out.println("\t\t\t" + readByteArray(read_five));
     				
     				//3. Send a request Message for one of the pieces
     				
@@ -143,9 +154,12 @@ public class RUBTClient {
     		System.err.println("Don't know about the host" + peerIP);
     	}catch(IOException e) {
 			System.err.println("IOException in peer connection method" + e.getMessage());
-		}catch(BencodingException e) {
+		}
+		/*
+		catch(BencodingException e) {
 			System.err.println("BencodingException in peer connection method" + e.getMessage());
 		}
+		*/
     }
     
     public static byte[] handshakeMessage(int length, String protocol, int fixedHeaders, byte[] SHA1, String peerID){
@@ -203,5 +217,7 @@ public class RUBTClient {
 		}
 		return result;
     }
-    
-}
+
+}//end of class :3 
+
+

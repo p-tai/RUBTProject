@@ -103,7 +103,7 @@ public class Client {
 	/**
 	 * returns boolean array of what bytes in toparse are set or not set
 	 */
-	public boolean[] getBitfield(byte[] toparse){
+	public static boolean[] getBitfield(byte[] toparse){
 		int bytelen = toparse.length;
 		boolean[] ret = new boolean[bytelen];
 		for(int i = 0 ; i < bytelen ; i++){
@@ -113,6 +113,6 @@ public class Client {
 				ret[i] = false;
 		}//end of for 
 		return ret;
-	}//endo f getBitfield
+	}//endo f getBitchfield
 
 }//end of class
