@@ -81,17 +81,17 @@ public class RUBTClient {
         TorrentInfo torrentFile = parseTorrentInfo(filePath);
         torrent = torrentFile;
         //Create client instance which will hold file information
-        Client torrentClient = null;
-        torrentClient = new Client(torrentFile, picture);
-
-		tracker = new Tracker(torrentFile);
-		tracker.create();
-
-        //Checks if the torrentfile was correctly made
+        Client torrentClient = new Client(torrentFile, picture);
+		
+		//Checks if the torrentfile was correctly made
         if(torrentFile == null) {
             System.err.println("Error: Could not read torrent info.");
             return;
         }
+        
+		tracker = new Tracker(torrentFile);
+		tracker.create();
+
         
         byte[] message = handshakeMessage(19, "BitTorrent protocol", 8, tracker.getSHA1(), tracker.peerID());
         String ip = tracker.getHostIP();
@@ -175,6 +175,8 @@ public class RUBTClient {
 		}
 		*/
     }
+    
+    public final static byte[] PROTOCOL = ['B','i','t','T','o','r','r','e','n','t',' ','p','r','o','t','o','c','o','l'];
     
     public static byte[] handshakeMessage(int length, String protocol, int fixedHeaders, byte[] SHA1, String peerID){
     	byte[] handshake = new byte[68];
