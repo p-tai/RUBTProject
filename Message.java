@@ -1,3 +1,6 @@
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+
 public class Message {
 
 	/**
@@ -33,7 +36,7 @@ public class Message {
 	 * HEHEHEHEHEH
 	 * JK
 	 */
-	public static final String[] responses = {"keepAlive", "choke", "unchoke", "interested", "uninterested"};
+	public static final String[] responses = {"keepAlive", "choke", "unchoke", "interested", "uninterested", "bitfield"};
 	
 	/**
 	 * 
@@ -59,7 +62,38 @@ public class Message {
 	 * @return
 	 */
 	public static byte[] request(int index, int begin, int length){
-		byte[] request = {0, 0, 0, 13, 6, (byte) index, (byte) begin, (byte) length};
+		//ByteBuffer request = ByteBuffer.wrap(new byte[] {0, 0, 0, 13, 6, (byte)index, (byte)begin, length});
+		byte[] request = new byte[17];
+		byte[] indexByte = ByteBuffer.allocate(4).putInt(index).array();
+		byte[] beginByte = ByteBuffer.allocate(4).putInt(begin).array();
+		byte[] lengthByte = ByteBuffer.allocate(4).putInt(length).array();
+		
+		int a = 0;
+		int b = 0;
+		int c = 0;
+		
+		/* Length Prefix */
+		request[0] = 0;
+		request[1] = 0;
+		request[2] = 0;
+		request[3] = 13;
+		/* Message ID */
+		request[4] = 6;
+		
+		for(int i = 5; i < 17; i++){
+			if(i < 9){
+				request[i] = indexByte[a]; 
+				a++;
+			}else if(i < 13){
+				request[i] = beginByte[b];
+				b++;
+			}else{
+				request[i] = lengthByte[c];
+				c++;
+			}
+		}
+		
+		//byte[] request = {0, 0, 0, 13, 6, (byte) index, (byte) begin, (byte) length};
 		return request;
 	}
 	
@@ -72,7 +106,37 @@ public class Message {
 	 * @return
 	 */
 	public static byte[] piece(int x, int index, int begin, int block){
-		byte[] piece = {0 , 0, 0, (byte) (9 + x) ,7, (byte) index, (byte) begin, (byte) block};
+		byte[] piece = new byte[17];
+		byte[] prefixByte = ByteBuffer.allocate(4).putInt(9 + x).array();
+		byte[] indexByte = ByteBuffer.allocate(4).putInt(index).array();
+		byte[] beginByte = ByteBuffer.allocate(4).putInt(begin).array();
+		byte[] lengthByte = ByteBuffer.allocate(4).putInt(block).array();
+		
+		int a = 0;
+		int b = 0;
+		int c = 0;
+		
+		/* Length Prefix */
+		for(int i = 0; i < 4; i++){
+			piece[i] = prefixByte[i];
+		}
+		/* Message ID */
+		piece[4] = 7;
+		
+		for(int i = 5; i < 17; i++){
+			if(i < 9){
+				piece[i] = indexByte[a]; 
+				a++;
+			}else if(i < 13){
+				piece[i] = beginByte[b];
+				b++;
+			}else{
+				piece[i] = lengthByte[c];
+				c++;
+			}
+		}
+		
+		//byte[] request = {0, 0, 0, 13, 6, (byte) index, (byte) begin, (byte) length};
 		return piece;
 	}
 	

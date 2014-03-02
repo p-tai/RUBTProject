@@ -129,18 +129,20 @@ public class RUBTClient {
 					System.out.println("#####################" + readByteArray(read_five));
 
 					//0. Getting bitchfields
-					boolean[] bitfield = Client.getBitfield(read_five);
+					byte[]  bitfield1 = new byte[1];
+					is.readFully(bitfield1);
+					boolean[] bitfield = Client.getBitfield(bitfield1);
 
     				//1. Send an Interested Message
 					os.write(Message.interested);
 					
     				//ByteBuffer interestMessage = ByteBuffer.wrap(Message.interested);
-    				os.write(Message.interested);
     				//System.out.println(readByteArray(temp));
     				//2. Send an unchoke Message
 					is.readFully(read_five);
 					System.out.println("\t\t\t" + readByteArray(read_five));
     				
+					System.out.println(readByteArray(Message.piece(1, 3, 2, torrent.piece_length)));
     				//3. Send a request Message for one of the pieces
     				
     			}else{
