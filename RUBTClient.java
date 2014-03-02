@@ -2,9 +2,9 @@
 /*
  * RUBTClient.java
  * Group 05:
- * Paul Tai
- * Anthony Wong
- * Alex Zhang
+ * Paul Tai Tai
+ * Anthony Wong Wong
+ * Alex Zhangoose
  */
 
 import java.io.*;
