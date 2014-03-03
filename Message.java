@@ -1,24 +1,47 @@
 import java.nio.ByteBuffer;
-import edu.rutgers.cs.cs352.bt.util.*;
+import java.util.Arrays;
 
 //TODO Add Cancel Function
 
 public class Message {
 
+	/**
+	 * The KeepAlive Message
+	 */
 	public static final byte[] keepAlive = {0, 0, 0, 0};
 	
+	/**
+	 * The Choke Message
+	 */
 	public static final byte[] choke = {0, 0, 0, 1, 0}; 
 	
+	/**
+	 * The Unchoke Message
+	 */
 	public static final byte[] unchoke = {0, 0, 0, 1, 1};
 	
+	/**
+	 * The Interested Message
+	 */
 	public static final byte[] interested = {0, 0, 0, 1, 2};
 	
+	/**
+	 * The Uninterested Message
+	 */
 	public static final byte[] uninterested = {0, 0, 0, 1, 3};
 	
+	/**
+	 * The List of Responses from the peer.
+	 */
 	public static final String[] responses = {"choke", "unchoke", "interested", 
 											  "uninterested", "have", "bitfield", 
 											  "request", "pieces", "cancel"};
 	
+	/**
+	 * Generates the Have Message
+	 * @param piece The piece of the total file.
+	 * @return The Have Message
+	 */
 	public static byte[] have(int piece){
 		byte[] have = new byte[9];
 		byte[] pieceByte = ByteBuffer.allocate(4).putInt(piece).array();
@@ -40,50 +63,38 @@ public class Message {
 		return have;
 	}
 	
+	/**
+	 * Generates a Request Message
+	 * @param index The index of the piece
+	 * @param begin The offset of the data in integers
+	 * @param length The size of the data in integers
+	 * @return The Request Message 
+	 */
 	public static byte[] request(int index, int begin, int length){
-		
-		
-		ByteBuffer values = ByteBuffer.allocateDirect(4*4);
-		
-		values.putInt(index);
-		
-		values.putInt(begin);
-		
-		values.putInt(length);
-		
-		ToolKit.print(values);
-		
 		byte[] request = new byte[17];
 		
-		int a = 0;
-		int b = 0;
-		int c = 0;
+		ByteBuffer requestBuff = ByteBuffer.allocate(17);
+		requestBuff.putInt(13);
+		byte b = 6;
+		requestBuff.put(b);
+		requestBuff.putInt(index);
+		requestBuff.putInt(begin);
+		requestBuff.putInt(length);
 		
-		/* Length Prefix */
-		request[0] = 0;
-		request[1] = 0;
-		request[2] = 0;
-		request[3] = 13;
-		/* Message ID */
-		request[4] = 6;
+		request = requestBuff.array();
+		System.out.println(Arrays.toString(request));
 		
-		for(int i = 5; i < 17; i++){
-			System.out.print(request[i]);
-			if(i < 9){
-				request[i] = values.get();
-				a++;
-			}else if(i < 13){
-				request[i] = values.get();
-				b++;
-			}else{
-				request[i] = values.get();
-				c++;
-			}
-		}
-		System.out.print('\n');
 		return request;
 	}
 	
+	/**
+	 * Generates a Piece Message
+	 * @param x The number of bytes of the block.
+	 * @param index The index of the piece of file.
+	 * @param begin The offset of the piece.
+	 * @param block The Data itself.
+	 * @return
+	 */
 	public static byte[] piece(int x, int index, int begin, int block){
 		byte[] piece = new byte[17];
 		byte[] prefixByte = ByteBuffer.allocate(4).putInt(9 + x).array();
@@ -117,6 +128,11 @@ public class Message {
 		return piece;
 	}
 	
+	/**
+	 * Return the reponses from the peer.
+	 * @param x The messageID.
+	 * @return The responses message
+	 */
 	public static String getMessageID(byte x){
 		int y = (int)x;
 		return responses[y];
