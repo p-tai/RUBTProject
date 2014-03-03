@@ -32,6 +32,7 @@ public class Client {
 	
 	private final int MAXIMUMLIMT = 16384;
 	private boolean[] blocks;
+	private boolean[] packets;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
@@ -46,6 +47,7 @@ public class Client {
 		this.saveName = saveName;
 		this.torrentInfo = parseTorrentInfo(filePath);
 		this.url = this.torrentInfo.announce_url;
+		this.createFile();
 	}
 	
 	public boolean HTTPGET(){
@@ -191,85 +193,105 @@ public class Client {
 	private boolean downloading(){
 		System.out.println("ALL SYSTEMS GO!");
 		System.out.println("DOWNLOADING PACKETS!");
-		
+		this.packets = new boolean[this.blocks.length*2];
 		/* DETERMING HOW MANY PACKETS WILL THERE BE */
 		this.numPackets = Math.ceil(((double)torrentInfo.file_length / (double)this.MAXIMUMLIMT));
 		System.out.println("THE TOTAL NUMBER OF PACKETS WILL WE DOWNLOAD IS " + this.numPackets);
-		ArrayList<Packet> packetArray = new ArrayList<Packet>();
-		
-		int index;
-		boolean flag = true;
-		if(sendRequest() == true) {
-			while( this.numPacketsDownloaded < this.numPackets ) {
-				try {
-					if( readSocketOutputStream() == true) {
-						this.numPacketsDownloaded++;
-					}
-					Thread.sleep(10);
-				} catch (IOException e) {
-					System.err.println("FAILURE DURING READING PACKET");
-					return false;
-				} catch(InterruptedException e) {
-					System.err.println("FAILURE: INTERRUPTION DURING READING PACKET");
-					return false;
+		while( this.numPacketsDownloaded < this.numPackets ) {
+			try {
+				//System.out.println("Requesting Packet "+ numPacketsDownloaded);
+				sendRequest();
+			
+				Thread.sleep(500);
+				
+				while( readSocketOutputStream() == false) {
+					Thread.sleep(200);
 				}
 				
+				
+			} catch (IOException e) {
+				System.err.println("FAILURE DURING READING PACKET IN DOWNLOADING");
+				return false;
+			} catch(Exception e) {
+				System.err.println("FAILURE: INTERRUPTION DURING READING PACKET");
+				return false;
 			}
+				
 		}
 		return true;
 	}
 	
 	 private boolean sendRequest(){
+		 if(this.numPacketsDownloaded > this.numPackets) {
+			return false;
+		 }
 		 try{
-			for(int i = 0; i < (int)numPackets - 1; i++){
-				this.request.write(Message.request(i, i * this.MAXIMUMLIMT, this.MAXIMUMLIMT));
+			 	// When the last piece is not equal to the MAXIMUMLIMT
+			 	//2 needs to be replaced with the number of requests per piece
+			 	int index = (int)Math.floor(numPacketsDownloaded/2);
+				System.out.printf("Requesting piece %d: %d offset %d \n", this.numPacketsDownloaded , index, numPacketsDownloaded%2 );
+				if(this.numPacketsDownloaded == (int)this.numPackets-1) {
+					this.request.write(Message.request(index, (numPacketsDownloaded%2)*this.MAXIMUMLIMT, this.torrentInfo.file_length % this.MAXIMUMLIMT));
+				} else { 
+					this.request.write(Message.request(index, (numPacketsDownloaded%2)*this.MAXIMUMLIMT, this.MAXIMUMLIMT));
+				}
 				this.request.flush();
-	        }
-	        // When the last piece is not equal to the MAXIMUMLIMT.
-	        int packetSize = this.torrentInfo.file_length % this.MAXIMUMLIMT;
-			if(packetSize != 0) {
-				this.request.write(Message.request((int)this.numPackets, ((int)this.numPackets - 1) * this.MAXIMUMLIMT, packetSize));
 				return true;
-			}
 		}catch(IOException e){
 			System.out.println("FAILURE FOR REQUEST A PACKET");
 	        return false;
 	    }
-	    return false;
 	}
 	
 	//Read a message from the socket input stream
 	private boolean readSocketOutputStream() throws IOException {
+		
 		int length = this.response.readInt();
+		//System.out.println("Length = "+ length);
 		byte classID;
+		
 		if(length == 0) {
 			//keep alive, do nothing
 		} else if(length > 0) {
 			classID = this.response.readByte();
+			//System.out.println("Class ID = "+ classID); 
+			length--;
 			//choke, unchoke, interested, or not interested
 			if(classID==7){
 				//Piece message
 				try {
 					int pieceIndex = this.response.readInt();
 					int blockOffset = this.response.readInt();
-					int blockLength = this.response.readInt();
-					
-					length = length-1-4-4-4; //Remove the length of the indexes and class ID
-					
+					System.out.printf("Receiving piece %d offset %d \n", pieceIndex, blockOffset );
+					length = length-8; //Remove the length of the indexes and class ID
 					byte[] payload = new byte[length];
 					
-					this.response.read(payload);
+
 					
-					this.dataFile.seek(pieceIndex*this.torrentInfo.piece_length+blockOffset);
+					this.response.readFully(payload);
+					int blockIndex = pieceIndex + (int)Math.floor((blockOffset+1)/this.MAXIMUMLIMT);
+					System.out.println("BlockIndex "+ blockIndex);
+					
+					this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
 					this.dataFile.write(payload);
+					this.numPacketsDownloaded++;
+					this.packets[blockIndex] = true;
+					System.out.println("updated data");
+					
+					//if(blockIndex == this.numPacketsDownloaded) {
+					//	return true;
+					//}
 					
 					return true;
 					
 				} catch(IOException e) {
 					System.err.println("Received an incorrect input from peer");
-				}
+				} 
+			} else if(length>0) {
+				//byte[] payload = new byte[length-1];
+				this.response.skipBytes(length);
+					
 			}
-		
 		}
 		return false;
 	}

@@ -1,5 +1,5 @@
 import java.nio.ByteBuffer;
-import edu.rutgers.cs.cs352.bt.util.*;
+import java.util.Arrays;
 
 //TODO Add Cancel Function
 
@@ -41,47 +41,53 @@ public class Message {
 	}
 	
 	public static byte[] request(int index, int begin, int length){
-		
-		
-		ByteBuffer values = ByteBuffer.allocateDirect(4*4);
-		
-		values.putInt(index);
-		
-		values.putInt(begin);
-		
-		values.putInt(length);
-		
-		ToolKit.print(values);
-		
 		byte[] request = new byte[17];
+		
+		ByteBuffer requestBuff = ByteBuffer.allocate(17);
+		requestBuff.putInt(13);
+		byte b = 6;
+		requestBuff.put(b);
+		requestBuff.putInt(index);
+		requestBuff.putInt(begin);
+		requestBuff.putInt(length);
+		
+		request = requestBuff.array();
+		System.out.println(Arrays.toString(request));
+		
+		return request;
+		
+		/*
+		byte[] indexByte = ByteBuffer.allocate(4).putInt(index).array();
+		byte[] beginByte = ByteBuffer.allocate(4).putInt(begin).array();
+		byte[] lengthByte = ByteBuffer.allocate(4).putInt(length).array();
 		
 		int a = 0;
 		int b = 0;
 		int c = 0;
 		
-		/* Length Prefix */
 		request[0] = 0;
 		request[1] = 0;
 		request[2] = 0;
 		request[3] = 13;
-		/* Message ID */
 		request[4] = 6;
 		
 		for(int i = 5; i < 17; i++){
-			System.out.print(request[i]);
 			if(i < 9){
-				request[i] = values.get();
+				request[i] = indexByte[a]; 
 				a++;
 			}else if(i < 13){
-				request[i] = values.get();
+				request[i] = beginByte[b];
 				b++;
 			}else{
-				request[i] = values.get();
+				request[i] = lengthByte[c];
 				c++;
 			}
 		}
-		System.out.print('\n');
+		
+		
+		
 		return request;
+		*/
 	}
 	
 	public static byte[] piece(int x, int index, int begin, int block){
