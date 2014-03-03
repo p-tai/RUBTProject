@@ -13,16 +13,14 @@ import edu.rutgers.cs.cs352.bt.util.*;
 
 public class Client {
 	//TODO PUT MOST OF THIS STUFF IN TRACKER!
-	private static String clientID;
 	
-/*	private static final byte[] handshake = 
-	{19, 'B', 'i', 'T', 'o', 'r', 'r', 'n', 't', ' ', 'p', 'r', 'o', 't', 'o', 'c', 'o', 'l',
-	'0', '0', '0', '0', '0', '0', '0', '0', };*/
+	private static String clientID;
 	
 	private static final char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
 	
 	private Tracker tracker;
-    private TorrentInfo torrentInfo;
+    
+	private TorrentInfo torrentInfo;
     private URL url;
     private HashMap<String, Peer> peerList;
     
@@ -40,6 +38,11 @@ public class Client {
 	private DataOutputStream request;
 	private DataInputStream  response;
 	
+	/**
+	 * Client Constructor
+	 * @param filePath Source of the torrent file
+	 * @param saveName The file you want to save in.
+	 */
 	public Client(String filePath, String saveName){
 		System.out.println("Booting");
 		this.numPacketsDownloaded = 0;
@@ -50,6 +53,10 @@ public class Client {
 		this.createFile();
 	}
 	
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean HTTPGET(){
 		String query = "";
 		genClientID();
@@ -584,4 +591,3 @@ public class Client {
     }
 	
 }
-
