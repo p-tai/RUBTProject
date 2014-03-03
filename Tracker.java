@@ -94,6 +94,10 @@ public class Tracker {
 		return peerHashMap;
 	}
 	
+	/**
+	 * Sending a Completed Message to the Tracker
+	 * @param url The URL of the tracker.
+	 */
 	public void completed(URL url){
 		URLConnection connnection = null;
 		InputStream getStream = null;
@@ -107,7 +111,20 @@ public class Tracker {
 		}
 	}
 	
-	public void stopped(){
-		
+	/**
+	 * Sending a Stopped Message to the Tracker
+	 * @param url The URL of the tracker.
+	 */
+	public void stopped(URL url){
+		URLConnection connnection = null;
+		InputStream getStream = null;
+		HttpURLConnection httpConnection = null;
+		try{
+			httpConnection = (HttpURLConnection)url.openConnection();
+			httpConnection.setRequestMethod("GET");
+			int responseCode = httpConnection.getResponseCode();
+		}catch(IOException e){
+			
+		}
 	}
 }

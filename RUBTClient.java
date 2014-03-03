@@ -95,6 +95,7 @@ public class RUBTClient {
 			if(client.completed()){
 				System.out.println("FILE SUCCESSFULY DOWNLOAD!");
 			}
+			client.stopped();
 			return;
 
 		}//end ofw hile 

@@ -65,7 +65,7 @@ public class Client {
 		query = URLify(query,"&uploaded", Integer.toString(0));
 		query = URLify(query,"&downloaded", Integer.toString(0));
 		query = URLify(query,"&left", Integer.toString(this.torrentInfo.file_length));
-		
+		query = URLify(query, "&event", "started");
 		try {
 			System.out.println("SEND THE TRACKER A HTTP GET MESSSAGE");
 			System.out.println("TO: " + this.url);
@@ -89,6 +89,10 @@ public class Client {
 		return false;
 	}
 	
+	/**
+	 * Sending a Completed Message to the the Tracker
+	 * @return true for success, otherwise false
+	 */
 	public boolean completed(){
 		String query = "";
 		genClientID();
@@ -97,12 +101,40 @@ public class Client {
 		query = URLify(query,"&uploaded", Integer.toString(0));
 		query = URLify(query,"&downloaded", Integer.toString(this.numPacketsDownloaded));
 		query = URLify(query,"&left", Integer.toString(this.torrentInfo.file_length));
+		query = URLify(query, "&event", "completed");
 		try {
 			System.out.println("SEND THE TRACKER A HTTP GET MESSSAGE");
 			System.out.println("TO: " + this.url);
 			this.url = new URL(url, query);
 			this.tracker = new Tracker(this.url);
 			this.tracker.completed(url);
+			return true;
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			return false;
+		}
+	}
+	
+	/**
+	 * Sending a Stopped Message to the the Tracker
+	 * @return true for success, otherwise false
+	 */
+	public boolean stopped(){
+		String query = "";
+		genClientID();
+		query = URLify(query,"announce?info_hash", this.torrentInfo.info_hash.array());
+		query = URLify(query,"&peer_id",this.clientID);
+		query = URLify(query,"&uploaded", Integer.toString(0));
+		query = URLify(query,"&downloaded", Integer.toString(this.numPacketsDownloaded));
+		query = URLify(query,"&left", Integer.toString(this.torrentInfo.file_length));
+		query = URLify(query, "&event", "stopped");
+		try {
+			System.out.println("SEND THE TRACKER A HTTP GET MESSSAGE");
+			System.out.println("TO: " + this.url);
+			this.url = new URL(url, query);
+			this.tracker = new Tracker(this.url);
+			this.tracker.stopped(this.url);
 			return true;
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
