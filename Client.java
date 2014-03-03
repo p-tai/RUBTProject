@@ -54,8 +54,8 @@ public class Client {
 	}
 	
 	/**
-	 * 
-	 * @return
+	 * Send the HTTP GET Message to the Tracker. 
+	 * @return true for success, otherwise false.
 	 */
 	public boolean HTTPGET(){
 		String query = "";
@@ -89,7 +89,31 @@ public class Client {
 		return false;
 	}
 	
-	//TODO Make this shorter
+	public boolean completed(){
+		String query = "";
+		genClientID();
+		query = URLify(query,"announce?info_hash", this.torrentInfo.info_hash.array());
+		query = URLify(query,"&peer_id",this.clientID);
+		query = URLify(query,"&uploaded", Integer.toString(0));
+		query = URLify(query,"&downloaded", Integer.toString(this.numPacketsDownloaded));
+		query = URLify(query,"&left", Integer.toString(this.torrentInfo.file_length));
+		try {
+			System.out.println("SEND THE TRACKER A HTTP GET MESSSAGE");
+			System.out.println("TO: " + this.url);
+			this.url = new URL(url, query);
+			this.tracker = new Tracker(this.url);
+			this.tracker.completed(url);
+			return true;
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			return false;
+		}
+	}
+	
+	/**
+	 * Prints out the List of Peers from the torrentInfo
+	 */
 	public void printPeerList(){
 		if(this.peerList == null){
 			//WHEN THE TRACKER IS DOWN
@@ -104,6 +128,9 @@ public class Client {
 		}
 	}
 	
+	/**
+	 * @return The List of Peers from the torrentInfo
+	 */
 	public String[] getPeerList(){
 		if(this.peerList == null){
 			//WHEN THE TRACKER IS DOWN
@@ -121,6 +148,14 @@ public class Client {
 		return peerList;
 	}
 	
+	/*********************************
+	 * Client->Peers Public Functions
+	 ********************************/
+	
+	/**
+	 * Connect to the Peer based on peerID.
+	 * @param peerID The peerID
+	 */
 	public void connect(String peerID){
 		if(this.peerList.containsKey(peerID)){
 			Peer peer = this.peerList.get(peerID);
@@ -177,6 +212,10 @@ public class Client {
 		}
 	}
 	
+	/**
+	 * Sends a interested message to the peer.
+	 * @return true for success, otherwise false.
+	 */
 	private boolean interested(){
 		try {
 			System.out.println("SENDING INTERESTED MESSAGE");
@@ -197,6 +236,11 @@ public class Client {
 		}
 	}
 	
+	/**
+	 * After handshaking, the Client starts download message from the 
+	 * peers. 
+	 * @return true for success, otherwise false
+	 */
 	private boolean downloading(){
 		System.out.println("ALL SYSTEMS GO!");
 		System.out.println("DOWNLOADING PACKETS!");
@@ -228,6 +272,10 @@ public class Client {
 		return true;
 	}
 	
+	/**
+	 * Sending a Request Message to the Peer
+	 * @return true for success, otherwise false
+	 */
 	 private boolean sendRequest(){
 		 if(this.numPacketsDownloaded > this.numPackets) {
 			return false;
@@ -250,7 +298,11 @@ public class Client {
 	    }
 	}
 	
-	//Read a message from the socket input stream
+	/**
+	 * Reading the responses from the peer.
+	 * @return True for success, otherwise false
+	 * @throws IOException 
+	 */
 	private boolean readSocketOutputStream() throws IOException {
 		
 		int length = this.response.readInt();
@@ -304,7 +356,10 @@ public class Client {
 	}
 	
 	
-	
+	/**
+	 * Send a Hand Shake Message to the Peer
+	 * @return true for success, otherwise false
+	 */
 	private boolean sendHandShakeMessaage(){
 		try {
 			request.write(handshakeMessage(this.torrentInfo.info_hash.array(), clientID));
@@ -337,6 +392,9 @@ public class Client {
 		}
 	}
 	
+	/**
+	 * @return Boolean Array based on the Value of the BitFields
+	 */
 	private boolean[] getBitFields(){
 		byte[] message = new byte[5];
 		try {
@@ -387,7 +445,11 @@ public class Client {
 		}
 	}
 	
-	/* TODO PUT THIS IN MESSAGE CLASS */
+	/**
+	 * Takes in a byte[] and returns the value of it.
+	 * @param b Byte Array
+	 * @return The value of the byte[] based on the values inside of it.
+	 */
 	private int byteArrayToInt(byte[] b) {
 	    return   b[3] & 0xFF |
 	            (b[2] & 0xFF) << 8 |
@@ -395,6 +457,9 @@ public class Client {
 	            (b[0] & 0xFF) << 24;
 	}
 	
+	/**
+	 * Print out the Boolean Array with 1's or 0's
+	 */
 	private void printBooleanArray(){
 		String output = "[";
 		for(int i = 0; i < this.blocks.length; i++){
@@ -408,6 +473,12 @@ public class Client {
 		System.out.println(output);
 	}
 	
+	/**
+	 * Creates a Handshake Message.
+	 * @param SHA1 The SHA-1 Hash of the torrentInfo
+	 * @param peerID The peerID.
+	 * @return A Handshake Message.
+	 */
 	private byte[] handshakeMessage(byte[] SHA1, String peerID){
 		byte[] handshake = new byte[68];
         handshake[0] = 19;
@@ -445,6 +516,11 @@ public class Client {
 		return handshake;
 	}
 	
+	/**
+	 * The Byte Array in Hex Format
+	 * @param target Byte Array
+	 * @return The String of the Byte Array in Hex Format
+	 */
     public static String readByteArray(byte[] target){
     	String result = "";
 		for(int i = 0; i < target.length; ++i){
@@ -531,6 +607,9 @@ public class Client {
         return reply;
     }
     
+	/**
+	 * @return true for success, otherwise false.
+	 */
 	private boolean createFile(){
         try {
             this.dataFile = new RandomAccessFile(this.saveName,"rw");
@@ -549,7 +628,12 @@ public class Client {
         }
     }
     
-    
+    /**
+     * Check the pieces with the torrentInfo.pieces_hash
+     * @param dataPiece A piece of a file
+     * @param dataOffset Where the piece is located to the file
+     * @return true for success, otherwise false
+     */
     public boolean checkData(byte[] dataPiece, int dataOffset) {
         
         MessageDigest hasher = null;

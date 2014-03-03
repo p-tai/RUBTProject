@@ -22,7 +22,11 @@ import java.lang.*;
  */
 public class RUBTClient {
 	public static void main(String[] args) throws InterruptedException{
-    	
+    	if(args == null || args.length != 2){
+    		System.err.println("Error: Incorrest number of paramaters");
+    		return;
+    	}
+		
 		/*
 		 * "how to gracefully handle sigkill"
 		 * http://stackoverflow.com/questions/2541597/how-to-gracefully-handle-the-sigkill-signal-in-java
@@ -70,8 +74,8 @@ public class RUBTClient {
 			Thread.sleep(1000);
 
 			//start of yo shitz
-			String filePath = "project1.torrent";
-			String picture = "picture.jpg";
+			String filePath = args[0];
+			String picture = args[1];
 			
 			Client client = new Client(filePath, picture);
 			client.HTTPGET();
@@ -88,6 +92,9 @@ public class RUBTClient {
 
             //TODO FIX THIS!
 			client.connect(peer);
+			if(client.completed()){
+				System.out.println("FILE SUCCESSFULY DOWNLOAD!");
+			}
 			return;
 
 		}//end ofw hile 

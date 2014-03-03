@@ -11,15 +11,27 @@ public class Tracker {
 	
 	private URL url;
 	
+	/**
+	 * The Peers ByteBuffer
+	 */
 	public final static ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
 	{ 'p', 'e', 'e', 'r', 's' });
         
+	/**
+	 * The IP ByteBuffer
+	 */
     public final static ByteBuffer IP = ByteBuffer.wrap(new byte[]
     { 'i', 'p' });
         
+    /**
+     * The PeerID ByteBuffer
+     */
     public final static ByteBuffer PEERID = ByteBuffer.wrap(new byte[]
     { 'p', 'e', 'e', 'r', ' ', 'i', 'd' });
         
+    /**
+     * The Port ByteBuffer
+     */
     public final static ByteBuffer PORT = ByteBuffer.wrap(new byte[]
     { 'p', 'o', 'r', 't', });
 	
@@ -28,6 +40,9 @@ public class Tracker {
 		this.url = url;
 	}
 	
+	/**
+	 * @return List of Peers 
+	 */
 	public HashMap<String, Peer> started(){/* This is based on the create() */
 		URLConnection connnection = null;
 		InputStream getStream = null;
@@ -59,6 +74,11 @@ public class Tracker {
 		return null;
 	}
 	
+	/**
+	 * Capture the Response from the Tracker
+	 * @param response The decode response
+	 * @return The List of Peers from the Tracker
+	 */
 	private HashMap<String, Peer> captureResponse(Map<ByteBuffer, Object> response){
 		HashMap<String, Peer> peerHashMap = new HashMap<String, Peer>();
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)response.get(PEERS);
@@ -74,8 +94,17 @@ public class Tracker {
 		return peerHashMap;
 	}
 	
-	public void completed(){
-		
+	public void completed(URL url){
+		URLConnection connnection = null;
+		InputStream getStream = null;
+		HttpURLConnection httpConnection = null;
+		try{
+			httpConnection = (HttpURLConnection)url.openConnection();
+			httpConnection.setRequestMethod("GET");
+			int responseCode = httpConnection.getResponseCode();
+		}catch(IOException e){
+			
+		}
 	}
 	
 	public void stopped(){
