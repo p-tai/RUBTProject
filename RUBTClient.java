@@ -28,7 +28,7 @@ public class RUBTClient {
     	}
 		
 		/*
-		 * "how to gracefully handle sigkill"
+		 * "how to gracefully handle sigkill aka armadillo
 		 * http://stackoverflow.com/questions/2541597/how-to-gracefully-handle-the-sigkill-signal-in-java
 		 */
 		Runtime.getRuntime().addShutdownHook(new Thread(){
