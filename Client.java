@@ -515,6 +515,7 @@ public class Client {
             }else{
 				try{ //If the byte is a valid ascii character, use URLEncoder
 					reply = reply + URLEncoder.encode(new String(new byte[] {query[i]}),"UTF-8");
+					System.out.println("REPLY: " + reply);
                 }catch(UnsupportedEncodingException e){
 					System.out.println("URL formation error:" + e.getMessage());
                 }
