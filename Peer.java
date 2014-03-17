@@ -5,7 +5,15 @@ public class Peer {
 	private String peerID;
 	private String peerIP;
 	private int peerPort;
+	
+	/**
+	 * They is unchoke in the client.
+	 */
 	private boolean isChoke;
+	
+	/**
+	 * They is interested in the client.  
+	 */
 	private boolean isInterested;
 	
 	/**
@@ -47,14 +55,6 @@ public class Peer {
 	/*********************************
 	 * Setters
 	 ********************************/
-	
-	public void setPeerID(String peerID) {
-		this.peerID = peerID;
-	}
-	
-	public void setPeerIP(String peerIP) {
-		this.peerIP = peerIP;
-	}
 	
 	public void setPeerPort(int peerPort) {
 		this.peerPort = peerPort;

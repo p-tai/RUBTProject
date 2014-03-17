@@ -14,6 +14,7 @@ import edu.rutgers.cs.cs352.bt.util.*;
 public class Client {
 	//TODO PUT MOST OF THIS STUFF IN TRACKER!
 	
+	
 	private static String clientID;
 	
 	private static final char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
@@ -22,7 +23,7 @@ public class Client {
     
 	private TorrentInfo torrentInfo;
     private URL url;
-    private HashMap<String, Peer> peerList;
+    private HashMap<String, Peer> peerList = new HashMap<String, Peer>();
     
     private String filePath;
 	private String saveName;
@@ -623,7 +624,7 @@ public class Client {
         String reply = base+queryID+"=";
                 
         for(int i = 0; i<query.length; i++) {
-			if(query[i] < 0) { //if the byte data has the most significant byte set (e.g. it is negative)
+			if((query[i] &0x80) == 0x80) { //if the byte data has the most significant byte set (e.g. it is negative)
 				reply = reply+"%";
                 //Mask the upper byte and lower byte and turn them into the correct chars
                 reply = reply + HEXCHARS[(query[i]&0xF0)>>>4]+HEXCHARS[query[i]&0x0F];

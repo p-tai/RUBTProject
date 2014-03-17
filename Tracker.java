@@ -52,24 +52,24 @@ public class Tracker {
 		
 		try{
 			httpConnection = (HttpURLConnection)url.openConnection();
-			httpConnection.setRequestMethod("GET");
-			int responseCode = httpConnection.getResponseCode();
+//			httpConnection.setRequestMethod("GET");
+//			int responseCode = httpConnection.getResponseCode();
 			
 			/*TODO Print out the Response Code */
 			getStream = httpConnection.getInputStream();
 			dataStream = new DataInputStream(getStream);
 			
-			getStreamBytes = new byte[getStream.available()];
-			dataStream.read(getStreamBytes);//TODO read causes an IOError
+			getStreamBytes = new byte[httpConnection.getContentLength()];
+			dataStream.readFully(getStreamBytes);//TODO read causes an IOError
 			
 			Map<ByteBuffer, Object> response = (Map<ByteBuffer, Object>) Bencoder2.decode(getStreamBytes);
 			getStream.close();
 			dataStream.close();
 			return captureResponse(response);
 		}catch(IOException e){
-			
+			e.printStackTrace();
 		}catch(BencodingException e){
-			
+			e.printStackTrace();
 		}
 		return null;
 	}
@@ -87,7 +87,7 @@ public class Tracker {
 			Map<ByteBuffer, Object> peerList = peers.get(i);
 			String peerID = new String(((ByteBuffer)peerList.get(PEERID)).array());
 			String peerIP = new String(((ByteBuffer)peerList.get(IP)).array());
-			int port = (int)(peerList.get(PORT));
+			int port = Integer.valueOf((Integer)(peerList.get(PORT)));
 			Peer peer = new Peer(peerID, peerIP, port);
 			peerHashMap.put(peerID, peer);
 		}
@@ -106,6 +106,7 @@ public class Tracker {
 			httpConnection = (HttpURLConnection)url.openConnection();
 			httpConnection.setRequestMethod("GET");
 			int responseCode = httpConnection.getResponseCode();
+			
 		}catch(IOException e){
 			
 		}
