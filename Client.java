@@ -25,7 +25,6 @@ public class Client {
     private URL url;
     private HashMap<String, Peer> peerList = new HashMap<String, Peer>();
     
-    private String filePath;
 	private String saveName;
 	private RandomAccessFile dataFile;
 	
@@ -44,12 +43,11 @@ public class Client {
 	 * @param filePath Source of the torrent file
 	 * @param saveName The file you want to save in.
 	 */
-	public Client(String filePath, String saveName){
+	public Client(TorrentInfo torrent, String saveName){
 		System.out.println("Booting");
 		this.numPacketsDownloaded = 0;
-		this.filePath = filePath;
 		this.saveName = saveName;
-		this.torrentInfo = parseTorrentInfo(filePath);
+		this.torrentInfo = torrent;
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 	}
@@ -568,36 +566,6 @@ public class Client {
 	/*********************************
 	 * Client->Tracker Private Functions
 	 ********************************/
-	
-    private static TorrentInfo parseTorrentInfo(String filename) {
-        try {
-            //Create input streams and file streams
-            File torrentFile = new File(filename);
-            FileInputStream torrentFileStream = new FileInputStream(torrentFile);
-            DataInputStream torrentFileReader = new DataInputStream(torrentFileStream);
-            
-            //Read the file into torrentFileBytes
-            byte[] torrentFileBytes = new byte[((int)torrentFile.length())];
-            torrentFileReader.readFully(torrentFileBytes);
-            
-            //Close input streams and file streams
-            torrentFileReader.close();
-            torrentFileStream.close();
-            //torrentFile.close();
-            
-            return new TorrentInfo(torrentFileBytes);
-            
-        } catch(FileNotFoundException e) {
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        } catch (IOException e){
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        } catch (BencodingException e) {
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        }   
-    }
 	
     private static String URLify(String base, String queryID, String query) {
         

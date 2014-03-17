@@ -21,17 +21,45 @@ import java.lang.*;
  * 
  */
 public class RUBTClient {
+	
+	private static TorrentInfo parseTorrentInfo(String filename) {
+        try {
+            //Create input streams and file streams
+            File torrentFile = new File(filename);
+            FileInputStream torrentFileStream = new FileInputStream(torrentFile);
+            DataInputStream torrentFileReader = new DataInputStream(torrentFileStream);
+            
+            //Read the file into torrentFileBytes
+            byte[] torrentFileBytes = new byte[((int)torrentFile.length())];
+            torrentFileReader.readFully(torrentFileBytes);
+            
+            //Close input streams and file streams
+            torrentFileReader.close();
+            torrentFileStream.close();
+            //torrentFile.close();
+            
+            return new TorrentInfo(torrentFileBytes);
+            
+        } catch(FileNotFoundException e) {
+            System.err.println("Error: " + e.getMessage());
+            return null;
+        } catch (IOException e){
+            System.err.println("Error: " + e.getMessage());
+            return null;
+        } catch (BencodingException e) {
+            System.err.println("Error: " + e.getMessage());
+            return null;
+        }   
+    }
+	
 	public static void main(String[] args) throws InterruptedException{
-    	if(args == null || args.length != 2){
-    		System.err.println("Error: Incorrect number of paramaters");
-    		return;
-    	}
-		
-		/*
-		 * "how to gracefully handle sigkill aka armadillo
+    	
+    	/*
+		 * "how to gracefully handle sigkill" aka armadillo
 		 * http://stackoverflow.com/questions/2541597/how-to-gracefully-handle-the-sigkill-signal-in-java
 		 */
 		Runtime.getRuntime().addShutdownHook(new Thread(){
+			
 			/*
 			 * for the teddy bear: 
 			 * http://www.chris.com/ascii/index.php?art=animals/bears+(teddybears)
@@ -41,9 +69,8 @@ public class RUBTClient {
 			 * http://1lineart.kulaone.com/
 			 */
 			public void run(){
-				double whichpic = Math.random()*10;
-				int whichpicint = (int)whichpic;
-
+				int whichpicint = (int)Math.random()*10;
+				
 				System.out.println();
 				System.out.println();
 
@@ -69,35 +96,47 @@ public class RUBTClient {
 
 			}//end of run
 		});//end of new thread runtime thingie :3
-		while(true){
-			//purely for testing purposes, get rid of thread later
-			Thread.sleep(1000);
+	
+		//Argument checking
+		if(args == null || args.length != 2){
+    		System.err.println("Error: Incorrect number of paramaters");
+    		return;
+    	}
+    	
+    	//Parse arguments
+    	String torrentPath = args[0];
+		String outputPath = args[1];
+		
+		//Open the torrent file specified
+		TorrentInfo torrent = parseTorrentInfo(torrentPath);
+		
+		Client client = new Client(torrent, outputPath);
+		
+		
+		client.HTTPGET();
+		client.printPeerList();
+		String[] getPeerList = client.getPeerList();
+		String peer = "";
+		if(getPeerList != null){
+			for(int i = 0; i < getPeerList.length; i++){
+				if(getPeerList[i].contains("RUBT11")){
+					peer = getPeerList[i];
+  				}//end of if 
+			}//end of for 
+		}//end of if 
 
-			//start of yo shitz
-			String filePath = args[0];
-			String picture = args[1];
-			
-			Client client = new Client(filePath, picture);
-			client.HTTPGET();
-			client.printPeerList();
-			String[] getPeerList = client.getPeerList();
-			String peer = "";
-			if(getPeerList != null){
-				for(int i = 0; i < getPeerList.length; i++){
-					if(getPeerList[i].contains("RUBT11")){
-						peer = getPeerList[i];
-  					}//end of if 
-				}//end of for 
-			}//end of if 
-
-            //TODO FIX THIS!
-			client.connect(peer);
-			if(client.completed()){
-				System.out.println("FILE SUCCESSFULY DOWNLOAD!");
-			}
-			client.stopped();
-			return;
-
-		}//end ofw hile 
+        //TODO FIX THIS!
+		client.connect(peer);
+		if(client.completed()){
+			System.out.println("FILE SUCCESSFULY DOWNLOAD!");
+		}
+		
+		client.stopped();
+		
+		
+		return;
+		
+				
 	}//end of public static void main
+	
 }//end of class
