@@ -138,4 +138,44 @@ public class Message {
 		return responses[y];
 	}
 	
+	/*
+	 * Function that will return a byte[] containing a handshake.
+	 */
+	public static byte[] handshakeMessage(byte[] SHA1, String peerID){
+		byte[] handshake = new byte[68];
+        handshake[0] = 19;
+        handshake[1] = 'B';
+        handshake[2] = 'i';
+        handshake[3] = 't';
+        handshake[4] = 'T';
+        handshake[5] = 'o';
+        handshake[6] = 'r'; 
+		handshake[7] = 'r';
+        handshake[8] = 'e';
+        handshake[9] = 'n'; 
+		handshake[10] = 't';
+        handshake[11] = ' ';
+        handshake[12] = 'p';
+        handshake[13] = 'r';
+        handshake[14] = 'o';
+        handshake[15] = 't';
+        handshake[16] = 'o';
+        handshake[17] = 'c';
+        handshake[18] = 'o';
+        handshake[19] = 'l';    
+		
+        for(int i = 0; i < 8; i++){
+        	handshake[19 + i + 1] = 0;
+        }
+        //28
+        for(int i = 0; i < 20; i++){
+        	handshake[28 + i] = SHA1[i];
+        }
+        //48
+        for(int i = 0; i < 20; i++){
+        	handshake[48 + i] = (byte) peerID.charAt(i);
+        }
+		return handshake;
+	}
+	
 }

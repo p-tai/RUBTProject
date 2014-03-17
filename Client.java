@@ -14,7 +14,6 @@ import edu.rutgers.cs.cs352.bt.util.*;
 public class Client {
 	//TODO PUT MOST OF THIS STUFF IN TRACKER!
 	
-	
 	private static String clientID;
 	
 	private static final char[] HEXCHARS = "0123456789ABCDEF".toCharArray();

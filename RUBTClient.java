@@ -36,7 +36,6 @@ public class RUBTClient {
             //Close input streams and file streams
             torrentFileReader.close();
             torrentFileStream.close();
-            //torrentFile.close();
             
             return new TorrentInfo(torrentFileBytes);
             
@@ -111,7 +110,6 @@ public class RUBTClient {
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
 		
 		Client client = new Client(torrent, outputPath);
-		
 		
 		client.HTTPGET();
 		client.printPeerList();
