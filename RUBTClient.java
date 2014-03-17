@@ -23,7 +23,7 @@ import java.lang.*;
 public class RUBTClient {
 	public static void main(String[] args) throws InterruptedException{
     	if(args == null || args.length != 2){
-    		System.err.println("Error: Incorrest number of paramaters");
+    		System.err.println("Error: Incorrect number of paramaters");
     		return;
     	}
 		
