@@ -35,6 +35,8 @@ public class Client {
 	private DataOutputStream request;
 	private DataInputStream  response;
 	
+	private ServerSocket listenSocket;
+	
 	private Map<byte[], String> peerList;
 	
 	/**
@@ -52,10 +54,35 @@ public class Client {
 		genClientID();
 	}
 	
-	public void connectToTracker(){
-		Tracker tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID);
+	/**
+	 * Opening a port for incoming messages. 
+	 * @return Available port number 
+	 */
+	public int openSocket(){
+		System.out.println("OPENING THE SOCKET: ");
+		for(int i = 1; i < 10; i++){
+			try {
+				this.listenSocket = new ServerSocket(Integer.valueOf(new String("688" + i)));
+				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)));
+				return Integer.valueOf(new String("688" + i));
+			} catch (NumberFormatException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)) + "FAIL!");
+			}
+		}
+		return 0;
+	}
+	
+	public boolean connectToTracker(final int port){
+		Tracker tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
 		this.peerList = tracker.sendHTTPGet(0, 0, 100, "started");
+		if(this.peerList == null){
+			return false;
+		}
 		System.out.println("Number of Peer List: " + peerList.size());
+		return true;
 	}
 	
 	public void connectToPeers(){

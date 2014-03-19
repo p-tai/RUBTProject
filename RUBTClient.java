@@ -110,7 +110,8 @@ public class RUBTClient {
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
 		
 		Client client = new Client(torrent, outputPath);
-		client.connectToTracker();
+		int port = client.openSocket();
+		client.connectToTracker(port);
 		client.connectToPeers();
 /*		client.HTTPGET();
 		client.printPeerList();
