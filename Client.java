@@ -14,15 +14,13 @@ import edu.rutgers.cs.cs352.bt.util.*;
 public class Client {
 	//TODO PUT MOST OF THIS STUFF IN TRACKER!
 	
-	private static String clientID;
-	
-	private static final char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
-	
+	private byte[] clientID = new byte[20];
+		
 	private Tracker tracker;
     
-	private TorrentInfo torrentInfo;
+	private static TorrentInfo torrentInfo;
     private URL url;
-    private HashMap<String, Peer> peerList = new HashMap<String, Peer>();
+ //  private HashMap<String, Peer> peerList = new HashMap<String, Peer>();
     
 	private String saveName;
 	private RandomAccessFile dataFile;
@@ -37,6 +35,8 @@ public class Client {
 	private DataOutputStream request;
 	private DataInputStream  response;
 	
+	private Map<byte[], String> peerList;
+	
 	/**
 	 * Client Constructor
 	 * @param filePath Source of the torrent file
@@ -49,13 +49,31 @@ public class Client {
 		this.torrentInfo = torrent;
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
+		genClientID();
+	}
+	
+	public void connectToTracker(){
+		Tracker tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID);
+		this.peerList = tracker.sendHTTPGet(0, 0, 100, "started");
+		System.out.println("Number of Peer List: " + peerList.size());
+	}
+	
+	public void connectToPeers(){
+		Set<byte[]> keys = peerList.keySet();
+		Iterator<byte[]> iter = keys.iterator();
+		while(iter.hasNext()){
+			byte[] peerID = iter.next();
+			String[] ipPort = peerList.get(peerID).split(":");
+			Peer peer = new Peer(clientID, peerID, ipPort[0], Integer.valueOf(ipPort[1]));
+			peer.start();
+		}		
 	}
 	
 	/**
 	 * Send the HTTP GET Message to the Tracker. 
 	 * @return true for success, otherwise false.
 	 */
-	public boolean HTTPGET(){
+/*	public boolean HTTPGET(){
 		String query = "";
 		genClientID();
 		query = URLify(query,"announce?info_hash", this.torrentInfo.info_hash.array());
@@ -85,15 +103,15 @@ public class Client {
 			return true;
 		}
 		return false;
-	}
+	}*/
 	
 	/**
 	 * Sending a Completed Message to the the Tracker
 	 * @return true for success, otherwise false
 	 */
-	public boolean completed(){
+/*	public boolean completed(){
 		String query = "";
-		genClientID();
+		//genClientID();
 		query = URLify(query,"announce?info_hash", this.torrentInfo.info_hash.array());
 		query = URLify(query,"&peer_id",this.clientID);
 		query = URLify(query,"&uploaded", Integer.toString(0));
@@ -104,8 +122,8 @@ public class Client {
 			System.out.println("SEND THE TRACKER A HTTP GET MESSSAGE");
 			System.out.println("TO: " + this.url);
 			this.url = new URL(url, query);
-			this.tracker = new Tracker(this.url);
-			this.tracker.completed(url);
+			//this.tracker = new Tracker(this.url);
+			//this.tracker.completed(url);
 			return true;
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
@@ -118,7 +136,7 @@ public class Client {
 	 * Sending a Stopped Message to the the Tracker
 	 * @return true for success, otherwise false
 	 */
-	public boolean stopped(){
+/*	public boolean stopped(){
 		String query = "";
 		genClientID();
 		query = URLify(query,"announce?info_hash", this.torrentInfo.info_hash.array());
@@ -131,8 +149,8 @@ public class Client {
 			System.out.println("SEND THE TRACKER A HTTP GET MESSSAGE");
 			System.out.println("TO: " + this.url);
 			this.url = new URL(url, query);
-			this.tracker = new Tracker(this.url);
-			this.tracker.stopped(this.url);
+			//this.tracker = new Tracker(this.url);
+			//this.tracker.stopped(this.url);
 			return true;
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
@@ -144,7 +162,7 @@ public class Client {
 	/**
 	 * Prints out the List of Peers from the torrentInfo
 	 */
-	public void printPeerList(){
+/*	public void printPeerList(){
 		if(this.peerList == null){
 			//WHEN THE TRACKER IS DOWN
 			return;
@@ -161,7 +179,7 @@ public class Client {
 	/**
 	 * @return The List of Peers from the torrentInfo
 	 */
-	public String[] getPeerList(){
+/*	public String[] getPeerList(){
 		if(this.peerList == null){
 			//WHEN THE TRACKER IS DOWN
 			return null;
@@ -186,7 +204,7 @@ public class Client {
 	 * Connect to the Peer based on peerID.
 	 * @param peerID The peerID
 	 */
-	public void connect(String peerID){
+/*	public void connect(String peerID){
 		if(this.peerList.containsKey(peerID)){
 			Peer peer = this.peerList.get(peerID);
 			System.out.println("CONTACTING " + peer.getPeerID());
@@ -201,13 +219,13 @@ public class Client {
 					if(sendHandShakeMessaage()){
 						
 						/* 0. Getting the BitFields */
-						this.blocks = getBitFields();
+				/*		this.blocks = getBitFields();
 						//printBooleanArray();
 						numBlock();
 						System.out.println("The total number of blocks the peer have " + this.numBlocks);
 						if(this.blocks != null){
 							/* 1. Send Interested Message */
-							this.request.flush();
+			/*		this.request.flush();
 							if(interested()){
 								downloading();
 							}
@@ -230,15 +248,17 @@ public class Client {
 		}else{
 			System.out.println("THE USER DOES NOT EXIST!");
 		}
-	}//end of connect()
+	}//end of connect()*/
 	
-	private static final char[] intArray = "0123456789".toCharArray();
 	
 	private void genClientID(){
-		this.clientID = "Alexandras";
+		this.clientID = new byte[20];
+		clientID[0] = 'A';
+		clientID[1] = 'A';
+		clientID[2] = 'A';
 		Random randGen = new Random();
-		for(int i = 0; i < 10; i++){
-			this.clientID = this.clientID + intArray[randGen.nextInt(9)];
+		for(int i = 3; i < 20; i++){
+			this.clientID[i] = (byte)randGen.nextInt(9);
 		}
 	}
 	
@@ -265,6 +285,11 @@ public class Client {
 			return false;	
 		}
 	}
+	
+	public static byte[] getHash(){
+		return torrentInfo.info_hash.array();
+	}
+	
 	
 	/**
 	 * After handshaking, the Client starts download message from the 
@@ -390,7 +415,7 @@ public class Client {
 	 * Send a Hand Shake Message to the Peer
 	 * @return true for success, otherwise false
 	 */
-	private boolean sendHandShakeMessaage(){
+/*	private boolean sendHandShakeMessaage(){
 		try {
 			request.write(handshakeMessage(this.torrentInfo.info_hash.array(), clientID));
 			byte[] response = new byte[68];
@@ -582,7 +607,7 @@ public class Client {
         return null;
 	}
         
-	private static String URLify(String base, String queryID, byte[] query) {
+/*	private static String URLify(String base, String queryID, byte[] query) {
                 
 		if(base==null) {
 			base = "";

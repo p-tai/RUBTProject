@@ -141,7 +141,7 @@ public class Message {
 	/*
 	 * Function that will return a byte[] containing a handshake.
 	 */
-	public static byte[] handshakeMessage(byte[] SHA1, String peerID){
+	public static byte[] handshakeMessage(byte[] SHA1, byte[] peerID){
 		byte[] handshake = new byte[68];
         handshake[0] = 19;
         handshake[1] = 'B';
@@ -172,8 +172,8 @@ public class Message {
         	handshake[28 + i] = SHA1[i];
         }
         //48
-        for(int i = 0; i < 20; i++){
-        	handshake[48 + i] = (byte) peerID.charAt(i);
+        for(int i = 0; i < peerID.length; i++){
+        	handshake[48 + i] = peerID[i];
         }
 		return handshake;
 	}

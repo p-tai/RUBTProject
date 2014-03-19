@@ -110,26 +110,27 @@ public class RUBTClient {
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
 		
 		Client client = new Client(torrent, outputPath);
-		
-		client.HTTPGET();
+		client.connectToTracker();
+		client.connectToPeers();
+/*		client.HTTPGET();
 		client.printPeerList();
 		String[] getPeerList = client.getPeerList();
 		String peer = "";
 		if(getPeerList != null){
 			for(int i = 0; i < getPeerList.length; i++){
 				if(getPeerList[i].contains("RUBT11")){
-					peer = getPeerList[i];
-  				}//end of if 
-			}//end of for 
-		}//end of if 
+					peer = getPeerList[i];*/
+//  				}//end of if 
+//			}//end of for 
+//		}//end of if 
 
         //TODO FIX THIS!
-		client.connect(peer);
+/*		client.connect(peer);
 		if(client.completed()){
 			System.out.println("FILE SUCCESSFULY DOWNLOAD!");
 		}
 		
-		client.stopped();
+		client.stopped();*/
 		
 		
 		return;

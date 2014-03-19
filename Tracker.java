@@ -107,6 +107,7 @@ public class Tracker {
     	
 		try {
 			this.url = new URL(url,query);
+			System.out.println(url.toString());
 		} catch (MalformedURLException e1) {
 			//This is from this.url
 			System.out.println("FAILURE: INVALID URL");
@@ -224,9 +225,12 @@ public class Tracker {
 			Map<ByteBuffer, Object> peerList = peers.get(i);
 			byte[] peerID = ((ByteBuffer)peerList.get(PEERID)).array();
 			String peerIPAddress = new String(((ByteBuffer)peerList.get(IP)).array());
-			int port = Integer.valueOf((Integer)(peerList.get(PORT)));
-			peerIPAddress =  peerIPAddress + ":" + Integer.toString(port);
-			peerMap.put(peerID, peerIPAddress);
+			System.out.println("IP Address: " + peerIPAddress);
+			if(peerIPAddress.contains("128.6.171.130") || peerIPAddress.contains("128.6.171.131")){
+				int port = Integer.valueOf((Integer)(peerList.get(PORT)));
+				peerIPAddress =  peerIPAddress + ":" + Integer.toString(port);
+				peerMap.put(peerID, peerIPAddress);				
+			}
 		}
 		return peerMap;
 	}

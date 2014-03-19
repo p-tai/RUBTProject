@@ -1,4 +1,10 @@
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import edu.rutgers.cs.cs352.bt.util.*;
 
 public class Peer extends Thread {
 
@@ -9,15 +15,15 @@ public class Peer extends Thread {
 	private Socket peerConnection;
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
-	
-	
+	private byte[] torrentSHA;	
+	private ByteBuffer buffer;
 	/**
 	 * Flags for local/remote choking/interested
 	 */
 	private boolean amChoking;
 	private boolean amInterested;
 	private boolean peerChoking;
-	private boolean peerIntersted;
+	private boolean peerInterested;
 	
 	/**
 	 * They is interested in the client.  
@@ -25,10 +31,11 @@ public class Peer extends Thread {
 	private boolean isInterested;
 	
 	/**
-	 * 
-	 * @param peerID The peer's ID.
-	 * @param peerIP The peer's IP.
-	 * @param peerPort The peer's Port.
+	 * Peer's Constructor
+	 * @param localID The Client's ID
+	 * @param peerID The Peer's ID
+	 * @param peerIP The Peer's IP
+	 * @param peerPort The Peer's Port
 	 */
 	public Peer(byte[] localID, byte[] peerID, String peerIP, int peerPort){
 		this.clientID = localID;
@@ -36,17 +43,18 @@ public class Peer extends Thread {
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
 		this.amChoking = true;
-		this.amIntersted = false;
+		this.amInterested= false;
 		this.peerChoking = true;
 		this.peerInterested = false;
+		this.torrentSHA = Client.getHash();
 	}
 	
 	/*********************************
 	 * Getters
 	 ********************************/
 	
-	public String getPeerID() {
-		return peerID;
+	public byte[] getPeerID() {
+		return this.peerID;
 	}
 	
 	public String toString(){
@@ -59,18 +67,19 @@ public class Peer extends Thread {
 	* @return true for success, otherwise false
 	*/
 	public void connect(){
-		System.out.println("CONTACTING " + this.peerID);
-		
+		System.out.print("CONTACTING ");
+		ToolKit.print(this.peerID);
+		System.out.println();
 		try {
-			Socket socket = new Socket(this.peerIP, this.peerPort);
+			this.peerConnection = new Socket(this.peerIP, this.peerPort);
 			
 			System.out.println("Opening Output Stream");
-			this.outgoing = new DataOutputStream(socket.getOutputStream());
+			this.outgoing = new DataOutputStream(peerConnection.getOutputStream());
 			
 			System.out.println("Opening Input Stream");
-			this.incoming = new DataInputStream(socket.getInputStream());
+			this.incoming = new DataInputStream(peerConnection.getInputStream());
 			
-			if(socket != null && request != null && response != null) {
+			if(peerConnection == null || this.outgoing == null || this.incoming == null) {
 				System.err.println("Input/Output Stream Creation Failed");
 			}
 			
@@ -88,10 +97,10 @@ public class Peer extends Thread {
 	*/
 	private boolean sendHandshake(byte[] infoHash){
 		try {
-			outgoing.write(handshakeMessage(infoHash, this.clientID));
+			outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
 			byte[] response = new byte[68];
 			byte[] hash = new byte[20];
-			this.response.readFully(response);
+			this.incoming.readFully(response);
 			
 			for(int i = 0; i < 20; i++){
 				hash[i] = response[28 + i];
@@ -100,13 +109,13 @@ public class Peer extends Thread {
 			System.out.println("Verify the SHA-1 HASH");
 			
 			for(int i = 0; i < 20; i++){
-				if(this.torrentInfo.info_hash.array()[i] != hash[i]){
+				if(this.torrentSHA[i] != hash[i]){
 					System.err.println("THE SHA-1 HASH IS INCORRECT!");
 					return false;
 				}
 			}
 			
-			this.request.flush();
+			this.outgoing.flush();
 			System.out.println("THE SHA-1 HASH IS CORRECT!");
 			return true;
 			
@@ -119,18 +128,31 @@ public class Peer extends Thread {
 	}
 	
 	private boolean sendUnchoke(){
-		
+		return false;
 	}
 	
 	private boolean sendInterested(){
-		
+		return false;
 	}
 	
-	public run() {
+	public void run() {
 		//while the socket is connected
 		//read from socket
 		//parse message
-		
+		connect();
+		if(sendHandshake(this.torrentSHA) == true){
+			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
+			try {
+				while(readSocketOutputStream()){
+					
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}else{
+			System.out.println("CONNECTION FAILURE");
+		}
 		
 	}
 	
@@ -144,8 +166,9 @@ public class Peer extends Thread {
 			//keep alive
 		} else if(length > 0) {
 			length--;
-			classID = this.response.readInt();
-			
+			classID = this.incoming.readByte();
+			System.out.println("Length: " + length);
+			System.out.println("classID: " + classID);
 			//System.out.println("Class ID = "+ classID); 
 			//choke, unchoke, interested, or not interested
 			switch(classID) {
@@ -168,7 +191,7 @@ public class Peer extends Thread {
 					break;
 				case 5:
 					//bitfield
-					byte[] bitfield = [length];
+					byte[] bitfield = new byte[length];
 					length-=4;
 					//update peer bitfield
 					break;
@@ -176,27 +199,27 @@ public class Peer extends Thread {
 					//request
 					int index = this.incoming.readInt();
 					int begin = this.incoming.readInt();
-					int length = this.incoming.readInt();
+					int requestLength = this.incoming.readInt();
 					//if peerChoked == false
 					//handle the request and send it to the peer
 					break;
 				case 7:
 					//piece
 					try {
-						int pieceIndex = this.response.readInt();
-						int blockOffset = this.response.readInt();
+						int pieceIndex = this.incoming.readInt();
+						int blockOffset = this.incoming.readInt();
 						System.out.printf("Receiving piece %d offset %d \n", pieceIndex, blockOffset );
-						length = length-8; //Remove the length of the indexes and class ID
+						length = length - 8; //Remove the length of the indexes and class ID
 						byte[] payload = new byte[length];
 					
-						this.response.readFully(payload);
-						int blockIndex = pieceIndex + (int)Math.floor((blockOffset+1)/this.MAXIMUMLIMT);
-						System.out.println("BlockIndex "+ blockIndex);
-					
-						this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
+						this.incoming.readFully(payload);
+//						int blockIndex = pieceIndex + (int)Math.floor((blockOffset+1)/this.MAXIMUMLIMT);
+//						System.out.println("BlockIndex "+ blockIndex);
+						this.buffer.put(payload);
+						/*this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
 						this.dataFile.write(payload);
 						this.numPacketsDownloaded++;
-						this.packets[blockIndex] = true;
+						this.packets[blockIndex] = true;*/
 						System.out.println("updated data");
 					
 						//if(blockIndex == this.numPacketsDownloaded) {
