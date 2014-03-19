@@ -67,9 +67,7 @@ public class Peer extends Thread {
 	* @return true for success, otherwise false
 	*/
 	public void connect(){
-		System.out.print("CONTACTING ");
 		ToolKit.print(this.peerID);
-		System.out.println();
 		try {
 			this.peerConnection = new Socket(this.peerIP, this.peerPort);
 			
@@ -141,7 +139,7 @@ public class Peer extends Thread {
 		//parse message
 		connect();
 		if(sendHandshake(this.torrentSHA) == true){
-			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
+//			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 			try {
 				while(readSocketOutputStream()){
 					
