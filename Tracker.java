@@ -47,22 +47,26 @@ public class Tracker {
      */
     private final ByteBuffer PORT = ByteBuffer.wrap(new byte[]
     { 'p', 'o', 'r', 't', });
-	
+
+    /**
+     * The Intervals ByteBuffer
+     */
+    private final ByteBuffer INTERVALS = ByteBuffer.wrap(new byte[]
+    { 'i', 'n', 't', 'e', 'r', 'v', 'a', 'l' });
+    
     /**
      * HEXCHARS
      */
-    private static char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
+    private final char[] HEXCHARS = "0123456789ABCDEF".toCharArray();
     
     /**
-     * Tracker Constructor
-     * @param infoHash The Torrent InfoHash.toArray()
+     * The Tracker Constructor
+     * @param url torrentInfo.announce_url
+     * @param infoHash torrentInfo.info_hash.array() 
      * @param clientID The Client ID
      */
-    public Tracker(byte[] infoHash, byte[] clientID){ 
-    	/**
-    	 * I did this because the tracker needs the
-    	 * infoHash and clientID.
-    	 */
+    public Tracker(URL url, byte[] infoHash, byte[] clientID){ 
+    	this.url = url;
     	this.infoHash = infoHash;
     	this.clientID = clientID;
     }
@@ -152,7 +156,6 @@ public class Tracker {
             }else{
 				try{ //If the byte is a valid ascii character, use URLEncoder
 					reply = reply + URLEncoder.encode(new String(new byte[] {query[i]}),"UTF-8");
-					System.out.println("REPLY: " + reply);
                 }catch(UnsupportedEncodingException e){
 					System.out.println("URL formation error:" + e.getMessage());
                 }
@@ -167,9 +170,9 @@ public class Tracker {
 	}*/
 	
 	/**
-	 * @return List of Peers 
+	 * @return The List of Peers
 	 */
-	public Map<byte[], String> getPeerList(){/* This is based on the create() */
+	private Map<byte[], String> getPeerList(){/* This is based on the create() */
 		URLConnection connnection = null;
 		InputStream getStream = null;
 		HttpURLConnection httpConnection = null;
@@ -192,7 +195,7 @@ public class Tracker {
 			}		
 			getStream.close();
 			dataStream.close();
-			this.captureResponse(response);
+			return this.captureResponse(response);
 		}catch(IOException e){
 			System.out.println("");
 			e.printStackTrace();
