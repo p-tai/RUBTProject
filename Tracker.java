@@ -138,6 +138,9 @@ public class Tracker {
     	return null;
     }
     
+    /**
+     * Method will append a queryID and query to a URL using proper URL-encoded format
+     */ 
     private String URLify(String base, String queryID, String query) {
         
 		if(base==null) {
@@ -154,6 +157,9 @@ public class Tracker {
         return null;
 	}
         
+    /**
+     * Method will append a queryID and a byte array query to a URL using proper URL-encoded format
+     */ 
 	private String URLify(String base, String queryID, byte[] query) {
                 
 		if(base==null) {
@@ -245,7 +251,7 @@ public class Tracker {
 	/**
 	 * @return the number of seconds the client should wait between regular rerequests.
 	 */
-	public int getInerval(){
+	public int getInterval(){
 		return this.interval;
 	}
 	

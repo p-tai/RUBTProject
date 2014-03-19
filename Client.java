@@ -534,7 +534,7 @@ public class Client {
 	 * @param peerID The peerID.
 	 * @return A Handshake Message.
 	 */
-	private byte[] handshakeMessage(byte[] SHA1, String peerID){
+/*	private byte[] handshakeMessage(byte[] SHA1, String peerID){
 		byte[] handshake = new byte[68];
         handshake[0] = 19;
         handshake[1] = 'B';
@@ -570,7 +570,7 @@ public class Client {
         }
 		return handshake;
 	}
-	
+*/
 	/**
 	 * The Byte Array in Hex Format
 	 * @param target Byte Array
