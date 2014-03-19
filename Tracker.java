@@ -75,6 +75,7 @@ public class Tracker {
      * @param url torrentInfo.announce_url
      * @param infoHash torrentInfo.info_hash.array() 
      * @param clientID The Client ID
+     * @param listenPort The open socket that takes incoming messages.
      */
     public Tracker(URL url, byte[] infoHash, byte[] clientID, int listenPort){ 
     	this.url = url;
