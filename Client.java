@@ -55,8 +55,9 @@ public class Client {
 	}
 	
 	/**
-	 * Opening a port for incoming messages. 
-	 * @return Available port number 
+	 * Opens a server socket for incoming messages.
+	 * Attempts to open the socket on port 6881 and continues (on failures) up to port 6889.
+	 * @return Available port number or 0 if port fails to open.
 	 */
 	public int openSocket(){
 		System.out.println("OPENING THE SOCKET: ");
@@ -69,11 +70,17 @@ public class Client {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)) + "FAIL!");
+				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)) + " FAIL!");
 			}
 		}
 		return 0;
 	}
+	
+	/**
+	 * Send the HTTP GET Message to the Tracker
+	 * @param port = LISTEN port that the client will use for incoming BT connections 
+	 * @return true for success, otherwise false.
+	 */
 	
 	public boolean connectToTracker(final int port){
 		Tracker tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
@@ -85,6 +92,10 @@ public class Client {
 		return true;
 	}
 	
+	
+	/**
+	 * ConnectToPeers will go through the current list of peers and connect to them
+	 */
 	public void connectToPeers(){
 		Set<byte[]> keys = peerList.keySet();
 		Iterator<byte[]> iter = keys.iterator();
