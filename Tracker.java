@@ -25,6 +25,12 @@ public class Tracker {
 	private byte[] clientID;
 	
 	/**
+	 * Maps to the number of seconds the client
+	 * should wait between regular rerequests.
+	 */
+	private int interval;
+	
+	/**
 	 * The Peers ByteBuffer
 	 */
 	private final ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
@@ -109,7 +115,7 @@ public class Tracker {
     	
     	if(left != 0){
     		/* Get the Peer List */
-    		return this.getPeerList();
+    		return getPeerList();
     	}else{
     		/* Send a Message */
     		try {
@@ -195,7 +201,7 @@ public class Tracker {
 			}		
 			getStream.close();
 			dataStream.close();
-			return this.captureResponse(response);
+			return captureResponse(response);
 		}catch(IOException e){
 			System.out.println("");
 			e.printStackTrace();
@@ -213,7 +219,7 @@ public class Tracker {
 	private Map<byte[], String> captureResponse(Map<ByteBuffer, Object> response){
 		Map<byte[], String> peerMap = new HashMap<byte[], String>();
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)response.get(PEERS);
-		
+		this.interval = (Integer)response.get(INTERVALS);
 		for(int i = 0; i < peers.size(); i++){
 			Map<ByteBuffer, Object> peerList = peers.get(i);
 			byte[] peerID = ((ByteBuffer)peerList.get(PEERID)).array();
@@ -223,6 +229,13 @@ public class Tracker {
 			peerMap.put(peerID, peerIPAddress);
 		}
 		return peerMap;
+	}
+	
+	/**
+	 * @return the number of seconds the client should wait between regular rerequests.
+	 */
+	public int getInerval(){
+		return this.interval;
 	}
 	
 	/**
