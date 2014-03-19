@@ -66,8 +66,7 @@ public class Client {
 				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)));
 				return Integer.valueOf(new String("688" + i));
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				/* DO NOTHING */
 			} catch (IOException e) {
 				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)) + "FAIL!");
 			}
