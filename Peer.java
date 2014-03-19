@@ -10,20 +10,23 @@ public class Peer extends Thread {
 
 	private byte[] clientID;
 	private byte[] peerID;
+	private byte[] torrentSHA;	
 	private String peerIP;
 	private int peerPort;
+	
+	private byte[] peerBitfield;
+	
 	private Socket peerConnection;
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
-	private byte[] torrentSHA;	
 	private ByteBuffer buffer;
 	/**
 	 * Flags for local/remote choking/interested
 	 */
-	private boolean amChoking;
-	private boolean amInterested;
-	private boolean peerChoking;
-	private boolean peerInterested;
+	private boolean localChoking;
+	private boolean localInterested;
+	private boolean remoteChoking;
+	private boolean remoteInterested;
 	
 	/**
 	 * They is interested in the client.  
@@ -42,10 +45,10 @@ public class Peer extends Thread {
 		this.peerID = peerID;
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
-		this.amChoking = true;
-		this.amInterested= false;
-		this.peerChoking = true;
-		this.peerInterested = false;
+		this.localChoking = true;
+		this.localInterested= false;
+		this.remoteChoking = true;
+		this.remoteInterested = false;
 		this.torrentSHA = Client.getHash();
 	}
 	
@@ -134,13 +137,13 @@ public class Peer extends Thread {
 	}
 	
 	public void run() {
-		//while the socket is connected
-		//read from socket
-		//parse message
 		connect();
 		if(sendHandshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 			try {
+				//while the socket is connected
+				//read from socket
+				//parse message
 				while(readSocketOutputStream()){
 					
 				}
@@ -155,6 +158,8 @@ public class Peer extends Thread {
 	}
 	
 	private boolean readSocketOutputStream() throws IOException {
+		
+		//Check if the connection still exists.  If not, return false
 		
 		int length = this.incoming.readInt();
 		//System.out.println("Length = "+ length);
@@ -172,15 +177,19 @@ public class Peer extends Thread {
 			switch(classID) {
 				case 0:
 					//choke
+					this.localChoking = true;
 					break;
 				case 1:
 					//unchoke
+					this.localChoking = false;
 					break;
 				case 2:
 					//interested
+					this.localInterested = true;
 					break;
 				case 3:
 					//not interested
+					this.localInterested = false;
 					break;
 				case 4:
 					//have message
@@ -190,15 +199,18 @@ public class Peer extends Thread {
 				case 5:
 					//bitfield
 					byte[] bitfield = new byte[length];
-					length-=4;
 					//update peer bitfield
+					this.incoming.readFully(bitfield);
+					this.peerBitfield = bitfield;
+					System.out.println(this.peerBitfield);
 					break;
 				case 6:
 					//request
-					int index = this.incoming.readInt();
-					int begin = this.incoming.readInt();
+					int requestPiece = this.incoming.readInt();
+					int requestOffset = this.incoming.readInt();
 					int requestLength = this.incoming.readInt();
 					//if peerChoked == false
+					//sendRequest(requestPiece, requestOffset, requestLength)
 					//handle the request and send it to the peer
 					break;
 				case 7:
@@ -235,7 +247,8 @@ public class Peer extends Thread {
 					
 					
 					
-			}
-		return false;
+		}
+		
+		return true;
 	}
 }

@@ -31,6 +31,11 @@ public class Tracker {
 	private int interval;
 	
 	/**
+	 * Port that the client is listening on for incoming handshakes 
+	 */
+	private int listenPort;
+	
+	/**
 	 * The Peers ByteBuffer
 	 */
 	private final ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
@@ -71,10 +76,11 @@ public class Tracker {
      * @param infoHash torrentInfo.info_hash.array() 
      * @param clientID The Client ID
      */
-    public Tracker(URL url, byte[] infoHash, byte[] clientID){ 
+    public Tracker(URL url, byte[] infoHash, byte[] clientID, int listenPort){ 
     	this.url = url;
     	this.infoHash = infoHash;
     	this.clientID = clientID;
+    	this.listenPort = listenPort;
     }
     
     /**
@@ -89,6 +95,7 @@ public class Tracker {
     	String query = "";
 		query = URLify(query,"announce?info_hash", this.infoHash);
 		query = URLify(query,"&peer_id",this.clientID);
+		query = URLify(query,"&port", Integer.toString(this.listenPort));
 		query = URLify(query,"&uploaded", Integer.toString(upload));
 		query = URLify(query,"&downloaded", Integer.toString(download));
 		query = URLify(query,"&left", Integer.toString(left));
