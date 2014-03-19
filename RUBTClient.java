@@ -111,7 +111,10 @@ public class RUBTClient {
 		
 		Client client = new Client(torrent, outputPath);
 		int port = client.openSocket();
-		client.connectToTracker(port);
+		if(client.connectToTracker(port) == false){
+			System.out.println("THE TRACKER IS DOWN!");
+			System.exit(1);
+		}
 		client.connectToPeers();
 /*		client.HTTPGET();
 		client.printPeerList();
