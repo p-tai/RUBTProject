@@ -39,6 +39,8 @@ public class Client {
 	
 	private Map<byte[], String> peerList;
 	
+	private Map<byte[], Peer> peerHistory;
+	
 	/**
 	 * Client Constructor
 	 * @param filePath Source of the torrent file
@@ -100,8 +102,12 @@ public class Client {
 		Iterator<byte[]> iter = keys.iterator();
 		while(iter.hasNext()){
 			byte[] peerID = iter.next();
+			if(this.peerHistory.containsKey(peerID)){
+				continue;
+			}
 			String[] ipPort = peerList.get(peerID).split(":");
 			Peer peer = new Peer(clientID, peerID, ipPort[0], Integer.valueOf(ipPort[1]));
+			this.peerHistory.put(peerID, peer);
 			peer.start();
 		}		
 	}
