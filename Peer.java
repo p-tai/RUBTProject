@@ -10,7 +10,7 @@ public class Peer extends Thread {
 
 	private byte[] clientID;
 	private byte[] peerID;
-	private byte[] torrentSHA;	
+	private byte[] torrentSHA;
 	private String peerIP;
 	private int peerPort;
 	
@@ -20,6 +20,8 @@ public class Peer extends Thread {
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
 	private ByteBuffer buffer;
+	private int bytesRead;
+	
 	/**
 	 * Flags for local/remote choking/interested
 	 */
@@ -27,11 +29,6 @@ public class Peer extends Thread {
 	private boolean localInterested;
 	private boolean remoteChoking;
 	private boolean remoteInterested;
-	
-	/**
-	 * They is interested in the client.  
-	 */
-	private boolean isInterested;
 	
 	/**
 	 * Peer's Constructor
@@ -144,7 +141,7 @@ public class Peer extends Thread {
 				//while the socket is connected
 				//read from socket
 				//parse message
-				while(readSocketOutputStream()){
+				while(readSocketInputStream()){
 					
 				}
 			} catch (IOException e) {
@@ -157,55 +154,82 @@ public class Peer extends Thread {
 		
 	}
 	
-	private boolean readSocketOutputStream() throws IOException {
+	/**
+	 * This method is called on shutdown to close all of the data streams and sockets.
+	 */
+	public void shutdownPeer() {
+		//to be implemented
+		//Needs to close all input/output streams and then close the socket to peer.
+		this.incoming.close();
+		this.outgoing.close();
+		this.peerConnection.close();
+	}
+	
+	private boolean readSocketInputStream() throws IOException {
 		
-		//Check if the connection still exists.  If not, return false
+		//NEED TO DO: Check if the connection still exists.  If not, return false
+		//NEED TO DO: Pass the message up to the client class into a LinkedBlockedQueue
 		
 		int length = this.incoming.readInt();
 		//System.out.println("Length = "+ length);
 		byte classID;
 		
 		if(length == 0) {
-			//keep alive
+			//keep alive is the only packet you can receive with length zero
+			
 		} else if(length > 0) {
-			length--;
+			
+			//Read the next byte (this should be the classID of the message)
 			classID = this.incoming.readByte();
-			System.out.println("Length: " + length);
-			System.out.println("classID: " + classID);
-			//System.out.println("Class ID = "+ classID); 
-			//choke, unchoke, interested, or not interested
+			
+			//Debug statement
+			System.out.println("Received classID: " + classID);
+			
+			//Length includes the classID. We are using length to determine how many bytes are left.
+			length--;			
+			
+			//Handle the message based on the classID
 			switch(classID) {
-				case 0:
-					//choke
+				case 0: //choke message
 					this.localChoking = true;
 					break;
-				case 1:
-					//unchoke
+					
+				case 1: //unchoke message
 					this.localChoking = false;
 					break;
-				case 2:
-					//interested
+					
+				case 2: //interested message
 					this.localInterested = true;
 					break;
-				case 3:
-					//not interested
+					
+				case 3: //not interested message
 					this.localInterested = false;
 					break;
-				case 4:
-					//have message
+					
+				case 4: //have message message
 					int piece = this.incoming.readInt();
+					byte[] temp = new byte[this.peerBitfield.length];
+					
+					//find the corresponding offset/bit that represents this piece.
+					int index = piece / 8;
+					int offset = piece % 8;
+					
+					//set the specific bit
+					temp[index] = (0x01<<(offset-1));
+					
 					//update peer bitfield
+					this.peerBitfield[index] = this.peerBitfield[index] && temp[index];
 					break;
-				case 5:
-					//bitfield
+					
+				case 5: //bitfield message
 					byte[] bitfield = new byte[length];
 					//update peer bitfield
 					this.incoming.readFully(bitfield);
 					this.peerBitfield = bitfield;
 					System.out.println(this.peerBitfield);
 					break;
-				case 6:
-					//request
+					
+				case 6: //request message
 					int requestPiece = this.incoming.readInt();
 					int requestOffset = this.incoming.readInt();
 					int requestLength = this.incoming.readInt();
@@ -213,24 +237,35 @@ public class Peer extends Thread {
 					//sendRequest(requestPiece, requestOffset, requestLength)
 					//handle the request and send it to the peer
 					break;
-				case 7:
-					//piece
+					
+				case 7: //piece message
 					try {
 						int pieceIndex = this.incoming.readInt();
 						int blockOffset = this.incoming.readInt();
 						System.out.printf("Receiving piece %d offset %d \n", pieceIndex, blockOffset );
 						length = length - 8; //Remove the length of the indexes and class ID
+						
 						byte[] payload = new byte[length];
-					
 						this.incoming.readFully(payload);
 //						int blockIndex = pieceIndex + (int)Math.floor((blockOffset+1)/this.MAXIMUMLIMT);
 //						System.out.println("BlockIndex "+ blockIndex);
 						this.buffer.put(payload);
+						this.bytesRead += length;
+						
+						System.out.println("Read " + length + " bytes from peer " + this.peerID);
+						
+						if (this.bytesRead >= Client.getPieceLength() ) {
+							//check the piece data
+							//put the entire buffer into the LinkedBlockQueue if SHA correct
+							//If not, increment the number of failed downloads.
+							//If the number of failed downloads is 3, kill the peer connection because it has corrupt data
+							
+						}
 						/*this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
 						this.dataFile.write(payload);
 						this.numPacketsDownloaded++;
 						this.packets[blockIndex] = true;*/
-						System.out.println("updated data");
+						
 					
 						//if(blockIndex == this.numPacketsDownloaded) {
 						//	return true;
@@ -240,7 +275,7 @@ public class Peer extends Thread {
 					
 					} catch(IOException e) {
 						System.err.println("Received an incorrect input from peer");
-					} 
+					}
 				default:
 					System.err.println("Unknown class ID");
 			}

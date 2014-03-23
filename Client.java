@@ -293,6 +293,11 @@ public class Client {
 		}
 	}//end of connect()*/
 	
+	/**
+	 * Generates a random byte[] Client ID. 
+	 * First 3 characters will be AAA, followed by 17 random integers.
+	 * Saved locally, used as an identifier for other peers and tracker.
+	 */
 	
 	private void genClientID(){
 		this.clientID = new byte[20];
@@ -333,6 +338,9 @@ public class Client {
 		return torrentInfo.info_hash.array();
 	}
 	
+	public static int getPieceLength(){
+		return torrentInfo.piece_length;
+	}
 	
 	/**
 	 * After handshaking, the Client starts download message from the 
