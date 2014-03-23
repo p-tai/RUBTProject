@@ -20,7 +20,7 @@ public class Client {
     
 	private static TorrentInfo torrentInfo;
     private URL url;
- //  private HashMap<String, Peer> peerList = new HashMap<String, Peer>();
+//  private HashMap<String, Peer> peerList = new HashMap<String, Peer>();
     
 	private String saveName;
 	private RandomAccessFile dataFile;
@@ -38,7 +38,6 @@ public class Client {
 	private ServerSocket listenSocket;
 	
 	private Map<byte[], String> peerList;
-	
 	private Map<byte[], Peer> peerHistory;
 	
 	/**

@@ -90,22 +90,29 @@ public class Peer extends Thread {
 	}//end of connect()
 	
 	/**
-	* Send a Handshake Message to the Peer
-	* @return true for success, otherwise false
+	* Send a Handshake Message to the Peer. Will also verify that the returning handshake is valid.
+	* @param byte[] containing the SHA1 of the entire file.
+	* @return true for success, otherwise false (i.e. the handshake failed)
 	*/
-	private boolean sendHandshake(byte[] infoHash){
+	private boolean handshake(byte[] infoHash){
 		try {
+			//Sends an outgoing message to the connected Peer.
 			outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
+			this.outgoing.flush();
+			
+			//Allocate space for the response and read it
 			byte[] response = new byte[68];
 			byte[] hash = new byte[20];
 			this.incoming.readFully(response);
 			
+			//TO DO: Check that the PEER_ID given is a VALID PEER ID
 			for(int i = 0; i < 20; i++){
 				hash[i] = response[28 + i];
 			}
 			
 			System.out.println("Verify the SHA-1 HASH");
 			
+			//Check the peer's SHA-1 hash matches local SHA-1 hash
 			for(int i = 0; i < 20; i++){
 				if(this.torrentSHA[i] != hash[i]){
 					System.err.println("THE SHA-1 HASH IS INCORRECT!");
@@ -113,7 +120,6 @@ public class Peer extends Thread {
 				}
 			}
 			
-			this.outgoing.flush();
 			System.out.println("THE SHA-1 HASH IS CORRECT!");
 			return true;
 			
@@ -135,7 +141,7 @@ public class Peer extends Thread {
 	
 	public void run() {
 		connect();
-		if(sendHandshake(this.torrentSHA) == true){
+		if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 			try {
 				//while the socket is connected
@@ -160,9 +166,13 @@ public class Peer extends Thread {
 	public void shutdownPeer() {
 		//to be implemented
 		//Needs to close all input/output streams and then close the socket to peer.
-		this.incoming.close();
-		this.outgoing.close();
-		this.peerConnection.close();
+		try {
+			this.incoming.close();
+			this.outgoing.close();
+			this.peerConnection.close();
+		} catch (Exception e) {
+			//Doesn't matter because the peer is closing anyway
+		}
 	}
 	
 	private boolean readSocketInputStream() throws IOException {
@@ -215,10 +225,10 @@ public class Peer extends Thread {
 					int offset = piece % 8;
 					
 					//set the specific bit
-					temp[index] = (0x01<<(offset-1));
+					temp[index] = (byte)(0x01<<offset);
 					
 					//update peer bitfield
-					this.peerBitfield[index] = this.peerBitfield[index] && temp[index];
+					this.peerBitfield[index] = (byte)(this.peerBitfield[index] & temp[index]);
 					break;
 					
 				case 5: //bitfield message
