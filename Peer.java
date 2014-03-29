@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import edu.rutgers.cs.cs352.bt.util.*;
+
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -20,9 +23,9 @@ public class Peer extends Thread {
 	private byte[] peerBitfield;
 	private boolean[] peerBooleanBitField;
 	
-	private final Socket peerConnection;
-	private final DataOutputStream outgoing;
-	private final DataInputStream incoming;
+	private Socket peerConnection;
+	private DataOutputStream outgoing;
+	private DataInputStream incoming;
 	private ByteBuffer buffer;
 	private int bytesRead;
 	
@@ -462,11 +465,8 @@ public class Peer extends Thread {
 		long now = System.currentTimeMillis();
 		if(now - this.lastMessageTime > KEEP_ALIVE_TIMEOUT){
 			// The "sendMessage" method should update lastMessageTime
-			this.sendMessage(new KeepAliveMessage());
+			this.writeToSocket((Message.keepAlive));
 			// Validate that the timestamp was updated
-			if(now > this.lastMessageTime){
-				throw new Exception("Didn't update lastMessageTime when sending a keep-alive!");
-			}
 			System.out.println("Sent Keep-Alive");
 		}
 	}//checkAndSendKeepAlive
