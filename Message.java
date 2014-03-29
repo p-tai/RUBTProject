@@ -129,9 +129,9 @@ public class Message {
 	 * @param begin The offset of the piece.
 	 * @param block The Data itself.
 	 */
-	public void piece(final int x, final int index, final int begin, final byte[] block){
+	public void piece(final int index, final int begin, final byte[] block){
 		ByteBuffer responseBuff = ByteBuffer.allocate(13+block.length);
-		responseBuff.putInt(9+x);
+		responseBuff.putInt(9+block.length);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);
 		responseBuff.put(block);
