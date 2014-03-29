@@ -94,7 +94,7 @@ public class Message {
 	 * @param begin The offset of the data in integer format
 	 * @param length The size of the data in integer format
 	 */
-	public void requestPayload(final int index, final int begin, final int length){
+	public void request(final int index, final int begin, final int length){
 		ByteBuffer responseBuff = ByteBuffer.allocate(17);
 		responseBuff.putInt(13);
 		byte id = 6;

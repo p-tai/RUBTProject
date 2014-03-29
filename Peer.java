@@ -212,10 +212,11 @@ public class Peer extends Thread {
 		//NEED TO DO: Pass the message up to the client class into a LinkedBlockedQueue
 		
 		int length = this.incoming.readInt();
-		//System.out.println("Length = "+ length);
+		//System.out.println("Length = " + length);
 		byte classID;
-		Message incomingMessage;
+		Message incomingMessage = null;
 		MessageTask incomingTask = new MessageTask(this,incomingMessage);
+		
 		if(length == 0) {
 			//keep alive is the only packet you can receive with length zero
 			incomingMessage = Message.keepAlive;
@@ -273,8 +274,8 @@ public class Peer extends Thread {
 					this.peerBitfield[index] = (byte)(this.peerBitfield[index] & temp[index]);
 					
 					incomingMessage.have(piece);
-					
 					this.RUBT.queueMessage(incomingTask);
+					
 					break;
 					
 				case 5: //bitfield message
@@ -283,6 +284,7 @@ public class Peer extends Thread {
 					this.incoming.readFully(bitfield);
 					this.peerBitfield = bitfield;
 					
+					this.RUBT.bitfield(bitfield);
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
@@ -292,6 +294,7 @@ public class Peer extends Thread {
 					int requestLength = this.incoming.readInt();
 					
 					//handle the request and send it to the peer
+					incomingMessage.request(requestPiece, requestOffset, requestLength);
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
@@ -327,6 +330,7 @@ public class Peer extends Thread {
 						//if(blockIndex == this.numPacketsDownloaded) {
 						//	return true;
 						//}
+						incomingMessage.piece(pieceIndex, blockOffset, payload);
 						this.RUBT.queueMessage(incomingTask);
 						return true;
 					} catch(IOException e) {
@@ -336,6 +340,8 @@ public class Peer extends Thread {
 					int reIndex = this.incoming.readInt();
 					int reOffset = this.incoming.readInt();
 					int reLength = this.incoming.readInt();
+					
+					incomingMessage.cancel(reIndex,reOffset,reLength);
 					this.RUBT.queueMessage(incomingTask);
 					break;
 				default:
