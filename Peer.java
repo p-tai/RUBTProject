@@ -5,21 +5,23 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import edu.rutgers.cs.cs352.bt.util.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Peer extends Thread {
 
-	private Client RUBT;
-	private byte[] clientID;
-	private byte[] peerID;
-	private byte[] torrentSHA;
-	private String peerIP;
+	private final Client RUBT;
+	private final byte[] clientID;
+	private final byte[] peerID;
+	private final byte[] torrentSHA;
+	private final String peerIP;
 	private int peerPort;
 	
 	private byte[] peerBitfield;
 	
-	private Socket peerConnection;
-	private DataOutputStream outgoing;
-	private DataInputStream incoming;
+	private final Socket peerConnection;
+	private final DataOutputStream outgoing;
+	private final DataInputStream incoming;
 	private ByteBuffer buffer;
 	private int bytesRead;
 	
@@ -30,6 +32,14 @@ public class Peer extends Thread {
 	private boolean localInterested;
 	private boolean remoteChoking;
 	private boolean remoteInterested;
+	
+	/**
+	 * Timer code is sourced form Sakai on 3.29.14
+	 * @author Rob Moore
+	 */
+	private static final long KEEP_ALIVE_TIMEOUT = 120000;
+	private Timer keepAliveTimer = new Timer();
+	private long lastMessageTime = System.currentTimeMillis();
 	
 	/**
 	 * Peer's Constructor
@@ -172,15 +182,19 @@ public class Peer extends Thread {
 	 */
 	public void run() {
 		connect();
+		
+		//Create a timer task
+		updateTimer();
+		
 		if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 			try {
 				//while the socket is connected
-				//read from socket
+				//read from socket (will block if it is empty)
 				//parse message
 				while(readSocketInputStream()){
-					
-				}
+					updateTimer();
+				}//while
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -189,7 +203,28 @@ public class Peer extends Thread {
 			System.out.println("CONNECTION FAILURE");
 		}
 		
-	}
+	}//run
+	
+	/**
+	 * Schedules a new anonymous implementation of a TimerTask that
+	 * will start now and execute every 10 seconds afterward.
+	 * Sourced from CS352 Sakai Forums on 3.29.14
+	 * @author Rob Moore
+	 */
+	private void updateTimer() {
+		try {
+			lastMessageTime = System.currentTimeMillis();
+			this.keepAliveTimer.cancel();
+			this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
+				public void run() {
+					// Let the peer figure out how/when to send a keep-alive
+					Peer.this.checkAndSendKeepAlive();
+				}//run
+			}, new Date(), 10000); //keepAliveTimer
+		} catch(Exception e) { 
+			//Catch this exception for now, caused by canceling the timer?
+		}//try
+	}//updateTimer
 	
 	/**
 	 * This method is called on shutdown to close all of the data streams and sockets.
@@ -284,7 +319,7 @@ public class Peer extends Thread {
 					this.incoming.readFully(bitfield);
 					this.peerBitfield = bitfield;
 					
-					this.RUBT.bitfield(bitfield);
+					incomingMessage.bitfield(bitfield);
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
@@ -352,5 +387,24 @@ public class Peer extends Thread {
 		
 		return true;
 	}
+	
+	/**
+	 * Sends a keep-alive message to the remote peer if the time between now
+	 * and the previous message exceeds the limit set by KEEP_ALIVE_TIMEOUT.
+	 * Sourced from CS352 Sakai Forums on 3.29.14
+	 * @author Rob Moore
+	 */
+	protected void checkAndSendKeepAlive(){
+		long now = System.currentTimeMillis();
+		if(now - this.lastMessageTime > KEEP_ALIVE_TIMEOUT){
+			// The "sendMessage" method should update lastMessageTime
+			this.sendMessage(new KeepAliveMessage());
+			// Validate that the timestamp was updated
+			if(now > this.lastMessageTime){
+				throw new Exception("Didn't update lastMessageTime when sending a keep-alive!");
+			}
+			System.out.println("Sent Keep-Alive");
+		}
+	}//checkAndSendKeepAlive
 	
 }//Peer.java
