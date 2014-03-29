@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
@@ -37,6 +38,7 @@ public class Client {
 	
 	private Map<byte[], String> peerList;
 	private Map<byte[], Peer> peerHistory;
+	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	
 	/**
 	 * Client Constructor
@@ -50,6 +52,7 @@ public class Client {
 		this.torrentInfo = torrent;
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
+		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		genClientID();
 	}
 	
@@ -57,8 +60,16 @@ public class Client {
 		return this.clientID;
 	}
 	
+	/**
+	 * Adding a message from Peer to the Client's Messages Queue. 
+	 * @param task The message from the Peer. 
+	 */
 	public void queueMessage(MessageTask task) {
-		//todo
+		if(task == null){
+			System.out.println("Invalid message from " + task.getPeer());
+			return;
+		}
+		this.messagesQueue.add(task);
 	}
 	
 	/**
@@ -102,6 +113,10 @@ public class Client {
 	 * ConnectToPeers will go through the current list of peers and connect to them
 	 */
 	public void connectToPeers(){
+		if(peerList.isEmpty()){
+			/* DO NOTHING */
+			return;
+		}
 		Set<byte[]> keys = peerList.keySet();
 		Iterator<byte[]> iter = keys.iterator();
 		while(iter.hasNext()){
@@ -114,6 +129,16 @@ public class Client {
 			this.peerHistory.put(peerID, peer);
 			peer.start();
 		}		
+	}
+	
+	private void readQueue(){
+		if(this.messagesQueue.isEmpty()){
+			/* DO NOTHING */
+			return;
+		}
+		MessageTask messageFromPeer = messagesQueue.poll();
+		Message message = messageFromPeer.getMessage();
+		
 	}
 	
 
