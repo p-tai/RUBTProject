@@ -67,10 +67,12 @@ public class Message {
 	}
 	
 	/**
-	 * Return the reponses from the peer.
-	 * @param x The messageID.
-	 * @return The responses message
+	 * @return The Message ID.
 	 */
+	public int getMessageID(){
+		return this.messageID;
+	}
+	
 	public static String getMessageID(final byte x){
 		return responses[(int)x];
 	}

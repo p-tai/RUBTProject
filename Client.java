@@ -132,16 +132,93 @@ public class Client {
 	}
 	
 	private void readQueue(){
+		//TODO: This should be call by a run method.
+		//TODO: Check to see this method works.
 		if(this.messagesQueue.isEmpty()){
 			/* DO NOTHING */
 			return;
 		}
 		MessageTask messageFromPeer = messagesQueue.poll();
+		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
+		if(message.getLength() == 0){
+			/* Keep Alive Message */
+			//TODO
+			return;
+		}
 		
+		switch(message.getMessageID()){
+			case 0: /* choke */
+				peer.setLocalChoking(true);
+				break;
+			case 1: /* unchoke */
+				peer.setLocalChoking(false);
+				break;
+			case 2: /* interested */
+				peer.setRemoteInterested(true);
+				break;
+			case 3: /* not interested */
+				peer.setRemoteInterested(false);
+				break;
+			case 4: /* have */
+				peer.updatePeerBitfield(message.getPayload()[5]);
+				break;
+			case 5: /* bitfield */
+				byte[] bitfield = Arrays.copyOfRange(message.getPayload(), 5, message.getPayload().length);
+				peer.setPeerBooleanBitField(convert(bitfield));
+				break;
+			case 6: /* request */
+				//TODO: Send the Peer the requested piece.
+				//TODO: 1. Check to see you have the piece to begin with. 
+				//TODO: 2. Send. 
+				break;
+			case 7: /* piece */
+				//TODO: Verify wit the SHA-1 and send a Have Message.
+				break;
+			case 8: /* cancel */
+				//TODO
+				break;
+			default:
+				System.out.println("Unknown Message");
+				break;
+		}
 	}
 	
+	/**
+	 * Source:
+	 * @author Robert Moore
+	 * Taken from sakai CS352 class resources on 3/29/14
+	 * @param bits
+	 * @param significantBits
+	 * @return
+	 */
+	private boolean[] convert(byte[] bits, int significantBits) {
+		boolean[] retVal = new boolean[significantBits];
+		int boolIndex = 0;
+		for (int byteIndex = 0; byteIndex < bits.length; ++byteIndex) {
+			for (int bitIndex = 7; bitIndex >= 0; --bitIndex) {
+				if (boolIndex >= significantBits) {
+					// Bad to return within a loop, but it's the easiest way
+					return retVal;
+				}
 
+				retVal[boolIndex++] = (bits[byteIndex] >> bitIndex & 0x01) == 1 ? true
+						: false;
+			}
+		}
+		return retVal;
+	}
+
+	/**
+	 * Source:
+	 * @author Robert Moore
+	 * Taken from sakai CS352 class resources on 3/29/14
+	 * @param bits
+	 * @return
+	 */
+	private boolean[] convert(byte[] bits) {
+		return this.convert(bits, bits.length * 8);
+	}
 	
 	/**
 	 * Generates a random byte[] Client ID. 
