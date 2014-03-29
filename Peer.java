@@ -8,6 +8,7 @@ import edu.rutgers.cs.cs352.bt.util.*;
 
 public class Peer extends Thread {
 
+	private Client RUBT;
 	private byte[] clientID;
 	private byte[] peerID;
 	private byte[] torrentSHA;
@@ -37,8 +38,9 @@ public class Peer extends Thread {
 	 * @param peerIP The Peer's IP
 	 * @param peerPort The Peer's Port
 	 */
-	public Peer(byte[] localID, byte[] peerID, String peerIP, int peerPort){
-		this.clientID = localID;
+	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort){
+		this.RUBT = RUBT;
+		this.clientID = RUBT.getClientID();
 		this.peerID = peerID;
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
@@ -55,6 +57,22 @@ public class Peer extends Thread {
 	
 	public byte[] getPeerID() {
 		return this.peerID;
+	}
+	
+	public boolean isChokingLocal() {
+		return this.localChoking;
+	}
+	
+	public boolean isInterestedLocal() {
+		return this.localInterested;
+	}
+	
+	public boolean amChoked() {
+		return this.remoteChoking;
+	}
+	
+	public boolean amInterested() {
+		return this.remoteInterested;
 	}
 	
 	public String toString(){
@@ -183,10 +201,10 @@ public class Peer extends Thread {
 		int length = this.incoming.readInt();
 		//System.out.println("Length = "+ length);
 		byte classID;
-		
+		Message incomingMessage;
 		if(length == 0) {
 			//keep alive is the only packet you can receive with length zero
-			
+			incomingMessage = Message.keepAlive;
 		} else if(length > 0) {
 			
 			//Read the next byte (this should be the classID of the message)
@@ -197,23 +215,28 @@ public class Peer extends Thread {
 			
 			//Length includes the classID. We are using length to determine how many bytes are left.
 			length--;			
+			incomingMessage = new Message(length+1,classID);
 			
 			//Handle the message based on the classID
 			switch(classID) {
 				case 0: //choke message
 					this.localChoking = true;
+					this.RUBT.queueMessage(new MessageTask(this,Message.choke));
 					break;
 					
 				case 1: //unchoke message
 					this.localChoking = false;
+					this.RUBT.queueMessage(new MessageTask(this,Message.unchoke));
 					break;
 					
 				case 2: //interested message
 					this.localInterested = true;
+					this.RUBT.queueMessage(new MessageTask(this,Message.interested));
 					break;
 					
 				case 3: //not interested message
 					this.localInterested = false;
+					this.RUBT.queueMessage(new MessageTask(this,Message.uninterested));
 					break;
 					
 				case 4: //have message message
@@ -229,6 +252,9 @@ public class Peer extends Thread {
 					
 					//update peer bitfield
 					this.peerBitfield[index] = (byte)(this.peerBitfield[index] & temp[index]);
+					
+					
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 5: //bitfield message
@@ -237,6 +263,7 @@ public class Peer extends Thread {
 					this.incoming.readFully(bitfield);
 					this.peerBitfield = bitfield;
 					System.out.println(this.peerBitfield);
+					
 					break;
 					
 				case 6: //request message
@@ -246,6 +273,7 @@ public class Peer extends Thread {
 					//if peerChoked == false
 					//sendRequest(requestPiece, requestOffset, requestLength)
 					//handle the request and send it to the peer
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 7: //piece message
@@ -280,12 +308,17 @@ public class Peer extends Thread {
 						//if(blockIndex == this.numPacketsDownloaded) {
 						//	return true;
 						//}
-					
+						this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 						return true;
-					
 					} catch(IOException e) {
-						System.err.println("Received an incorrect input from peer");
+						System.err.println("Received an incorrect input from peer during piece download");
 					}
+				case 8: //Cancel message
+					int reIndex = this.incoming.readInt();
+					int reOffset = this.incoming.readInt();
+					int reLength = this.incoming.readInt();
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
+					break;
 				default:
 					System.err.println("Unknown class ID");
 			}
