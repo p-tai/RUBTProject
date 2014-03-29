@@ -153,8 +153,11 @@ public class Client {
 				break;
 			case 1: /* unchoke */
 				peer.setLocalChoking(false);
+				//TODO: Look at the Peer bitfield and compare that to the Client bitfield.
+				//TODO: Request for pieces that the client do not have. 
 				break;
 			case 2: /* interested */
+				//TODO: The Client can send a Unchoke or Choke Message to the Peer.
 				peer.setRemoteInterested(true);
 				break;
 			case 3: /* not interested */
@@ -176,7 +179,8 @@ public class Client {
 				//TODO: Verify wit the SHA-1 and send a Have Message.
 				break;
 			case 8: /* cancel */
-				//TODO
+				//TODO: The Peer already have the piece. 
+				//TODO: 
 				break;
 			default:
 				System.out.println("Unknown Message");
