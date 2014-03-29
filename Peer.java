@@ -149,14 +149,22 @@ public class Peer extends Thread {
 		}
 	}
 	
-	private boolean sendUnchoke(){
-		return false;
+	
+	/**
+	 * Function to write a message to the outgoing socket.
+	 */
+	public void writeToSocket(Message payload){
+		synchronized(this.outgoing) {
+			this.outgoing.write(payload.getPayload());
+			this.outgoing.flush();
+		}
 	}
 	
-	private boolean sendInterested(){
-		return false;
-	}
 	
+	/**
+	 * Main runnable thread process for the peer class.
+	 * Will continously try to read from the incoming socket.
+	 */
 	public void run() {
 		connect();
 		if(handshake(this.torrentSHA) == true){
@@ -216,27 +224,32 @@ public class Peer extends Thread {
 			//Length includes the classID. We are using length to determine how many bytes are left.
 			length--;			
 			incomingMessage = new Message(length+1,classID);
+			incomingTask = new MessageTask(this,incomingMessage);
 			
 			//Handle the message based on the classID
 			switch(classID) {
 				case 0: //choke message
 					this.localChoking = true;
-					this.RUBT.queueMessage(new MessageTask(this,Message.choke));
+					incomingMessage = Message.choke;
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 1: //unchoke message
 					this.localChoking = false;
-					this.RUBT.queueMessage(new MessageTask(this,Message.unchoke));
+					incomingMessage = Message.unchoke;
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 2: //interested message
 					this.localInterested = true;
-					this.RUBT.queueMessage(new MessageTask(this,Message.interested));
+					incomingMessage = Message.interested;
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 3: //not interested message
 					this.localInterested = false;
-					this.RUBT.queueMessage(new MessageTask(this,Message.uninterested));
+					incomingMessage = Message.uninterested;
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 4: //have message message
@@ -253,6 +266,7 @@ public class Peer extends Thread {
 					//update peer bitfield
 					this.peerBitfield[index] = (byte)(this.peerBitfield[index] & temp[index]);
 					
+					incomingMessage.have(piece);
 					
 					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
@@ -262,8 +276,11 @@ public class Peer extends Thread {
 					//update peer bitfield
 					this.incoming.readFully(bitfield);
 					this.peerBitfield = bitfield;
-					System.out.println(this.peerBitfield);
+					//System.out.println(this.peerBitfield);
 					
+					
+					
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 6: //request message
@@ -321,12 +338,11 @@ public class Peer extends Thread {
 					break;
 				default:
 					System.err.println("Unknown class ID");
-			}
-					
-					
-					
-		}
+			}//switch
+				
+		}//if
 		
 		return true;
 	}
-}
+	
+}//Peer.java

@@ -76,9 +76,8 @@ public class Message {
 	}
 	
 	/**
-	 * Generates the Have Message
+	 * Generates the Have Message and sets it to the local payload field
 	 * @param piece The piece of the total file.
-	 * @return The Have Message
 	 */
 	public void have(final int piece){
 		ByteBuffer responseBuff = ByteBuffer.allocate(9);
@@ -90,13 +89,12 @@ public class Message {
 	}
 	
 	/**
-	 * Generates a Request Message
+	 * Generates a Request Message and sets it to the local payload field
 	 * @param index The index of the piece
 	 * @param begin The offset of the data in integer format
 	 * @param length The size of the data in integer format
-	 * @return The Request Message 
 	 */
-	public void requestPayload(int index, int begin, int length){
+	public void requestPayload(final int index, final int begin, final int length){
 		ByteBuffer responseBuff = ByteBuffer.allocate(17);
 		responseBuff.putInt(13);
 		byte id = 6;
@@ -105,15 +103,13 @@ public class Message {
 		responseBuff.putInt(begin);
 		responseBuff.putInt(length);
 		this.payload = responseBuff.array();
-		//return responseBuff.array();
 	}
 	
 	/**
-	 * Generates a Cancel Message
+	 * Generates a Cancel Message and sets it to the local payload field
 	 * @param index The index of the piece
 	 * @param begin The offset of the data in integer format
 	 * @param length The size of the data in integer format
-	 * @return The Request Message 
 	 */
 	public void cancel(final int index, final int begin, final int length){
 		ByteBuffer responseBuff = ByteBuffer.allocate(17);
@@ -124,18 +120,16 @@ public class Message {
 		responseBuff.putInt(begin);
 		responseBuff.putInt(length);
 		this.payload = responseBuff.array();
-		//return responseBuff.array();
 	}
 	
 	/**
-	 * Generates a Piece Message
+	 * Generates a Piece Message and sets it to the local payload field
 	 * @param x The number of bytes of the block.
 	 * @param index The index of the piece of file.
 	 * @param begin The offset of the piece.
 	 * @param block The Data itself.
-	 * @return
 	 */
-	public void piece(int x, int index, int begin, byte[] block){
+	public void piece(final int x, final int index, final int begin, final byte[] block){
 		ByteBuffer responseBuff = ByteBuffer.allocate(13+block.length);
 		responseBuff.putInt(9+x);
 		responseBuff.putInt(index);
@@ -144,11 +138,21 @@ public class Message {
 		this.payload = responseBuff.array();
 	}
 	
+	/**
+	 * Generates a Bitfield Message and sets it to the local payload field
+	 * @param bitfield - The bitfield that is a bit array of the pieces
+	 */
+	public void bitfield(final byte[] bitfield) {
+		ByteBuffer responseBuff = ByteBuffer.allocate(1+bitefield.length);
+		responseBuff.put((byte)5);
+		responseBuff.put(bitfield);
+		this.payload = response.Buff.array();
+	}
 	
 	/*
 	 * Function that will return a byte[] containing a handshake.
 	 */
-	public static byte[] handshakeMessage(byte[] SHA1, byte[] peerID){
+	public static byte[] handshakeMessage(final byte[] SHA1, final byte[] peerID){
 		byte[] handshake = new byte[68];
         handshake[0] = 19;
         handshake[1] = 'B';
