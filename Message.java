@@ -143,10 +143,10 @@ public class Message {
 	 * @param bitfield - The bitfield that is a bit array of the pieces
 	 */
 	public void bitfield(final byte[] bitfield) {
-		ByteBuffer responseBuff = ByteBuffer.allocate(1+bitefield.length);
+		ByteBuffer responseBuff = ByteBuffer.allocate(1+bitfield.length);
 		responseBuff.put((byte)5);
 		responseBuff.put(bitfield);
-		this.payload = response.Buff.array();
+		this.payload = responseBuff.array();
 	}
 	
 	/*

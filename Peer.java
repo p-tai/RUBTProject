@@ -155,8 +155,13 @@ public class Peer extends Thread {
 	 */
 	public void writeToSocket(Message payload){
 		synchronized(this.outgoing) {
-			this.outgoing.write(payload.getPayload());
-			this.outgoing.flush();
+			try {
+				this.outgoing.write(payload.getPayload());
+				this.outgoing.flush();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -224,7 +229,6 @@ public class Peer extends Thread {
 			//Length includes the classID. We are using length to determine how many bytes are left.
 			length--;			
 			incomingMessage = new Message(length+1,classID);
-			incomingTask = new MessageTask(this,incomingMessage);
 			
 			//Handle the message based on the classID
 			switch(classID) {
