@@ -16,6 +16,7 @@ public class Peer extends Thread {
 	private int peerPort;
 	
 	private byte[] peerBitfield;
+	private boolean[] peerBooleanBitField;
 	
 	private Socket peerConnection;
 	private DataOutputStream outgoing;
@@ -49,6 +50,54 @@ public class Peer extends Thread {
 		this.remoteChoking = true;
 		this.remoteInterested = false;
 		this.torrentSHA = Client.getHash();
+	}
+	
+	/*********************************
+	 * Setters
+	 ********************************/
+	
+	/**
+	 * The status of the Peer chocking the Client.
+	 * @param remoteChoking true = The Peer is Chocking the Client.
+	 * Otherwise, false.
+	 */
+	public void setLocalChoking(boolean localChoking){
+		this.localChoking = localChoking;
+	}
+	
+	/**
+	 * The status of the Client being interested of the Peer. 
+	 * @param localInterested true = The Client is the Peer.
+	 * Otherwise, false.
+	 */
+	public void setLocalInterested(boolean localInterested){
+		this.localInterested = localInterested;
+	}
+	
+	/**
+	 * The status of the Peer Choking the Client. 
+	 * @param remoteChoking true = Peer is Choking the Client.
+	 * Otherwise, false.
+	 */
+	public void setRemoteChoking(boolean remoteChoking){
+		this.remoteChoking = remoteChoking;
+	}
+	
+	/**
+	 * The status of the Peer being interested of the Client.
+	 * @param remoteInterested true = Peer is interested the Client.
+	 * Otherwise, false.
+	 */
+	public void setRemoteInterested(boolean remoteInterested){
+		this.remoteInterested = remoteInterested;
+	}
+	
+	/**
+	 * Set the Peer Boolean Bit Field. 
+	 * @param peerBooleanBitField The Peer Boolean Bit Field. 
+	 */
+	public void setPeerBooleanBitField(boolean[] peerBooleanBitField){
+		this.peerBooleanBitField = peerBooleanBitField;
 	}
 	
 	/*********************************
@@ -149,6 +198,20 @@ public class Peer extends Thread {
 		}
 	}
 	
+	/**
+	 * Update the Peer Bitfield.
+	 * @param pieceIndex The Piece Index.
+	 */
+	public void updatePeerBitfield(int pieceIndex){
+		if(pieceIndex >= this.peerBooleanBitField.length){
+			System.out.println("ERROR: UPDATING PEER BIT FIELD");
+			System.out.println("INVALID PIECE INDEX");
+			return;
+		}
+		
+		this.peerBooleanBitField[pieceIndex] = true;
+	}
+	
 	
 	/**
 	 * Function to write a message to the outgoing socket.
@@ -171,6 +234,7 @@ public class Peer extends Thread {
 	 * Will continously try to read from the incoming socket.
 	 */
 	public void run() {
+		//TODO: Change this to reading message from peer.
 		connect();
 		if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
@@ -283,8 +347,7 @@ public class Peer extends Thread {
 					//update peer bitfield
 					this.incoming.readFully(bitfield);
 					this.peerBitfield = bitfield;
-					
-					this.RUBT.bitfield(bitfield);
+					incomingMessage.bitfield(bitfield);
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
