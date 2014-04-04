@@ -39,18 +39,19 @@ public class Message {
 	
 	
 	private final int length;
-	private final int messageID;
+	private final byte messageID;
 	private byte[] payload;
 	
 	public Message(final int length, final byte id) {
 		this.length = length;
 		this.messageID = id;
-		ByteBuffer payloadBuff = ByteBuffer.allocate(5);
-		payloadBuff.putInt(length);
-		if(id != -1) {
-			payloadBuff.put(id);
-		}
-		payload = payloadBuff.array();
+		this.payload = null;
+		//ByteBuffer payloadBuff = ByteBuffer.allocate(5);
+		//payloadBuff.putInt(length);
+		//if(id != -1) {
+		//	payloadBuff.put(id);
+		//}
+		//payload = payloadBuff.array();
 			
 	}
 	
@@ -66,10 +67,22 @@ public class Message {
 		return this.payload;
 	}
 	
+	public byte[] getBTMessage(){
+		int messageLength = 4;
+		if (this.length > 0) {
+			messageLength += length;
+		}
+		ByteBuffer bt = ByteBuffer.allocate(length);
+		bt.putInt(length);
+		bt.put(messageID);
+		bt.put(payload);
+		return bt.array();
+	}
+	
 	/**
 	 * @return The Message ID.
 	 */
-	public int getMessageID(){
+	public int getMessageID() {
 		return this.messageID;
 	}
 	
@@ -78,29 +91,23 @@ public class Message {
 	}
 	
 	/**
-	 * Generates the Have Message and sets it to the local payload field
+	 * Generates the Have Message Payload and sets it to the local payload field
 	 * @param piece The piece of the total file.
 	 */
 	public void have(final int piece){
-		ByteBuffer responseBuff = ByteBuffer.allocate(9);
-		responseBuff.putInt(5);
-		byte id = 4;
-		responseBuff.put(id);
+		ByteBuffer responseBuff = ByteBuffer.allocate(length-5);
 		responseBuff.putInt(piece);
 		this.payload = responseBuff.array();
 	}
 	
 	/**
-	 * Generates a Request Message and sets it to the local payload field
+	 * Generates a Request Message Payload and sets it to the local payload field
 	 * @param index The index of the piece
 	 * @param begin The offset of the data in integer format
 	 * @param length The size of the data in integer format
 	 */
 	public void request(final int index, final int begin, final int length){
-		ByteBuffer responseBuff = ByteBuffer.allocate(17);
-		responseBuff.putInt(13);
-		byte id = 6;
-		responseBuff.put(id);
+		ByteBuffer responseBuff = ByteBuffer.allocate(length-5);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);
 		responseBuff.putInt(length);
@@ -108,16 +115,13 @@ public class Message {
 	}
 	
 	/**
-	 * Generates a Cancel Message and sets it to the local payload field
+	 * Generates a Cancel Message Payload and sets it to the local payload field
 	 * @param index The index of the piece
 	 * @param begin The offset of the data in integer format
 	 * @param length The size of the data in integer format
 	 */
 	public void cancel(final int index, final int begin, final int length){
-		ByteBuffer responseBuff = ByteBuffer.allocate(17);
-		responseBuff.putInt(13);
-		byte id = 8;
-		responseBuff.put(id);
+		ByteBuffer responseBuff = ByteBuffer.allocate(length-5);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);
 		responseBuff.putInt(length);
@@ -132,8 +136,7 @@ public class Message {
 	 * @param block The Data itself.
 	 */
 	public void piece(final int index, final int begin, final byte[] block){
-		ByteBuffer responseBuff = ByteBuffer.allocate(13+block.length);
-		responseBuff.putInt(9+block.length);
+		ByteBuffer responseBuff = ByteBuffer.allocate(length-5);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);
 		responseBuff.put(block);
@@ -145,8 +148,7 @@ public class Message {
 	 * @param bitfield - The bitfield that is a bit array of the pieces
 	 */
 	public void bitfield(final byte[] bitfield) {
-		ByteBuffer responseBuff = ByteBuffer.allocate(1+bitfield.length);
-		responseBuff.put((byte)5);
+		ByteBuffer responseBuff = ByteBuffer.allocate(bitfield.length);
 		responseBuff.put(bitfield);
 		this.payload = responseBuff.array();
 	}

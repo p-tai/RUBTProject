@@ -317,6 +317,7 @@ public class Peer extends Thread {
 		//System.out.println("Length = " + length);
 		byte classID;
 		Message incomingMessage = null;
+		
 		MessageTask incomingTask = new MessageTask(this,incomingMessage);
 		
 		if(length == 0) {
@@ -338,65 +339,29 @@ public class Peer extends Thread {
 			//Handle the message based on the classID
 			switch(classID) {
 				case 0: //choke message
-					this.localChoking = true;
 					incomingMessage = Message.choke;
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
 				case 1: //unchoke message
-					this.localChoking = false;
 					incomingMessage = Message.unchoke;
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
 				case 2: //interested message
-					this.localInterested = true;
 					incomingMessage = Message.interested;
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
 				case 3: //not interested message
-					this.localInterested = false;
 					incomingMessage = Message.uninterested;
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
-				case 4: //have message message
-					int piece = this.incoming.readInt();
-					byte[] temp = new byte[this.peerBitfield.length];
-					
-					//find the corresponding offset/bit that represents this piece.
-					int index = piece / 8;
-					int offset = piece % 8;
-					
-					//set the specific bit
-					temp[index] = (byte)(0x01<<offset);
-					
-					//update peer bitfield
-					this.peerBitfield[index] = (byte)(this.peerBitfield[index] & temp[index]);
-					
-					incomingMessage.have(piece);
-					this.RUBT.queueMessage(incomingTask);
-					
-					break;
-					
-				case 5: //bitfield message
-					byte[] bitfield = new byte[length];
-					//update peer bitfield
-					this.incoming.readFully(bitfield);
-					this.peerBitfield = bitfield;
-
-					incomingMessage.bitfield(bitfield);
-					this.RUBT.queueMessage(incomingTask);
-					break;
-					
-				case 6: //request message
-					int requestPiece = this.incoming.readInt();
-					int requestOffset = this.incoming.readInt();
-					int requestLength = this.incoming.readInt();
-					
-					//handle the request and send it to the peer
-					incomingMessage.request(requestPiece, requestOffset, requestLength);
+				case 4: case 5: case 6: //have message message. bitfield message, request message
+					byte[] temp = new byte[length];
+					this.incoming.readFully(temp);
+					incomingMessage.setPayload(temp);
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
