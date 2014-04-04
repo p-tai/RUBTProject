@@ -184,6 +184,9 @@ public class Client {
 				//TODO: The Peer already have the piece. 
 				//TODO: 
 				break;
+			case 9: /* quit */
+				
+				break;
 			default:
 				System.out.println("Unknown Message");
 				break;

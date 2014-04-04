@@ -1,6 +1,7 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ public class Peer extends Thread {
 	private final Client RUBT;
 	private final byte[] clientID;
 	private final byte[] peerID;
+	private String peerIDString;
 	private final byte[] torrentSHA;
 	private final String peerIP;
 	private int peerPort;
@@ -56,6 +58,12 @@ public class Peer extends Thread {
 		this.RUBT = RUBT;
 		this.clientID = RUBT.getClientID();
 		this.peerID = peerID;
+		try {
+			this.peerIDString = new String(peerID, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
 		this.localChoking = true;
@@ -117,22 +125,37 @@ public class Peer extends Thread {
 	 * Getters
 	 ********************************/
 	
+	/**
+	 * @return The Peer's ID
+	 */
 	public byte[] getPeerID() {
 		return this.peerID;
 	}
 	
+	/**
+	 * @return The status of the Client choking the peer.
+	 */
 	public boolean isChokingLocal() {
 		return this.localChoking;
 	}
 	
+	/**
+	 * @return The status of Peer interested of the Client. 
+	 */
 	public boolean isInterestedLocal() {
 		return this.localInterested;
 	}
 	
+	/**
+	 * @return The status of the Client being choking by Peer.
+	 */
 	public boolean amChoked() {
 		return this.remoteChoking;
 	}
 	
+	/**
+	 * @return The status of the Client interested of the Peer.
+	 */
 	public boolean amInterested() {
 		return this.remoteInterested;
 	}
@@ -147,14 +170,14 @@ public class Peer extends Thread {
 	* @return true for success, otherwise false
 	*/
 	public void connect(){
-		ToolKit.print(this.peerID);
+		System.out.println("Connecting to " + this.peerIDString);
 		try {
 			this.peerConnection = new Socket(this.peerIP, this.peerPort);
 			
-			System.out.println("Opening Output Stream");
+			System.out.println("Opening Output Stream to " + this.peerIDString);
 			this.outgoing = new DataOutputStream(peerConnection.getOutputStream());
 			
-			System.out.println("Opening Input Stream");
+			System.out.println("Opening Input Stream to " + this.peerIDString);
 			this.incoming = new DataInputStream(peerConnection.getInputStream());
 			
 			if(peerConnection == null || this.outgoing == null || this.incoming == null) {
@@ -177,6 +200,9 @@ public class Peer extends Thread {
 	private boolean handshake(byte[] infoHash){
 		try {
 			//Sends an outgoing message to the connected Peer.
+			System.out.println();
+			System.out.println("SENDING A HANDSHAKE TO" + this.peerIDString);
+			System.out.println();
 			outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
 			this.outgoing.flush();
 			
@@ -190,17 +216,17 @@ public class Peer extends Thread {
 				hash[i] = response[28 + i];
 			}
 			
-			System.out.println("Verify the SHA-1 HASH");
+			//System.out.println("Verify the SHA-1 HASH");
 			
 			//Check the peer's SHA-1 hash matches local SHA-1 hash
 			for(int i = 0; i < 20; i++){
 				if(this.torrentSHA[i] != hash[i]){
-					System.err.println("THE SHA-1 HASH IS INCORRECT!");
+					//System.err.println("THE SHA-1 HASH IS INCORRECT!");
 					return false;
 				}
 			}
 			
-			System.out.println("THE SHA-1 HASH IS CORRECT!");
+			//System.out.println("THE SHA-1 HASH IS CORRECT!");
 			return true;
 			
 		} catch (IOException e) {
@@ -255,6 +281,8 @@ public class Peer extends Thread {
 		
 		if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
+			System.out.println("HANDSHAKE RECEIVED");
+			System.out.println("FROM:" + this.peerIDString);
 			try {
 				//while the socket is connected
 				//read from socket (will block if it is empty)
@@ -331,8 +359,9 @@ public class Peer extends Thread {
 			incomingMessage = new Message(length,classID);
 			
 			//Debug statement
-			System.out.println("Received classID: " + classID);
-			
+			System.out.println("Received " + Message.getMessageID(classID).toUpperCase() + " Message");
+			System.out.println("FROM " + this.peerIDString);
+			System.out.println();
 			//Length includes the classID. We are using length to determine how many bytes are left.
 			length--;
 			
@@ -435,5 +464,4 @@ public class Peer extends Thread {
 			System.out.println("Sent Keep-Alive");
 		}
 	}//checkAndSendKeepAlive
-	
 }//Peer.java

@@ -239,7 +239,6 @@ public class Tracker {
 			Map<ByteBuffer, Object> peerList = peers.get(i);
 			byte[] peerID = ((ByteBuffer)peerList.get(PEERID)).array();
 			String peerIPAddress = new String(((ByteBuffer)peerList.get(IP)).array());
-			System.out.println("IP Address: " + peerIPAddress);
 			if(peerIPAddress.contains("128.6.171.130") || peerIPAddress.contains("128.6.171.131")){
 				int port = Integer.valueOf((Integer)(peerList.get(PORT)));
 				peerIPAddress =  peerIPAddress + ":" + Integer.toString(port);

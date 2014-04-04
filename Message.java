@@ -87,6 +87,9 @@ public class Message {
 	}
 	
 	public static String getMessageID(final byte x){
+		if((int)x >= responses.length){
+			return "NOT A VALID MESSAGE";
+		}
 		return responses[(int)x];
 	}
 	
