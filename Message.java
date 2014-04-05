@@ -55,18 +55,31 @@ public class Message {
 			
 	}
 	
+	/**
+	 * Setting the Message Payload
+	 * @param payload The Message Payload
+	 */
 	public void setPayload(final byte[] payload) {
 		this.payload = payload;
 	}
 	
+	/**
+	 * @return The Peer Message Length
+	 */
 	public int getLength() {
 		return this.length;
 	}
 	
+	/**
+	 * @return The Peer Message Payload
+	 */
 	public byte[] getPayload() {
 		return this.payload;
 	}
 	
+	/**
+	 * @return The Peer Message
+	 */
 	public byte[] getBTMessage(){
 		int messageLength = 4;
 		if (this.length > 0) {
@@ -86,6 +99,11 @@ public class Message {
 		return this.messageID;
 	}
 	
+	/**
+	 * Get a Message String based on the Message ID
+	 * @param x The Message ID
+	 * @return The Message String
+	 */
 	public static String getMessageID(final byte x){
 		if((int)x >= responses.length){
 			return "NOT A VALID MESSAGE";
