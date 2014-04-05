@@ -45,6 +45,7 @@ public class Peer extends Thread {
 	 */
 	private static final long KEEP_ALIVE_TIMEOUT = 120000;
 	private Timer keepAliveTimer = new Timer();
+	private Timer peerTimeoutTimer = new Timer();
 	private long lastMessageTime = System.currentTimeMillis();
 	
 	/**
@@ -256,6 +257,7 @@ public class Peer extends Thread {
 	 * Function to write a message to the outgoing socket.
 	 */
 	public void writeToSocket(Message payload){
+		updateTimer(this.keepAliveTimer);
 		synchronized(this.outgoing) {
 			try {
 				this.outgoing.write(payload.getPayload());
@@ -276,7 +278,7 @@ public class Peer extends Thread {
 		connect();
 		
 		//Create a timer task that will check for Peer Timeouts.
-		updateTimer();
+		updateTimer(this.peerTimeoutTimer);
 		
 		if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
@@ -293,7 +295,7 @@ public class Peer extends Thread {
 				//parse message
 				while(readSocketInputStream()){
 					//Update the timer to a new timeout value.
-					updateTimer();
+					updateTimer(this.peerTimeoutTimer);
 				}//while
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -311,11 +313,11 @@ public class Peer extends Thread {
 	 * Sourced from CS352 Sakai Forums on 3.29.14
 	 * @author Rob Moore
 	 */
-	private void updateTimer() {
+	private void updateTimer(Timer timerTask) {
 		try {
 			lastMessageTime = System.currentTimeMillis();
-			this.keepAliveTimer.cancel();
-			this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
+			timer.cancel();
+			timer.scheduleAtFixedRate(new Timer(){
 				public void run() {
 					// Let the peer figure out how/when to kill the peer/send a keepalive
 					Peer.this.checkPeerTimeout();
@@ -324,6 +326,7 @@ public class Peer extends Thread {
 		} catch(Exception e) { 
 			//Catch this exception for now, caused by canceling the timer?
 		}//try
+		
 	}//updateTimer
 	
 	/**
