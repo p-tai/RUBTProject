@@ -51,6 +51,11 @@ public class RUBTClient extends Thread{
 		}   
 	}
 	
+	/**
+	 * Cited: http://stackoverflow.com/questions/12234526/java-writing-unittest-for-exiting-a-program-when-user-type-quit-in-the-console
+	 * User: David Wallace
+	 * Time: 4, 05, 2014
+	 */
 	public void run(){
 		String line = "";
 		String QUIT = "quit";
