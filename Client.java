@@ -261,7 +261,7 @@ public class Client {
 	}
 	
 	/**
-	 * Send the HTTP GET Message to the Tracker
+	 * Initialize the tracker and send the HTTP GET Message to the Tracker
 	 * @param port = LISTEN port that the client will use for incoming BT connections 
 	 * @return true for success, otherwise false.
 	 */
@@ -275,6 +275,17 @@ public class Client {
 		}
 		System.out.println("Number of Peer List: " + peerList.size());
 		return true;
+	}
+	
+	/**
+	 *	Send a "stopped" event to the tracker
+	 */
+	public void disconnectFromTracker(){
+		if(tracker != null) {
+			tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
+		}
+		//response can be ignored because we're disconnecting anyway
+		System.out.println("Sent STOPPED event to tracker");
 	}
 	
 	private static class requestTracker extends Thread{
