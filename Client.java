@@ -1,13 +1,27 @@
-import java.util.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
+import java.net.ServerSocket;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.AbstractQueue;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.io.*;
-import java.net.*;
-import java.nio.*;
-import java.security.*;
 
-import edu.rutgers.cs.cs352.bt.*;
-import edu.rutgers.cs.cs352.bt.exceptions.*;
-import edu.rutgers.cs.cs352.bt.util.*;
+import edu.rutgers.cs.cs352.bt.TorrentInfo;
 
 //DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
@@ -40,6 +54,10 @@ public class Client {
 	private Map<byte[], Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	
+	private LinkedList<Integer>	havePiece;
+	// just use removeFirst() to dequeue and addLast() to enqueue
+	private LinkedList<Integer> needPiece;
+	
 	/**
 	 * Client Constructor
 	 * @param filePath Source of the torrent file
@@ -47,12 +65,15 @@ public class Client {
 	 */
 	public Client(TorrentInfo torrent, String saveName){
 		System.out.println("Booting");
-		this.numPacketsDownloaded = 0;
+		//this.numPacketsDownloaded = 0;
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
+		this.havePiece = new LinkedList<Integer>();
+		this.needPiece = new LinkedList<Integer>(); 
+		
 		genClientID();
 	}
 	
@@ -212,6 +233,7 @@ public class Client {
 				peer.setLocalChoking(false);
 				//TODO: Look at the Peer bitfield and compare that to the Client bitfield.
 				//TODO: Request for pieces that the client do not have. 
+				
 				break;
 			case 2: /* interested */
 				//TODO: The Client can send a Unchoke or Choke Message to the Peer.
@@ -340,8 +362,8 @@ public class Client {
 	 * @return true for success, otherwise false
 	 */
 	private boolean downloading(){
-		System.out.println("ALL SYSTEMS GO!");
-		System.out.println("DOWNLOADING PACKETS!");
+		//System.out.println("ALL SYSTEMS GO!");
+		//System.out.println("DOWNLOADING PACKETS!");
 		this.packets = new boolean[this.blocks.length*2];
 		/* DETERMING HOW MANY PACKETS WILL THERE BE */
 		this.numPackets = Math.ceil(((double)torrentInfo.file_length / (double)this.MAXIMUMLIMT));
