@@ -109,7 +109,21 @@ public class RUBTClient {
 		//Open the torrent file specified
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
 		
-		Client client = new Client(torrent, outputPath);
+		
+		Client client;
+		
+		try {
+			RandomAccessFile file = new RandomAccessFile(outputPath,"r");
+			/* The File exist */
+			//System.out.println("The file exist");
+			client = new Client(torrent, file);
+		} catch (FileNotFoundException e) {
+			/* The File does not exist */
+			//System.out.println("The fill does not exist");
+			client = new Client(torrent, outputPath);
+			//e.printStackTrace();
+		}
+		
 		int port = client.openSocket();
 		if(client.connectToTracker(port) == false){
 			System.out.println("THE TRACKER IS DOWN!");

@@ -313,7 +313,7 @@ public class Peer extends Thread {
 			this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
 				public void run() {
 					// Let the peer figure out how/when to send a keep-alive
-					Peer.this.checkAndSendKeepAlive();
+					Peer.this.checkPeerTimeout();
 				}//run
 			}, new Date(), 10000); //keepAliveTimer
 		} catch(Exception e) { 
@@ -455,7 +455,7 @@ public class Peer extends Thread {
 	 * Sourced from CS352 Sakai Forums on 3.29.14
 	 * @author Rob Moore
 	 */
-	protected void checkAndSendKeepAlive(){
+	protected void checkPeerTimeout(){
 		long now = System.currentTimeMillis();
 		if(now - this.lastMessageTime > KEEP_ALIVE_TIMEOUT){
 			// The "sendMessage" method should update lastMessageTime

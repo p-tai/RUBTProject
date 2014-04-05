@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
+import edu.rutgers.cs.cs352.bt.util.ToolKit;
 
 //DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
@@ -74,6 +75,24 @@ public class Client {
 		this.havePiece = new LinkedList<Integer>();
 		this.needPiece = new LinkedList<Integer>(); 
 		
+		genClientID();
+	}
+	
+	/**
+	 * Client Constructor
+	 * This is called when the file already exist. 
+	 * @param torrent Source of the torrent file
+	 * @param file The RandomAccessFile file
+	 */
+	public Client(TorrentInfo torrent, RandomAccessFile file){
+		System.out.println("Booting");
+		this.torrentInfo = torrent;
+		this.blocks = checkfile(torrent, file);
+		this.url = this.torrentInfo.announce_url;
+		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
+		this.havePiece = new LinkedList<Integer>();
+		this.needPiece = new LinkedList<Integer>(); 
+		ToolKit.print(this.blocks);
 		genClientID();
 	}
 	
