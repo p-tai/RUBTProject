@@ -2,9 +2,12 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+import edu.rutgers.cs.cs352.bt.util.*;
+
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -255,16 +258,7 @@ public class Peer extends Thread {
 	public void writeToSocket(Message payload){
 		synchronized(this.outgoing) {
 			try {
-				/* Print */
-				System.out.println("SENDING " + 
-				Message.getMessageID(payload.getMessageID()).toUpperCase() + 
-				" TO " + this.peerIDString);
-				
-				ByteBuffer messageBuffer = ByteBuffer.allocate(payload.getLength()+4);
-				messageBuffer.putInt(payload.getLength());
-				messageBuffer.put(payload.getMessageID());
-				messageBuffer.put(payload.getPayload());
-				this.outgoing.write(messageBuffer.array());
+				this.outgoing.write(payload.getPayload());
 				this.outgoing.flush();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -349,7 +343,7 @@ public class Peer extends Thread {
 		
 		int length = this.incoming.readInt();
 		//System.out.println("Length = " + length);
-		byte messageID;
+		byte classID;
 		Message incomingMessage = null;
 		
 		MessageTask incomingTask = new MessageTask(this,incomingMessage);
@@ -361,18 +355,18 @@ public class Peer extends Thread {
 		} else if(length > 0) {
 			
 			//Read the next byte (this should be the classID of the message)
-			messageID = this.incoming.readByte();
-			incomingMessage = new Message(length,messageID);
+			classID = this.incoming.readByte();
+			incomingMessage = new Message(length,classID);
 			
 			//Debug statement
-			System.out.println("Received " + Message.getMessageID(messageID).toUpperCase() + " Message");
+			System.out.println("Received " + Message.getMessageID(classID).toUpperCase() + " Message");
 			System.out.println("FROM " + this.peerIDString);
 			System.out.println();
 			//Length includes the classID. We are using length to determine how many bytes are left.
 			length--;
 			
 			//Handle the message based on the classID
-			switch(messageID) {
+			switch(classID) {
 				case 0: //choke message
 					incomingMessage = Message.choke;
 					this.RUBT.queueMessage(incomingTask);
