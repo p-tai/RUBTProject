@@ -97,6 +97,9 @@ public class Client {
 		genClientID();
 	}
 	
+	/**
+	 * @return The Client's ID.
+	 */
 	public byte[] getClientID() {
 		return this.clientID;
 	}
@@ -246,6 +249,7 @@ public class Client {
 	public void connectToPeers(){
 		if(peerList.isEmpty()){
 			/* DO NOTHING */
+			System.out.println("THERE ARE NO PEERS");
 			return;
 		}
 		System.out.println("Connecting to Peers");
@@ -401,10 +405,16 @@ public class Client {
 		}
 	}
 	
+	/**
+	 * @return The Torrent Info Hash.
+	 */
 	public static byte[] getHash(){
 		return torrentInfo.info_hash.array();
 	}
 	
+	/**
+	 * @return The Torrent Piece Length.
+	 */
 	public static int getPieceLength(){
 		return torrentInfo.piece_length;
 	}
