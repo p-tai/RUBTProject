@@ -50,6 +50,10 @@ public class Client {
 	private double numPackets;
 	private int numPacketsDownloaded;
 	
+	public int downloaded;
+	public int left;
+	public int uploaded;
+	
 	private DataOutputStream request;
 	private DataInputStream  response;
 	
@@ -79,7 +83,7 @@ public class Client {
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.havePiece = new LinkedList<Integer>();
 		this.needPiece = new LinkedList<Integer>(); 
-		
+		updateDownloaded();
 		genClientID();
 	}
 	
@@ -98,6 +102,7 @@ public class Client {
 		this.havePiece = new LinkedList<Integer>();
 		this.needPiece = new LinkedList<Integer>(); 
 		ToolKit.print(this.blocks);
+		updateDownloaded();
 		genClientID();
 	}
 	
@@ -114,31 +119,58 @@ public class Client {
 		return bitfieldMessage;
 	}
 	
-	private byte[] convertBooleanBitfield(boolean[] bitfield) {
+	
+	//Updates the downloaded values, left values, and uploaded values.
+	//Returns the number of bytes that have been successfully downloaded and confirmed to be correct
+	//Based on pieces that have been downloaded
+	private void updateDownloaded() {
+		int retVal = 0;
 		
+		for( boolean bool : this.bitfield ) {
+			if(bool) {
+				retVal++;
+			}
+		}
+		if(bitfield[bitfield.length-1]) {
+			retVal -= 1;
+			retVal *= this.torrentInfo.piece_length;
+			retVal += (this.torrentInfo.file_length % this.torrentInfo.piece_length);
+		} else {
+			retVal *= this.torrentInfo.piece_length;
+		}
+		
+		this.downloaded = retVal;
+		this.left = this.torrentInfo.file_length - this.downloaded;
+	}
+	
+	private byte[] convertBooleanBitfield(boolean[] bitfield) {
+		//Calcuate the number of bytes needed to contain the bitfield
 		byte[] bytes = new byte[(int)Math.ceil( bitfield.length / 8.0 )];
 		for(int i = 0; i < bytes.length; i++) {
 			bytes[i] = (byte)0;
 			for(int j = 0; j < 8; j++) {
 				byte curr = (byte)0;
 				
-				if((i*8+j) == bitfield.length) {
+				//If you hit the full length of the bitfield array, finish.
+				if((i*8+j) >= bitfield.length) {
+					bytes[i]<<=(7-j);
 					break;
 				}
 				
+				//If the boolean array contains a 1, set curr to 1.
 				if( bitfield[i*8+j] ) {
 					curr = (byte)1;
 				}
 				
+				//bitwise calculation to append the bit to the end of the current byte
 				bytes[i] = (byte)(bytes[i]|curr);
 				
+				//left shift for the next byte, unless you are already at the end of the current byte
 				if(j != 7) {
 					bytes[i]<<=1;
 				}
-			}
-			
-		}
-		
+			} //for each bit in a byte
+		} //for each byte
 		return bytes;
 	}
 	
@@ -236,7 +268,7 @@ public class Client {
 	
 	public boolean connectToTracker(final int port){
 		this.tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
-		this.peerList = tracker.sendHTTPGet(0, 0, 100, "started");
+		this.peerList = tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "started");
 		this.peerHistory = new HashMap<byte[], Peer>();
 		if(this.peerList == null){
 			return false;
@@ -261,8 +293,8 @@ public class Client {
 				@Override
 				public void run() {
 					if(System.currentTimeMillis() - lastRequestSent > client.tracker.getInterval()){
-						/* Send a HTTP GET REQUEST */
-						Map<byte[], String> peerList = client.tracker.sendHTTPGet(0, 0, 100, "");
+						client.updateDownloaded();
+						Map<byte[], String> peerList = client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "");
 						Map<byte[], Peer> peerHistory = client.peerHistory;
 						Iterator it = peerList.entrySet().iterator();
 						while(it.hasNext()){
