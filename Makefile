@@ -4,6 +4,9 @@ RUBT:
 IMG:
 	java RUBTClient project1.torrent a.img
 
+RUN:
+	java RUBTClient project2.torrent test.mp3
+
 clean:
 	rm *.class
 	rm a.img
