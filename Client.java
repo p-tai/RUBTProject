@@ -60,6 +60,35 @@ public class Client {
 		return this.clientID;
 	}
 	
+	
+	private byte[] convertBooleanBitfield(boolean[] bitfield) {
+		
+		byte[] bytes = new byte[(int)Math.ceil( bitfield.length / 8.0 )];
+		for(int i = 0; i < bytes.length; i++) {
+			bytes[i] = (byte)0;
+			for(int j = 0; j < 8; j++) {
+				byte curr = (byte)0;
+				
+				if((i*8+j) == bitfield.length) {
+					break;
+				}
+				
+				if( bitfield[i*8+j] ) {
+					curr = (byte)1;
+				}
+				
+				bytes[i] = (byte)(bytes[i]|curr);
+				
+				if(j != 7) {
+					bytes[i]<<=1;
+				}
+			}
+			
+		}
+		
+		return bytes;
+	}
+	
 	/*
 	* verify sha1 hashes right match with otrrentinfo.. .match with all pieces
 	 * then set bitfield
