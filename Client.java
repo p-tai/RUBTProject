@@ -254,6 +254,7 @@ public class Client {
 		}
 		
 		public void run(final Client client){
+			System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 			
 			this.requestTracker.scheduleAtFixedRate(new TimerTask(){;
 
@@ -263,13 +264,20 @@ public class Client {
 						/* Send a HTTP GET REQUEST */
 						Map<byte[], String> peerList = client.tracker.sendHTTPGet(0, 0, 100, "");
 						Map<byte[], Peer> peerHistory = client.peerHistory;
-						//TODO FIX THIS
-					}
-				}
+						Iterator it = peerList.entrySet().iterator();
+						while(it.hasNext()){
+							Map.Entry pairs = (Map.Entry)it.next();
+							System.out.println(pairs.getKey() + " = " + pairs.getValue());
+							it.remove();
+
+						}//end of while 
+
+					}//end of if 
+				}//end of void run()
 				
 			}, new Date(), 10000);
-		}
-	}	
+		}// end of run
+	}//end of requestTracker method
 	
 	/**
 	 * ConnectToPeers will go through the current list of peers and connect to them
