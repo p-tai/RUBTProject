@@ -235,7 +235,7 @@ public class Client {
 	 */
 	
 	public boolean connectToTracker(final int port){
-		Tracker tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
+		this.tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
 		this.peerList = tracker.sendHTTPGet(0, 0, 100, "started");
 		this.peerHistory = new HashMap<byte[], Peer>();
 		if(this.peerList == null){
@@ -274,11 +274,10 @@ public class Client {
 
 					}//end of if 
 				}//end of void run()
-				
 			}, new Date(), 10000);
 		}// end of run
 	}//end of requestTracker method
-	
+
 	/**
 	 * ConnectToPeers will go through the current list of peers and connect to them
 	 */
@@ -300,7 +299,8 @@ public class Client {
 			Peer peer = new Peer(this, peerID, ipPort[0], Integer.valueOf(ipPort[1]));
 			this.peerHistory.put(peerID, peer);
 			peer.start();
-		}		
+		}
+		(new requestTracker()).run(this);;
 	}
 	
 	private void readQueue(){

@@ -20,7 +20,7 @@ import java.lang.*;
  * For le error checking
  * 
  */
-public class RUBTClient {
+public class RUBTClient extends Thread{
 
 	private static TorrentInfo parseTorrentInfo(String filename) {
 		try {
@@ -50,8 +50,13 @@ public class RUBTClient {
 			return null;
 		}   
 	}
-
-	private static void exitWhenQuitDetected(){
+	
+	/**
+	 * Cited: http://stackoverflow.com/questions/12234526/java-writing-unittest-for-exiting-a-program-when-user-type-quit-in-the-console
+	 * User: David Wallace
+	 * Time: 4, 05, 2014
+	 */
+	public void run(){
 		String line = "";
 		String QUIT = "quit";
 
@@ -70,9 +75,8 @@ public class RUBTClient {
 			System.err.println("Error: " + e.getMessage());
 		}//end of catch
 		return;
-
-	}//end of exitwhenquitdetected
-
+	}
+	
 	public static void main(String[] args) throws InterruptedException{
 
 		/*
@@ -150,7 +154,7 @@ public class RUBTClient {
 		}
 		client.connectToPeers();
 
-
+		(new RUBTClient()).start();
 		return;
 
 
