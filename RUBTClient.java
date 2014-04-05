@@ -56,7 +56,7 @@ public class RUBTClient extends Thread{
 	 * User: David Wallace
 	 * Time: 4, 05, 2014
 	 */
-	public void run(){
+	public void run(Client client){
 		String line = "";
 		String QUIT = "quit";
 
@@ -66,7 +66,8 @@ public class RUBTClient extends Thread{
 			while (!(line.equals(QUIT))) {    
 				line = in.readLine();    
 				if (line.equals(QUIT)) {    
-					System.out.println("You are now quiting the program");                      
+					client.disconnectFromTracker();
+					System.out.println("You are now quiting the program");     
 					System.exit(1);    
 				}    //end of if
 			}  //end of while
@@ -154,7 +155,7 @@ public class RUBTClient extends Thread{
 		}
 		client.connectToPeers();
 
-		(new RUBTClient()).start();
+		(new RUBTClient()).run(client);
 		return;
 
 

@@ -103,7 +103,7 @@ public class Tracker {
 		
     	if(event.length() > 0){
     		/* When event == started, completed, or stopped*/
-    		query = URLify(query, "&event", "event");
+    		query = URLify(query, "&event", event);
     	}
     	
     	System.out.println("SENDING A HTTP GET REQUEST TO THE TRACKER ");
