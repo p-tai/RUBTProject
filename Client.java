@@ -1,13 +1,28 @@
-import java.util.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
+import java.net.ServerSocket;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.AbstractQueue;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.io.*;
-import java.net.*;
-import java.nio.*;
-import java.security.*;
 
-import edu.rutgers.cs.cs352.bt.*;
-import edu.rutgers.cs.cs352.bt.exceptions.*;
-import edu.rutgers.cs.cs352.bt.util.*;
+import edu.rutgers.cs.cs352.bt.TorrentInfo;
+import edu.rutgers.cs.cs352.bt.util.ToolKit;
 
 //DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
@@ -27,6 +42,7 @@ public class Client {
 	private final int MAXIMUMLIMT = 16384;
 	private boolean[] blocks;
 	private boolean[] packets;
+	private boolean[] bitfield;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
@@ -40,6 +56,10 @@ public class Client {
 	private Map<byte[], Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	
+	private LinkedList<Integer>	havePiece;
+	// just use removeFirst() to dequeue and addLast() to enqueue
+	private LinkedList<Integer> needPiece;
+	
 	/**
 	 * Client Constructor
 	 * @param filePath Source of the torrent file
@@ -47,17 +67,76 @@ public class Client {
 	 */
 	public Client(TorrentInfo torrent, String saveName){
 		System.out.println("Booting");
-		this.numPacketsDownloaded = 0;
+		//this.numPacketsDownloaded = 0;
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
+		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
+		this.havePiece = new LinkedList<Integer>();
+		this.needPiece = new LinkedList<Integer>(); 
+		
 		genClientID();
 	}
 	
+	/**
+	 * Client Constructor
+	 * This is called when the file already exist. 
+	 * @param torrent Source of the torrent file
+	 * @param file The RandomAccessFile file
+	 */
+	public Client(TorrentInfo torrent, RandomAccessFile file){
+		System.out.println("Booting");
+		this.torrentInfo = torrent;
+		this.bitfield = checkfile(torrent, file);
+		this.url = this.torrentInfo.announce_url;
+		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
+		this.havePiece = new LinkedList<Integer>();
+		this.needPiece = new LinkedList<Integer>(); 
+		ToolKit.print(this.blocks);
+		genClientID();
+	}
+	
+	/**
+	 * @return The Client's ID.
+	 */
 	public byte[] getClientID() {
 		return this.clientID;
+	}
+	
+	public Message generateBitfieldMessage() {
+		Message bitfieldMessage = new Message(this.bitfield.length+1,(byte)6);
+		bitfieldMessage.bitfield(convertBooleanBitfield(this.bitfield));
+		return bitfieldMessage;
+	}
+	
+	private byte[] convertBooleanBitfield(boolean[] bitfield) {
+		
+		byte[] bytes = new byte[(int)Math.ceil( bitfield.length / 8.0 )];
+		for(int i = 0; i < bytes.length; i++) {
+			bytes[i] = (byte)0;
+			for(int j = 0; j < 8; j++) {
+				byte curr = (byte)0;
+				
+				if((i*8+j) == bitfield.length) {
+					break;
+				}
+				
+				if( bitfield[i*8+j] ) {
+					curr = (byte)1;
+				}
+				
+				bytes[i] = (byte)(bytes[i]|curr);
+				
+				if(j != 7) {
+					bytes[i]<<=1;
+				}
+			}
+			
+		}
+		
+		return bytes;
 	}
 	
 	/*
@@ -69,10 +148,10 @@ public class Client {
 	 */
 
 	private boolean[] checkfile(TorrentInfo torrent, RandomAccessFile datafile){
-	    boolean[] lovefield = null;
+	    boolean[] lovefield = new boolean[this.torrentInfo.piece_hashes.length];
 	    try{
 	        int piece_length = this.torrentInfo.piece_length;
-	        System.out.println("What the love is the piecelength: " + piece_length);
+	        //System.out.println("What the love is the piecelength: " + piece_length);
 	        int dividend = (int)Math.ceil((double)datafile.length() / (double)this.torrentInfo.piece_length);
 	        System.out.println("Dividend: " + dividend);
 	        byte[] readbyte = new byte[piece_length];
@@ -81,8 +160,6 @@ public class Client {
 	        System.out.println("LOVE YOU: " + piece_length * (dividend-1));
 	        int lastlength = (int)datafile.length() % piece_length;
 	        System.out.println("lastlength::: " + lastlength);
-
-	        lovefield = new boolean[dividend];
 
 	        for(int i = 0; i < dividend; i++){
 	            boolean datacheck = false;
@@ -171,6 +248,7 @@ public class Client {
 	public void connectToPeers(){
 		if(peerList.isEmpty()){
 			/* DO NOTHING */
+			System.out.println("THERE ARE NO PEERS");
 			return;
 		}
 		System.out.println("Connecting to Peers");
@@ -206,10 +284,10 @@ public class Client {
 		
 		switch(message.getMessageID()){
 			case 0: /* choke */
-				peer.setLocalChoking(true);
+				peer.setRemoteChoking(true);
 				break;
 			case 1: /* unchoke */
-				peer.setLocalChoking(false);
+				peer.setRemoteChoking(false);
 				//TODO: Look at the Peer bitfield and compare that to the Client bitfield.
 				//TODO: Request for pieces that the client do not have. 
 				break;
@@ -326,10 +404,16 @@ public class Client {
 		}
 	}
 	
+	/**
+	 * @return The Torrent Info Hash.
+	 */
 	public static byte[] getHash(){
 		return torrentInfo.info_hash.array();
 	}
 	
+	/**
+	 * @return The Torrent Piece Length.
+	 */
 	public static int getPieceLength(){
 		return torrentInfo.piece_length;
 	}
@@ -340,8 +424,8 @@ public class Client {
 	 * @return true for success, otherwise false
 	 */
 	private boolean downloading(){
-		System.out.println("ALL SYSTEMS GO!");
-		System.out.println("DOWNLOADING PACKETS!");
+		//System.out.println("ALL SYSTEMS GO!");
+		//System.out.println("DOWNLOADING PACKETS!");
 		this.packets = new boolean[this.blocks.length*2];
 		/* DETERMING HOW MANY PACKETS WILL THERE BE */
 		this.numPackets = Math.ceil(((double)torrentInfo.file_length / (double)this.MAXIMUMLIMT));

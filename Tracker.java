@@ -184,11 +184,6 @@ public class Tracker {
         }        
         return reply;
     }
-    
-    
-/*	public Tracker(URL url){
-		this.url = url;
-	}*/
 	
 	/**
 	 * @return The List of Peers
