@@ -47,6 +47,7 @@ public class Peer extends Thread {
 	private Timer keepAliveTimer = new Timer();
 	private Timer peerTimeoutTimer = new Timer();
 	private long lastMessageTime = System.currentTimeMillis();
+	private long lastPeerTime = System.currentTimeMillis();
 	
 	/**
 	 * Peer's Constructor
@@ -257,11 +258,11 @@ public class Peer extends Thread {
 	 * Function to write a message to the outgoing socket.
 	 */
 	public void writeToSocket(Message payload){
-		updateTimer(this.keepAliveTimer);
 		synchronized(this.outgoing) {
 			try {
 				this.outgoing.write(payload.getPayload());
 				this.outgoing.flush();
+				updateTimer();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -277,9 +278,6 @@ public class Peer extends Thread {
 	public void run() {
 		connect();
 		
-		//Create a timer task that will check for Peer Timeouts.
-		updateTimer(this.peerTimeoutTimer);
-		
 		if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 			System.out.println("HANDSHAKE RECEIVED");
@@ -294,8 +292,8 @@ public class Peer extends Thread {
 				//read from socket (will block if it is empty)
 				//parse message
 				while(readSocketInputStream()){
-					//Update the timer to a new timeout value.
-					updateTimer(this.peerTimeoutTimer);
+					//Update the PEER TIMEOUT timer to a new value (because we received a packet).
+					updatePeerTimeoutTimer();
 				}//while
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -306,29 +304,6 @@ public class Peer extends Thread {
 		}
 		
 	}//run
-	
-	/**
-	 * Schedules a new anonymous implementation of a TimerTask that
-	 * will start now and execute every 10 seconds afterward.
-	 * Sourced from CS352 Sakai Forums on 3.29.14
-	 * @author Rob Moore
-	 */
-	private void updateTimer(Timer timerTask) {
-		try {
-			lastMessageTime = System.currentTimeMillis();
-			timerTask.cancel();
-			timerTask.scheduleAtFixedRate(new TimerTask(){;
-				public void run() {
-					// Let the peer figure out how/when to kill the peer/send a keepalive
-					Peer.this.checkPeerTimeout();
-				}//run
-			}, new Date(), 10000); //keepAliveTimer
-			
-		} catch(Exception e) { 
-			//Catch this exception for now, caused by canceling the timer?
-		}//try
-		
-	}//updateTimer
 	
 	/**
 	 * This method is called on shutdown to close all of the data streams and sockets.
@@ -396,14 +371,14 @@ public class Peer extends Thread {
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
-				case 4: case 5: case 6: //have message message. bitfield message, request message
+				case 4: case 5: case 6: case 7: case 8: //have message message. bitfield message, request message, piece message, cancel message
 					byte[] temp = new byte[length];
 					this.incoming.readFully(temp);
 					incomingMessage.setPayload(temp);
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
-				case 7: //piece message
+				/*case 7: //piece message
 					try {
 						int pieceIndex = this.incoming.readInt();
 						int blockOffset = this.incoming.readInt();
@@ -426,10 +401,10 @@ public class Peer extends Thread {
 							//If the number of failed downloads is 3, kill the peer connection because it has corrupt data
 							
 						}
-						/*this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
+						this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
 						this.dataFile.write(payload);
 						this.numPacketsDownloaded++;
-						this.packets[blockIndex] = true;*/
+						this.packets[blockIndex] = true;
 						
 					
 						//if(blockIndex == this.numPacketsDownloaded) {
@@ -449,6 +424,7 @@ public class Peer extends Thread {
 					incomingMessage.cancel(reIndex,reOffset,reLength);
 					this.RUBT.queueMessage(incomingTask);
 					break;
+				*/
 				default:
 					System.err.println("Unknown class ID");
 			}//switch
@@ -459,6 +435,42 @@ public class Peer extends Thread {
 	}
 	
 	/**
+	 * Schedules a new anonymous implementation of a TimerTask that
+	 * will start now and execute every 10 seconds afterward.
+	 * Sourced from CS352 Sakai Forums on 3.29.14
+	 * @author Rob Moore
+	 */
+	private void updateTimer() {
+		try {
+			this.lastMessageTime = System.currentTimeMillis();
+			this.keepAliveTimer.cancel();
+			this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
+				public void run() {
+					// Let the peer figure out when to send a keepalive
+					Peer.this.checkAndSendKeepAlive();
+				}//run
+			}, new Date(), 10000); //keepAliveTimer
+		} catch(Exception e) { 
+			//Catch this exception for now, caused by canceling the timer?
+		}//try
+	}//updateTimer
+	
+	private void updatePeerTimeoutTimer() {
+		try {
+			this.lastPeerTime = System.currentTimeMillis();
+			this.peerTimeoutTimer.cancel();
+			this.peerTimeoutTimer.scheduleAtFixedRate(new TimerTask(){
+				public void run() {
+					// Let the peer figure out when to kill the peer
+					Peer.this.checkPeerTimeout();
+				}//run
+			}, new Date(), 10000); //peerTimeoutTimer
+		} catch(Exception e) { 
+			//Catch this exception for now, caused by canceling the timer?
+		}//try
+	}//updatePeerTimeoutTimer
+	
+	/**
 	 * Sends a keep-alive message to the remote peer if the time between now
 	 * and the previous message exceeds the limit set by KEEP_ALIVE_TIMEOUT.
 	 * Sourced from CS352 Sakai Forums on 3.29.14
@@ -466,7 +478,17 @@ public class Peer extends Thread {
 	 */
 	protected void checkPeerTimeout(){
 		long now = System.currentTimeMillis();
-		if(now - this.lastMessageTime > KEEP_ALIVE_TIMEOUT){
+		if((now - this.lastPeerTime) > KEEP_ALIVE_TIMEOUT){
+			//Peer timed out, should kill the peer
+			//Peer.this.shutdown();
+			// Validate that the timestamp was updated
+			System.out.println("PEER TIMED OUT");
+		}
+	}//checkAndSendKeepAlive
+	
+	protected void checkAndSendKeepAlive(){
+		long now = System.currentTimeMillis();
+		if((now - this.lastMessageTime) > KEEP_ALIVE_TIMEOUT*0.2){
 			// The "sendMessage" method should update lastMessageTime
 			this.writeToSocket((Message.keepAlive));
 			// Validate that the timestamp was updated
