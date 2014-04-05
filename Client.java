@@ -70,6 +70,7 @@ public class Client {
 		//this.numPacketsDownloaded = 0;
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
+		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
@@ -88,7 +89,7 @@ public class Client {
 	public Client(TorrentInfo torrent, RandomAccessFile file){
 		System.out.println("Booting");
 		this.torrentInfo = torrent;
-		this.blocks = checkfile(torrent, file);
+		this.bitfield = checkfile(torrent, file);
 		this.url = this.torrentInfo.announce_url;
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.havePiece = new LinkedList<Integer>();
@@ -147,10 +148,10 @@ public class Client {
 	 */
 
 	private boolean[] checkfile(TorrentInfo torrent, RandomAccessFile datafile){
-	    boolean[] lovefield = null;
+	    boolean[] lovefield = new boolean[this.torrentInfo.piece_hashes.length];
 	    try{
 	        int piece_length = this.torrentInfo.piece_length;
-	        System.out.println("What the love is the piecelength: " + piece_length);
+	        //System.out.println("What the love is the piecelength: " + piece_length);
 	        int dividend = (int)Math.ceil((double)datafile.length() / (double)this.torrentInfo.piece_length);
 	        System.out.println("Dividend: " + dividend);
 	        byte[] readbyte = new byte[piece_length];
@@ -159,8 +160,6 @@ public class Client {
 	        System.out.println("LOVE YOU: " + piece_length * (dividend-1));
 	        int lastlength = (int)datafile.length() % piece_length;
 	        System.out.println("lastlength::: " + lastlength);
-
-	        lovefield = new boolean[dividend];
 
 	        for(int i = 0; i < dividend; i++){
 	            boolean datacheck = false;
