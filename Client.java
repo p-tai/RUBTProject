@@ -42,6 +42,7 @@ public class Client {
 	private final int MAXIMUMLIMT = 16384;
 	private boolean[] blocks;
 	private boolean[] packets;
+	private boolean[] bitfield;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
@@ -100,6 +101,11 @@ public class Client {
 		return this.clientID;
 	}
 	
+	public Message generateBitfieldMessage() {
+		Message bitfieldMessage = new Message(this.bitfield.length+1,(byte)6);
+		bitfieldMessage.bitfield(convertBooleanBitfield(this.bitfield));
+		return bitfieldMessage;
+	}
 	
 	private byte[] convertBooleanBitfield(boolean[] bitfield) {
 		
@@ -275,13 +281,12 @@ public class Client {
 		
 		switch(message.getMessageID()){
 			case 0: /* choke */
-				peer.setLocalChoking(true);
+				peer.setRemoteChoking(true);
 				break;
 			case 1: /* unchoke */
-				peer.setLocalChoking(false);
+				peer.setRemoteChoking(false);
 				//TODO: Look at the Peer bitfield and compare that to the Client bitfield.
 				//TODO: Request for pieces that the client do not have. 
-				
 				break;
 			case 2: /* interested */
 				//TODO: The Client can send a Unchoke or Choke Message to the Peer.

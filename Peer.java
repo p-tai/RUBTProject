@@ -273,21 +273,26 @@ public class Peer extends Thread {
 	 * Will continously try to read from the incoming socket.
 	 */
 	public void run() {
-		//TODO: Change this to reading message from peer.
 		connect();
 		
-		//Create a timer task
+		//Create a timer task that will check for Peer Timeouts.
 		updateTimer();
 		
 		if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 			System.out.println("HANDSHAKE RECEIVED");
 			System.out.println("FROM:" + this.peerIDString);
+			
+			//Send Bitfield to Peer
+			Message bitfieldMessage = RUBT.generateBitfieldMessage();
+			writeToSocket(bitfieldMessage);
+			
 			try {
 				//while the socket is connected
 				//read from socket (will block if it is empty)
 				//parse message
 				while(readSocketInputStream()){
+					//Update the timer to a new timeout value.
 					updateTimer();
 				}//while
 			} catch (IOException e) {
@@ -312,7 +317,7 @@ public class Peer extends Thread {
 			this.keepAliveTimer.cancel();
 			this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
 				public void run() {
-					// Let the peer figure out how/when to send a keep-alive
+					// Let the peer figure out how/when to kill the peer/send a keepalive
 					Peer.this.checkPeerTimeout();
 				}//run
 			}, new Date(), 10000); //keepAliveTimer
