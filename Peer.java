@@ -316,13 +316,14 @@ public class Peer extends Thread {
 	private void updateTimer(Timer timerTask) {
 		try {
 			lastMessageTime = System.currentTimeMillis();
-			timer.cancel();
-			timer.scheduleAtFixedRate(new Timer(){
+			timerTask.cancel();
+			timerTask.scheduleAtFixedRate(new TimerTask(){;
 				public void run() {
 					// Let the peer figure out how/when to kill the peer/send a keepalive
 					Peer.this.checkPeerTimeout();
 				}//run
 			}, new Date(), 10000); //keepAliveTimer
+			
 		} catch(Exception e) { 
 			//Catch this exception for now, caused by canceling the timer?
 		}//try

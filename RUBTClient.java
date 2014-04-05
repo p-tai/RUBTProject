@@ -131,7 +131,6 @@ public class RUBTClient {
 		//Open the torrent file specified
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
 		Client client;
-		Client client = new Client(torrent, outputPath);
 		try {
 			RandomAccessFile file = new RandomAccessFile(outputPath,"r");
 			/* The File exist */

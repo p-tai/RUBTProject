@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.AbstractQueue;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -19,6 +20,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
@@ -241,6 +244,32 @@ public class Client {
 		System.out.println("Number of Peer List: " + peerList.size());
 		return true;
 	}
+	
+	private static class requestTracker extends Thread{
+		private Timer requestTracker = new Timer();
+		private long lastRequestSent = System.currentTimeMillis();
+		
+		public requestTracker(){
+			/* DO NOTHING */
+		}
+		
+		public void run(final Client client){
+			
+			this.requestTracker.scheduleAtFixedRate(new TimerTask(){;
+
+				@Override
+				public void run() {
+					if(System.currentTimeMillis() - lastRequestSent > client.tracker.getInterval()){
+						/* Send a HTTP GET REQUEST */
+						Map<byte[], String> peerList = client.tracker.sendHTTPGet(0, 0, 100, "");
+						Map<byte[], Peer> peerHistory = client.peerHistory;
+						//TODO FIX THIS
+					}
+				}
+				
+			}, new Date(), 10000);
+		}
+	}	
 	
 	/**
 	 * ConnectToPeers will go through the current list of peers and connect to them
