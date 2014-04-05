@@ -82,7 +82,7 @@ public class Message {
 	/**
 	 * @return The Message ID.
 	 */
-	public int getMessageID() {
+	public byte getMessageID() {
 		return this.messageID;
 	}
 	

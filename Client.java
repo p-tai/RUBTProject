@@ -60,6 +60,61 @@ public class Client {
 		return this.clientID;
 	}
 	
+	/*
+	* verify sha1 hashes right match with otrrentinfo.. .match with all pieces
+	 * then set bitfield
+	 * make bitfield
+	 * of things that are donwloaded or not
+	 * RETURNS BITFIELD.
+	 */
+
+	private boolean[] checkfile(TorrentInfo torrent, RandomAccessFile datafile){
+	    boolean[] lovefield = null;
+	    try{
+	        int piece_length = this.torrentInfo.piece_length;
+	        System.out.println("What the love is the piecelength: " + piece_length);
+	        int dividend = (int)Math.ceil((double)datafile.length() / (double)this.torrentInfo.piece_length);
+	        System.out.println("Dividend: " + dividend);
+	        byte[] readbyte = new byte[piece_length];
+
+	        System.out.println("DATAFILE LENGTH: " + datafile.length());
+	        System.out.println("LOVE YOU: " + piece_length * (dividend-1));
+	        int lastlength = (int)datafile.length() % piece_length;
+	        System.out.println("lastlength::: " + lastlength);
+
+	        lovefield = new boolean[dividend];
+
+	        for(int i = 0; i < dividend; i++){
+	            boolean datacheck = false;
+	            if(i == dividend-1){
+	                byte[] readbyte2 = new byte[lastlength];
+	                System.out.println("What the love is happening");
+	                int loveoffset = i * piece_length;
+	                datafile.seek((long)loveoffset);
+	                System.out.println("I is " + i + " and loveoffset is " + loveoffset);
+	                datafile.read(readbyte2, 0, lastlength);
+	                datacheck = checkData(readbyte2, i);
+	                System.out.println("Datacheck:: " + datacheck);
+
+	            }//end of if
+	            else{
+	                int loveoffset = i * piece_length;
+	                datafile.seek((long)loveoffset);
+	                System.out.println("I is " + i + " and loveoffset is " + loveoffset);
+	                datafile.read(readbyte, 0, piece_length);
+	                datacheck = checkData(readbyte, i);
+	                System.out.println("Datacheck:: " + datacheck);
+	            }//end of else
+	            lovefield[i] = datacheck;
+	        }//end of for 
+	    }//end of try
+	    catch(IOException e){
+	        System.out.println("IOEXCEPTION CHECKFILE");
+	    }//end of catch
+	    return lovefield;
+
+	}//end of checkfile
+	
 	/**
 	 * Adding a message from Peer to the Client's Messages Queue. 
 	 * @param task The message from the Peer. 
@@ -161,6 +216,7 @@ public class Client {
 			case 2: /* interested */
 				//TODO: The Client can send a Unchoke or Choke Message to the Peer.
 				peer.setRemoteInterested(true);
+				peer.writeToSocket(Message.unchoke);
 				break;
 			case 3: /* not interested */
 				peer.setRemoteInterested(false);
