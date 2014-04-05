@@ -21,44 +21,66 @@ import java.lang.*;
  * 
  */
 public class RUBTClient {
-	
+
 	private static TorrentInfo parseTorrentInfo(String filename) {
-        try {
-            //Create input streams and file streams
-            File torrentFile = new File(filename);
-            FileInputStream torrentFileStream = new FileInputStream(torrentFile);
-            DataInputStream torrentFileReader = new DataInputStream(torrentFileStream);
-            
-            //Read the file into torrentFileBytes
-            byte[] torrentFileBytes = new byte[((int)torrentFile.length())];
-            torrentFileReader.readFully(torrentFileBytes);
-            
-            //Close input streams and file streams
-            torrentFileReader.close();
-            torrentFileStream.close();
-            
-            return new TorrentInfo(torrentFileBytes);
-            
-        } catch(FileNotFoundException e) {
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        } catch (IOException e){
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        } catch (BencodingException e) {
-            System.err.println("Error: " + e.getMessage());
-            return null;
-        }   
-    }
-	
+		try {
+			//Create input streams and file streams
+			File torrentFile = new File(filename);
+			FileInputStream torrentFileStream = new FileInputStream(torrentFile);
+			DataInputStream torrentFileReader = new DataInputStream(torrentFileStream);
+
+			//Read the file into torrentFileBytes
+			byte[] torrentFileBytes = new byte[((int)torrentFile.length())];
+			torrentFileReader.readFully(torrentFileBytes);
+
+			//Close input streams and file streams
+			torrentFileReader.close();
+			torrentFileStream.close();
+
+			return new TorrentInfo(torrentFileBytes);
+
+		} catch(FileNotFoundException e) {
+			System.err.println("Error: " + e.getMessage());
+			return null;
+		} catch (IOException e){
+			System.err.println("Error: " + e.getMessage());
+			return null;
+		} catch (BencodingException e) {
+			System.err.println("Error: " + e.getMessage());
+			return null;
+		}   
+	}
+
+	private static void exitWhenQuitDetected(){
+		String line = "";
+		String QUIT = "quit";
+
+		try{
+			final InputStreamReader input = new InputStreamReader(System.in);
+			final BufferedReader in = new BufferedReader(input);    
+			while (!(line.equals(QUIT))) {    
+				line = in.readLine();    
+				if (line.equals(QUIT)) {    
+					System.out.println("You are now quiting the program");                      
+					System.exit(1);    
+				}    //end of if
+			}  //end of while
+
+		} catch(Exception e){
+			System.err.println("Error: " + e.getMessage());
+		}//end of catch
+		return;
+
+	}//end of exitwhenquitdetected
+
 	public static void main(String[] args) throws InterruptedException{
-    	
-    	/*
+
+		/*
 		 * "how to gracefully handle sigkill" aka armadillo
 		 * http://stackoverflow.com/questions/2541597/how-to-gracefully-handle-the-sigkill-signal-in-java
 		 */
 		Runtime.getRuntime().addShutdownHook(new Thread(){
-			
+
 			/*
 			 * for the teddy bear: 
 			 * http://www.chris.com/ascii/index.php?art=animals/bears+(teddybears)
@@ -69,7 +91,7 @@ public class RUBTClient {
 			 */
 			public void run(){
 				int whichpicint = (int)Math.random()*10;
-				
+
 				System.out.println();
 				System.out.println();
 
@@ -95,20 +117,20 @@ public class RUBTClient {
 
 			}//end of run
 		});//end of new thread runtime thingie :3
-	
+
 		//Argument checking
 		if(args == null || args.length != 2){
-    		System.err.println("Error: Incorrect number of paramaters");
-    		return;
-    	}
-    	
-    	//Parse arguments
-    	String torrentPath = args[0];
+			System.err.println("Error: Incorrect number of paramaters");
+			return;
+		}
+
+		//Parse arguments
+		String torrentPath = args[0];
 		String outputPath = args[1];
-		
+
 		//Open the torrent file specified
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
-		
+
 		Client client = new Client(torrent, outputPath);
 		int port = client.openSocket();
 		if(client.connectToTracker(port) == false){
@@ -116,30 +138,11 @@ public class RUBTClient {
 			System.exit(1);
 		}
 		client.connectToPeers();
-/*		client.HTTPGET();
-		client.printPeerList();
-		String[] getPeerList = client.getPeerList();
-		String peer = "";
-		if(getPeerList != null){
-			for(int i = 0; i < getPeerList.length; i++){
-				if(getPeerList[i].contains("RUBT11")){
-					peer = getPeerList[i];*/
-//  				}//end of if 
-//			}//end of for 
-//		}//end of if 
 
-        //TODO FIX THIS!
-/*		client.connect(peer);
-		if(client.completed()){
-			System.out.println("FILE SUCCESSFULY DOWNLOAD!");
-		}
-		
-		client.stopped();*/
-		
-		
+
 		return;
-		
-				
+
+
 	}//end of public static void main
-	
+
 }//end of class
