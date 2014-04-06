@@ -76,7 +76,7 @@ public class Peer extends Thread {
 		this.torrentSHA = Client.getHash();
 		this.peerConnection = null;
 	}
-	
+
 	/*********************************
 	 * Setters
 	 ********************************/
@@ -90,6 +90,18 @@ public class Peer extends Thread {
 		this.localChoking = localChoking;
 	}
 	
+	public void setPeerConnection(Socket peerConnection){
+		this.peerConnection = peerConnection;
+	}
+
+	public void setOutgoing(DataOutputStream outgoing){
+		this.outgoing = outgoing;
+	}
+
+	public void setIncoming(DataInputStream incoming){
+		this.incoming = incoming;
+	}
+
 	/**
 	 * The status of the Client being interested of the Peer. 
 	 * @param localInterested true = The Client is the Peer.
@@ -146,7 +158,7 @@ public class Peer extends Thread {
 		}
 		return retVal;
 	}
-	
+
 	/*********************************
 	 * Getters
 	 ********************************/
