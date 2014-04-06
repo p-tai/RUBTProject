@@ -5,20 +5,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.AbstractQueue;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -311,13 +309,25 @@ public class Client extends Thread{
 						client.updateDownloaded();
 						Map<byte[], String> peerList = client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "");
 						Map<byte[], Peer> peerHistory = client.peerHistory;
-						Iterator it = peerList.entrySet().iterator();
+						ArrayList<String> peerListString = new ArrayList<String>(peerList.values());
+						ArrayList<Peer> peerHistoryPeer = new ArrayList<Peer>(peerHistory.values());
+						for(int i = 0; i < peerListString.size(); i++){
+							String[] ipPort = peerListString.get(i).split(":");
+							for(int z = 0; z < peerHistoryPeer.size(); i++){
+								if(ipPort[0].equals(peerHistoryPeer.get(z))){
+									
+								}
+							}
+						}
+						
+						
+						/*Iterator it = peerList.entrySet().iterator();
 						while(it.hasNext()){
 							Map.Entry pairs = (Map.Entry)it.next();
 							System.out.println(pairs.getKey() + " = " + pairs.getValue());
 							it.remove();
 
-						}//end of while 
+						}*///end of while 
 
 					}//end of if 
 				}//end of void run()

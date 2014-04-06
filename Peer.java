@@ -151,6 +151,20 @@ public class Peer extends Thread {
 	 ********************************/
 	
 	/**
+	 * @return The Peer's IP
+	 */
+	public String getPeerIP(){
+		return this.peerIP;
+	}
+	
+	/**
+	 * @return The Peer's Port
+	 */
+	public int getPeerPort(){
+		return this.peerPort;
+	}
+	
+	/**
 	 * @return The Peer's ID
 	 */
 	public byte[] getPeerID() {
