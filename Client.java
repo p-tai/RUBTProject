@@ -81,9 +81,9 @@ public class Client extends Thread{
 	private Map<byte[], Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	
-	private LinkedList<Integer>	havePiece;
+	private LinkedList<String>	havePiece;
 	// just use removeFirst() to dequeue and addLast() to enqueue
-	private LinkedList<Integer> needPiece;
+	private LinkedList<String> needPiece;
 	
 	/**
 	 * Client Constructor
@@ -100,8 +100,8 @@ public class Client extends Thread{
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
-		this.havePiece = new LinkedList<Integer>();
-		this.needPiece = new LinkedList<Integer>(); 
+		//this.havePiece = new LinkedList<Integer>();
+		//this.needPiece = new LinkedList<Integer>(); 
 		this.userQuit = false;
 		updateDownloaded();
 		genClientID();
@@ -119,8 +119,8 @@ public class Client extends Thread{
 		this.bitfield = checkfile(torrent, file);
 		this.url = this.torrentInfo.announce_url;
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
-		this.havePiece = new LinkedList<Integer>();
-		this.needPiece = new LinkedList<Integer>(); 
+		//this.havePiece = new LinkedList<Integer>();
+		//this.needPiece = new LinkedList<Integer>(); 
 		this.userQuit = false;
 		ToolKit.print(this.blocks);
 		updateDownloaded();
@@ -420,6 +420,30 @@ public class Client extends Thread{
 		this.start();
 	}
 	
+	private static class requestPieces extends Thread{
+		
+		private Client client;
+		
+		/**
+		 * RequestPiece Constructor
+		 * @param client The client Object
+		 */
+		public requestPieces(Client client){
+			this.client = client;
+			this.client.havePiece = new LinkedList<String>();
+			this.client.needPiece = new LinkedList<String>();
+			
+		}
+		
+		/**
+		 * Request Pieces to the peers
+		 */
+		public void run(){
+			
+		}
+		
+	}
+	
 	/**
 	 * Start the thread that reads the messages
 	 * from the peer
@@ -473,6 +497,7 @@ public class Client extends Thread{
 				break;
 			case 4: /* have */
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
+				pieceBuffer.mark();
 				pieceBuffer.put(message.getPayload());
 				pieceBuffer.reset();
 				int pieceIndex = pieceBuffer.getInt();
