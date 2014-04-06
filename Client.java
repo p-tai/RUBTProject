@@ -307,15 +307,34 @@ public class Client {
 					if(System.currentTimeMillis() - lastRequestSent > client.tracker.getInterval()){
 						client.updateDownloaded();
 						Map<byte[], String> peerList = client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "");
+						if(peerList == null){
+							return;
+						}
 						Map<byte[], Peer> peerHistory = client.peerHistory;
 						ArrayList<String> peerListString = new ArrayList<String>(peerList.values());
 						ArrayList<Peer> peerHistoryPeer = new ArrayList<Peer>(peerHistory.values());
+						boolean found = false;
 						for(int i = 0; i < peerListString.size(); i++){
 							String[] ipPort = peerListString.get(i).split(":");
-							for(int z = 0; z < peerHistoryPeer.size(); i++){
-								if(ipPort[0].equals(peerHistoryPeer.get(z))){
-									
+							for(int z = 0; z < peerHistoryPeer.size(); z++){
+								Peer peer = peerHistoryPeer.get(z);
+								if(ipPort[0].equals(peer.getPeerIP()) && 
+										ipPort[1].equals(String.valueOf(peer.getPeerPort()))){
+									found = true;
+									break;
 								}
+							}
+							if(found == true){
+								//System.out.println("Same Peer");
+								found = false;
+							}else{
+								//Add a new Peer
+								System.out.println("Found a new Peer");
+								byte[] peerID = findByteArray(peerList, peerListString.get(i));
+								Peer newPeer = new Peer(client, peerID, ipPort[0], Integer.valueOf(ipPort[1]));
+								peerHistory.put(peerID, newPeer);
+								//TODO When we found a new peer, should we automatically 
+								//connect to it. 
 							}
 						}
 						
@@ -330,6 +349,24 @@ public class Client {
 
 					}//end of if 
 				}//end of void run()
+				
+				private byte[] findByteArray(Map<byte[], String> peerList, String ipPort){
+					if(peerList == null){
+						return null;
+					}
+					
+					Set<byte[]> keys = peerList.keySet();
+					Iterator<byte[]> iter = keys.iterator();
+					while(iter.hasNext()){
+						byte[] peerID = iter.next();
+						if(peerList.get(peerID).equals(ipPort)){
+							return peerID;
+						}
+					}
+					
+					return null;
+				}
+				
 			}, new Date(), client.interval);
 		}// end of run
 	}//end of requestTracker method
