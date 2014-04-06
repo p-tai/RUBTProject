@@ -28,7 +28,7 @@ public class Peer extends Thread {
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
 	private ByteBuffer buffer;
-	private int bytesDownloaded;
+	private boolean[] blocksDownloaded;
 	
 	/**
 	 * Flags for local/remote choking/interested
@@ -142,27 +142,40 @@ public class Peer extends Thread {
 	 * Writes a byte[] to the peer's internal buffer.
 	 * Also checks if the buffer is full.
 	 * @param payload The payload that will be written to buffer. Should come from a peer message.
-	 * @param byteOffset Offset to write into at the bfufer - should come from a peer message.
-	 * @return The entire contents of the buffer.
+	 * @param blockOffset Offset to write into at the buffer - should come from a peer message.
+	 * @return The entire contents of the buffer or null.
 	 */ 
-	public byte[] writeToInternalBuffer(byte[] payload, int byteOffset) {
+	public byte[] writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
 		if(this.buffer == null) {
-			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
+			resetByteBuffer(pieceOffset);
 		}
-		this.buffer.put(payload,byteOffset,payload.length);
-		this.bytesDownloaded += payload.length;
-		byte[] currentBuffer = null;
+		this.buffer.put(payload,blockOffset,payload.length);
+		this.blocksDownloaded[blockOffset%RUBT.MAXIMUMLIMT] = true;
 		
 		//Check if you have a full buffer. If so, reset the buffer.
-		if(this.bytesDownloaded == RUBT.getPieceLength()) {
-			currentBuffer = buffer.array();
-			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
-		} else if( this.bytesDownloaded == RUBT.getLastPieceLength() ) {
-			currentBuffer = buffer.array();
-			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
-			this.bytesDownloaded = 0;
+		if(isAllTrue(this.blocksDownloaded)) {
+			return buffer.array();
+		} else {
+			return null;
 		}
-		return currentBuffer;
+	}
+	
+	public void resetByteBuffer(int pieceOffset){
+		if(pieceOffset == -1) {
+			this.buffer = null;
+		}
+		System.out.println("THE PIECE LENGTH IS: " + RUBT.getPieceLength() );
+		if(pieceOffset == this.RUBT.getNumPieces()-1) {
+			//if this is the last piece, special case.
+			this.blocksDownloaded = new boolean[RUBT.getLastPieceBlockCount()];
+		}
+		this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
+		this.blocksDownloaded = new boolean[RUBT.getNumBlocks()];
+	}
+	
+	private boolean isAllTrue(boolean[] blocks){
+		for(boolean b: blocks) if(!b) return false;
+		return true;
 	}
 
 	/*********************************

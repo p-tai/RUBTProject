@@ -46,7 +46,7 @@ public class Client extends Thread{
 	private String saveName;
 	private RandomAccessFile dataFile;
 	
-	private final int MAXIMUMLIMT = 16384;
+	public final static int MAXIMUMLIMT = 16384;
 	private boolean[] blocks;
 	private boolean[] packets;
 	private boolean[] bitfield;
@@ -672,19 +672,22 @@ public class Client extends Thread{
 				pieceBuffer.get(temp);
 				
 				//Stores this in the peer's internal buffer
-				byte[] piece = peer.writeToInternalBuffer(temp,offset);
+				byte[] piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
+				
+				System.out.println("Made it past the error");
 				
 				//Internal buffer will return a null if it is not of the correct length.
 				if (piece == null) {
 					break;
-				}
-				//If the length of the buffer is equal to the piece, then check the SHA-1
-				if(piece.length==this.getPieceLength() || (pieceNo == (this.getNumPieces()-1) && piece.length==this.getLastPieceLength())) {
+				} else { //If the length of the buffer is equal to the piece, then check the SHA-1
 					//If the SHA-1 matches, then write it to the file
+					System.out.println("CHECKING PIECE " + pieceNo + checkData(piece,pieceNo));
+					
 					if(checkData(piece,pieceNo)) {
 						this.downloadsInProgress[pieceNo]=false;
 						this.bitfield[pieceNo]=true;
 						writeData(piece,pieceNo);
+						peer.resetByteBuffer(-1); //reset byte buffer for the next piece
 						Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 						haveMessage.have(pieceNo);
 						//write this message to all peers
@@ -801,6 +804,10 @@ public class Client extends Thread{
 		}
 		return temp;
 	}
+	
+	public static int getLastPieceBlockCount() {
+		return (int)(Math.ceil(getLastPieceLength()/MAXIMUMLIMT));
+	}
 	/**
 	 * @return The Torrent Piece Length.
 	 */
@@ -811,17 +818,20 @@ public class Client extends Thread{
 	/**
 	 * @return The file length as per the torrent info file
 	 */
-	public int getFileLength(){
-		return this.torrentInfo.file_length;
+	public static int getFileLength(){
+		return torrentInfo.file_length;
 	}
 	
 	/**
 	 * @return The number of pieces as per the torrent info file
 	 */
-	public int getNumPieces() {
-		return this.torrentInfo.piece_hashes.length;
+	public static int getNumPieces() {
+		return torrentInfo.piece_hashes.length;
 	}
 
+	public static int getNumBlocks() {
+		return ((int)(Math.ceil(getPieceLength()/MAXIMUMLIMT)));
+	}
 	/*********************************
 	 * Client->Tracker Private Functions
 	 ********************************/
