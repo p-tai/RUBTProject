@@ -22,7 +22,6 @@ public class Peer extends Thread {
 	private final String peerIP;
 	private int peerPort;
 	
-	private byte[] peerBitfield;
 	private boolean[] peerBooleanBitField;
 	
 	private Socket peerConnection;
@@ -47,6 +46,7 @@ public class Peer extends Thread {
 	private Timer keepAliveTimer = new Timer();
 	private Timer peerTimeoutTimer = new Timer();
 	private long lastMessageTime = System.currentTimeMillis();
+	private long lastPeerTime = System.currentTimeMillis();
 	
 	/**
 	 * Peer's Constructor
@@ -57,6 +57,7 @@ public class Peer extends Thread {
 	 */
 	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort){
 		this.RUBT = RUBT;
+		this.buffer.allocate(RUBT.getPieceLength());
 		this.clientID = RUBT.getClientID();
 		this.peerID = peerID;
 		try {
@@ -65,6 +66,7 @@ public class Peer extends Thread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		this.peerBooleanBitField = new boolean[RUBT.getNumPieces()];
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
 		this.localChoking = true;
@@ -72,6 +74,7 @@ public class Peer extends Thread {
 		this.remoteChoking = true;
 		this.remoteInterested = false;
 		this.torrentSHA = Client.getHash();
+		this.peerConnection = null;
 	}
 	
 	/*********************************
@@ -86,6 +89,8 @@ public class Peer extends Thread {
 	public void setLocalChoking(boolean localChoking){
 		this.localChoking = localChoking;
 	}
+	
+	
 	
 	/**
 	 * The status of the Client being interested of the Peer. 
@@ -122,15 +127,55 @@ public class Peer extends Thread {
 		this.peerBooleanBitField = peerBooleanBitField;
 	}
 	
+	/**
+	 * Writes a byte[] to the peer's internal buffer.
+	 * Also checks if the buffer is full.
+	 * @param payload The payload that will be written to buffer. Should come from a peer message.
+	 * @param byteOffset Offset to write into at the bfufer - should come from a peer message.
+	 * @return The entire contents of the buffer.
+	 */ 
+	public byte[] writeToInternalBuffer(byte[] payload, int byteOffset) {
+		buffer.put(payload,byteOffset,payload.length);
+		byte[] retVal = buffer.array();
+		//Check if you have a full buffer. If so, reset the buffer.
+		if(retVal.length == RUBT.getPieceLength()) {
+			buffer.allocate(RUBT.getPieceLength());
+		} else if( retVal.length == RUBT.getLastPieceLength() ) {
+			buffer.allocate(RUBT.getPieceLength());
+		}
+		return retVal;
+	}
+	
 	/*********************************
 	 * Getters
 	 ********************************/
+	
+	/**
+	 * @return The Peer's IP
+	 */
+	public String getPeerIP(){
+		return this.peerIP;
+	}
+	
+	/**
+	 * @return The Peer's Port
+	 */
+	public int getPeerPort(){
+		return this.peerPort;
+	}
 	
 	/**
 	 * @return The Peer's ID
 	 */
 	public byte[] getPeerID() {
 		return this.peerID;
+	}
+	
+	/**
+	 * @return The Peer's ID as a String
+	 */
+	public String getPeerIDString(){
+		return this.peerIDString;
 	}
 	
 	/**
@@ -152,6 +197,13 @@ public class Peer extends Thread {
 	 */
 	public boolean amChoked() {
 		return this.remoteChoking;
+	}
+	
+	/**
+	 * @return This peer's bitfield as a boolean array
+	 */
+	public boolean[] getBitfields() {
+		return this.peerBooleanBitField;
 	}
 	
 	/**
@@ -255,13 +307,25 @@ public class Peer extends Thread {
 	
 	/**
 	 * Function to write a message to the outgoing socket.
+	 * @param payload message to be sent to peer
 	 */
 	public void writeToSocket(Message payload){
-		updateTimer(this.keepAliveTimer);
+		
+		//In case the client and the peer threads both want to write to socket at the same time
 		synchronized(this.outgoing) {
 			try {
-				this.outgoing.write(payload.getPayload());
+				if(payload.getLength() == 0){
+					/* Keep Alive */
+					System.out.println("Sending Keep Alive to " + this.peerIDString);
+					System.out.println();
+				}else{
+					System.out.println("Sending " + Message.getMessageID(payload.getMessageID()) + " " + this.peerIDString);
+					System.out.println();
+				}
+				//get message payload, write to socket, then update the keep alive timer
+				this.outgoing.write(payload.getBTMessage());
 				this.outgoing.flush();
+				updateTimer();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -269,70 +333,71 @@ public class Peer extends Thread {
 		}
 	}
 	
-	
 	/**
 	 * Main runnable thread process for the peer class.
-	 * Will continously try to read from the incoming socket.
+	 * Will connect and handshake continously try to read from the incoming socket.
 	 */
 	public void run() {
-		connect();
+		if(this.peerConnection == null) {
+			connect();
 		
-		//Create a timer task that will check for Peer Timeouts.
-		updateTimer(this.peerTimeoutTimer);
-		
-		if(handshake(this.torrentSHA) == true){
+			if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
-			System.out.println("HANDSHAKE RECEIVED");
-			System.out.println("FROM:" + this.peerIDString);
+				System.out.println("HANDSHAKE RECEIVED");
+				System.out.println("FROM:" + this.peerIDString);
 			
-			//Send Bitfield to Peer
-			Message bitfieldMessage = RUBT.generateBitfieldMessage();
-			writeToSocket(bitfieldMessage);
-			
-			try {
-				//while the socket is connected
-				//read from socket (will block if it is empty)
-				//parse message
-				while(readSocketInputStream()){
-					//Update the timer to a new timeout value.
-					updateTimer(this.peerTimeoutTimer);
-				}//while
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				//Send Bitfield to Peer
+				if(this.RUBT.downloaded != 0) {
+					Message bitfieldMessage = RUBT.generateBitfieldMessage();
+					writeToSocket(bitfieldMessage);
+				}
+			} else {
+				System.out.println("CONNECTION FAILURE");
 			}
-		}else{
-			System.out.println("CONNECTION FAILURE");
 		}
 		
+		/**
+		* Schedules a new anonymous implementation of a TimerTask that
+		* will start now and execute every 10 seconds afterward.
+		* Sourced from CS352 Sakai Forums on 3.29.14
+		* @author Rob Moore
+		*/
+		this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
+			public void run() {
+				// Let the peer figure out when to send a keepalive
+				Peer.this.checkAndSendKeepAlive();
+			}//run
+		}, 10000, 10000); //keepAlive Transmission Timer
+		
+		updateTimer();
+		
+		this.peerTimeoutTimer.scheduleAtFixedRate(new TimerTask(){
+			public void run() {
+				// Let the peer figure out when to send a keepalive
+				Peer.this.checkPeerTimeout();
+			}//run
+		}, 10000, 10000); //peerTimeout timer
+		
+		updatePeerTimeoutTimer();
+		
+		try {
+			//while the socket is connected
+			//read from socket (will block if it is empty)
+			//parse message
+			while(readSocketInputStream()){
+				//Update the PEER TIMEOUT timer to a new value (because we received a packet).
+				updatePeerTimeoutTimer();
+			}//while
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+				
 	}//run
 	
 	/**
-	 * Schedules a new anonymous implementation of a TimerTask that
-	 * will start now and execute every 10 seconds afterward.
-	 * Sourced from CS352 Sakai Forums on 3.29.14
-	 * @author Rob Moore
-	 */
-	private void updateTimer(Timer timerTask) {
-		try {
-			lastMessageTime = System.currentTimeMillis();
-			timerTask.cancel();
-			timerTask.scheduleAtFixedRate(new TimerTask(){;
-				public void run() {
-					// Let the peer figure out how/when to kill the peer/send a keepalive
-					Peer.this.checkPeerTimeout();
-				}//run
-			}, new Date(), 10000); //keepAliveTimer
-			
-		} catch(Exception e) { 
-			//Catch this exception for now, caused by canceling the timer?
-		}//try
-		
-	}//updateTimer
-	
-	/**
 	 * This method is called on shutdown to close all of the data streams and sockets.
-	 */
+	 */	
 	public void shutdownPeer() {
 		//to be implemented
 		//Needs to close all input/output streams and then close the socket to peer.
@@ -340,6 +405,8 @@ public class Peer extends Thread {
 			this.incoming.close();
 			this.outgoing.close();
 			this.peerConnection.close();
+			this.keepAliveTimer.cancel(); 
+			this.peerTimeoutTimer.cancel(); 
 		} catch (Exception e) {
 			//Doesn't matter because the peer is closing anyway
 		}
@@ -355,19 +422,19 @@ public class Peer extends Thread {
 		byte classID;
 		Message incomingMessage = null;
 		
-		MessageTask incomingTask = new MessageTask(this,incomingMessage);
+		//MessageTask incomingTask = new MessageTask(this,incomingMessage);
 		
 		if(length == 0) {
 			//keep alive is the only packet you can receive with length zero
 			incomingMessage = Message.keepAlive;
-			this.RUBT.queueMessage(incomingTask);
+			this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 		} else if(length > 0) {
 			
 			//Read the next byte (this should be the classID of the message)
 			classID = this.incoming.readByte();
 			incomingMessage = new Message(length,classID);
-			
 			//Debug statement
+			//TODO Remove this and add it to the Client readQueue. 
 			System.out.println("Received " + Message.getMessageID(classID).toUpperCase() + " Message");
 			System.out.println("FROM " + this.peerIDString);
 			System.out.println();
@@ -378,69 +445,32 @@ public class Peer extends Thread {
 			switch(classID) {
 				case 0: //choke message
 					incomingMessage = Message.choke;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 1: //unchoke message
 					incomingMessage = Message.unchoke;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 2: //interested message
 					incomingMessage = Message.interested;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 3: //not interested message
 					incomingMessage = Message.uninterested;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
-				case 4: case 5: case 6: //have message message. bitfield message, request message
+				case 4: case 5: case 6: case 7: case 8: 
+				//have message message. bitfield message, request message, piece message, cancel message
 					byte[] temp = new byte[length];
 					this.incoming.readFully(temp);
 					incomingMessage.setPayload(temp);
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
-					
-				case 7: //piece message
-					try {
-						int pieceIndex = this.incoming.readInt();
-						int blockOffset = this.incoming.readInt();
-						System.out.printf("Receiving piece %d offset %d \n", pieceIndex, blockOffset );
-						length = length - 8; //Remove the length of the indexes and class ID
-						
-						byte[] payload = new byte[length];
-						this.incoming.readFully(payload);
-//						int blockIndex = pieceIndex + (int)Math.floor((blockOffset+1)/this.MAXIMUMLIMT);
-//						System.out.println("BlockIndex "+ blockIndex);
-						this.buffer.put(payload);
-						this.bytesRead += length;
-						
-						System.out.println("Read " + length + " bytes from peer " + this.peerID);
-						
-						if (this.bytesRead >= Client.getPieceLength() ) {
-							//check the piece data
-							//put the entire buffer into the LinkedBlockQueue if SHA correct
-							//If not, increment the number of failed downloads.
-							//If the number of failed downloads is 3, kill the peer connection because it has corrupt data
-							
-						}
-						/*this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
-						this.dataFile.write(payload);
-						this.numPacketsDownloaded++;
-						this.packets[blockIndex] = true;*/
-						
-					
-						//if(blockIndex == this.numPacketsDownloaded) {
-						//	return true;
-						//}
-						incomingMessage.piece(pieceIndex, blockOffset, payload);
-						this.RUBT.queueMessage(incomingTask);
-						return true;
-					} catch(IOException e) {
-						System.err.println("Received an incorrect input from peer during piece download");
-					}
+				/*
 				case 8: //Cancel message
 					int reIndex = this.incoming.readInt();
 					int reOffset = this.incoming.readInt();
@@ -449,6 +479,7 @@ public class Peer extends Thread {
 					incomingMessage.cancel(reIndex,reOffset,reLength);
 					this.RUBT.queueMessage(incomingTask);
 					break;
+				*/
 				default:
 					System.err.println("Unknown class ID");
 			}//switch
@@ -466,11 +497,27 @@ public class Peer extends Thread {
 	 */
 	protected void checkPeerTimeout(){
 		long now = System.currentTimeMillis();
-		if(now - this.lastMessageTime > KEEP_ALIVE_TIMEOUT){
-			// The "sendMessage" method should update lastMessageTime
-			this.writeToSocket((Message.keepAlive));
-			// Validate that the timestamp was updated
-			System.out.println("Sent Keep-Alive");
+		if((now - Peer.this.lastPeerTime) > KEEP_ALIVE_TIMEOUT*1.05){
+			//Peer timed out, should kill the peer
+			Peer.this.shutdownPeer();
 		}
 	}//checkAndSendKeepAlive
+	
+	protected void checkAndSendKeepAlive(){
+		long now = System.currentTimeMillis();
+		if((now - Peer.this.lastMessageTime) > KEEP_ALIVE_TIMEOUT*0.25){
+			Peer.this.writeToSocket(Message.keepAlive);
+		}
+	}//checkAndSendKeepAlive
+	
+	private void updateTimer() {
+		//System.out.println("Updating message time");
+		this.lastMessageTime = System.currentTimeMillis();
+	}//updateTimer
+	
+	private void updatePeerTimeoutTimer() {
+		//System.out.println("Updating last packet from peer time");
+		this.lastPeerTime = System.currentTimeMillis();
+	}//updatePeerTimeoutTimer
+	
 }//Peer.java
