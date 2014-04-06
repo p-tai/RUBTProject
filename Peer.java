@@ -22,7 +22,6 @@ public class Peer extends Thread {
 	private final String peerIP;
 	private int peerPort;
 	
-	private byte[] peerBitfield;
 	private boolean[] peerBooleanBitField;
 	
 	private Socket peerConnection;
@@ -302,16 +301,8 @@ public class Peer extends Thread {
 		
 			if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
-			System.out.println("HANDSHAKE RECEIVED");
-			System.out.println("FROM:" + this.peerIDString);
-			
-			//Send Bitfield to Peer
-			Message bitfieldMessage = RUBT.generateBitfieldMessage();
-			System.out.println("SEND " + this.peerIDString + " CLIENT BITFIELD");
-			System.out.println("WITH THE FOLLOWING BITFIELD");
-			System.out.println(Arrays.toString(bitfieldMessage.getPayload()));
-			System.out.println();
-			writeToSocket(bitfieldMessage);
+				System.out.println("HANDSHAKE RECEIVED");
+				System.out.println("FROM:" + this.peerIDString);
 			
 				//Send Bitfield to Peer
 				if(this.RUBT.downloaded != 0) {

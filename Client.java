@@ -47,6 +47,7 @@ public class Client {
 	private boolean[] blocks;
 	private boolean[] packets;
 	private boolean[] bitfield;
+	private boolean[] downloadInProgress;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
@@ -791,7 +792,51 @@ public class Client {
 			}
 		}
 	}
+	
+	/**
+	 * Send piece requests for download a piece from peer
+	 * @param pieceIndex zero based piece index
+	 * @param peer the peer to download from
+	 */
+	private void getPiece(int pieceIndex, Peer remotePeer ) {
+		if(remotePeer.amChoked()) {
+			remotePeer.writeToSocket(Message.unchoke);
+		}
+		Message request;
+		int length;
+		int blockOffset = 0;
+		//Check if this is the oddball final piece)
+		int leftToRequest = this.getPieceLength();
+		if(pieceIndex == this.getNumPieces()-1) {
+			leftToRequest = (this.getFileLength()%this.getPieceLength());
+			if(leftToRequest == 0) {
+				leftToRequest = this.getPieceLength();
+			}
+		} else {
+			leftToRequest = this.getPieceLength();
+		}
+		
+		
+		while(leftToRequest>0) {
+			if(leftToRequest > this.MAXIMUMLIMT) {
+				length = this.MAXIMUMLIMT;
+			} else {
+				length = leftToRequest;
+			}
+			request = new Message((length+1),(byte)6);
+			request.request(pieceIndex,blockOffset,length);
+			leftToRequest-=length;
+			remotePeer.writeToSocket(request);
+		}
+	}
     
+    private int getFileLength(){
+		return this.torrentInfo.file_length;
+	}
+	
+	private int getNumPieces() {
+		return this.torrentInfo.piece_hashes.length;
+	}
 	/**
 	 * @return true for success, otherwise false.
 	 */
@@ -892,8 +937,6 @@ public class Client {
                 return false;
                 }
         }
-
         return true;
     }
-	
 }
