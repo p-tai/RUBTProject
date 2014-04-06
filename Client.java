@@ -12,11 +12,13 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -81,9 +83,9 @@ public class Client extends Thread{
 	private Map<byte[], Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	
-	private LinkedList<String>	havePiece;
+	private LinkedBlockingQueue<String> processPiece;
 	// just use removeFirst() to dequeue and addLast() to enqueue
-	private LinkedList<String> needPiece;
+	private LinkedBlockingQueue<String> needPiece;
 	
 	/**
 	 * Client Constructor
@@ -425,9 +427,12 @@ public class Client extends Thread{
 		 * MessageID: 6
 		 * Payload: <index><begin><length>
 		 **********************************/
-		
-		
 		private Client client;
+		private int fileLength;
+		private int pieceLength;
+		private boolean[] bitfield;
+		private LinkedBlockingQueue<String> processPiece;
+		private LinkedBlockingQueue<String> needPiece;
 		
 		/**
 		 * RequestPiece Constructor
@@ -435,17 +440,119 @@ public class Client extends Thread{
 		 */
 		public requestPieces(Client client){
 			this.client = client;
-			this.client.havePiece = new LinkedList<String>();
-			this.client.needPiece = new LinkedList<String>();
+			this.client.processPiece = new LinkedBlockingQueue<String>();
+			this.client.needPiece = new LinkedBlockingQueue<String>();
+			this.processPiece = this.client.processPiece;
+			this.needPiece = this.client.needPiece;
+			this.fileLength = this.client.torrentInfo.file_length;
+			this.pieceLength = this.client.torrentInfo.piece_length;
+			this.bitfield = this.client.bitfield;
+			updateNeedPiece();
+		}
+		
+		/**
+		 * 
+		 */
+		private void updateNeedPiece(){
+			double numberOfPieces = Math.ceil((double)(this.fileLength/this.pieceLength));
+			double numberOfIndexPerPiece = (this.pieceLength/this.client.MAXIMUMLIMT);	
+			double leftOver = this.fileLength - (this.pieceLength * numberOfPieces);
+			//TODO DEBUG
+			System.out.println();
+			System.out.println("File Length = " + this.fileLength);
+			System.out.println("Piece Length = " + this.pieceLength);
+			System.out.println("Number of Pieces = " + numberOfPieces);
+			System.out.println("Number of Index Per Piece = " + numberOfIndexPerPiece);
+			System.out.println("LeftOver = " + leftOver);
+			System.out.println();
+			//TODO Remove this print statments
+			if(isAllTrue(this.bitfield)){
+				/* Have the file */
+				// SEEDER
+			}else if(isAllFalse(this.bitfield)){
+				/* Have no file */
+				//TODO I think I can reduced this down into one
+				for(int i = 0; i < numberOfPieces; i++){
+					for(int z = 0; z < numberOfIndexPerPiece; z++){
+						String requestMessage = i + ":" + 
+							(z * this.client.MAXIMUMLIMT) + ":" + this.client.MAXIMUMLIMT;
+						this.needPiece.add(requestMessage);
+					}
+				}
+				
+				if((int)leftOver != 0){
+					String requestMessage = ((int)numberOfPieces) + ":" + 0 + ":" + (int)leftOver; 
+					this.needPiece.add(requestMessage);
+				}
+				System.out.println(this.needPiece);
+			}else{
+				/* Have some of the pieces */
+				//TODO
+			}
+		}
+		
+		/**
+		 * Checks to see if the bitField is all false
+		 * @param bitField The bitfield
+		 * @return true if it is all false, otherwise false
+		 */
+		private boolean isAllFalse(boolean[] bitField){
+			for(boolean b: bitField) if(b) return false;
+			return true;
+		}
+		
+		/**
+		 * Checks to see if the bitField is all true
+		 * @param bitField The bitfield
+		 * @return true if it is all true, otherwise false
+		 */
+		private boolean isAllTrue(boolean[] bitField){
+			for(boolean b: bitField) if(!b) return false;
+			return true;
+		}
+		
+		/**
+		 * Sends a Interested Message to the Peer
+		 * @param peer The Peer Object
+		 */
+		private void sendInterestedMessage(Peer peer){
+			peer.writeToSocket(Message.interested);
 		}
 		
 		/**
 		 * Request Pieces to the peers
 		 */
 		public void run(){
-			
+			if(this.needPiece.isEmpty()){
+				/* Seeder */
+				return;
+			}
+			if(!this.needPiece.isEmpty()){
+				Set<byte[]> keys = this.client.peerHistory.keySet();
+				Iterator<byte[]> iter = keys.iterator();
+				String[] request = this.needPiece.peek().split(":");
+				int index = Integer.valueOf(request[0]);
+				int begin = Integer.valueOf(request[1]);
+				int length = Integer.valueOf(request[2]);
+				while(iter.hasNext()){
+					byte[] peerID = iter.next();
+					Peer peer = this.client.peerHistory.get(peerID);
+					if(peer.getBitfields()[index] == true){
+						//TESTING
+						this.processPiece.add(this.needPiece.poll());
+						Message message = new Message(13, (byte)6);
+						System.out.println("SEND A REQUEST MESSAGE TO ");
+						System.out.println(peer.getPeerIDString());
+						System.out.println("WITH THE FOLLOWING PARAMTER");
+						System.out.println("INDEX: " + index);
+						System.out.println("BEGIN: " + begin);
+						System.out.println("LENGTH: " + length);
+						message.request(index, begin, length);
+						break;
+					}
+				}
+			}
 		}
-		
 	}
 	
 	/**
