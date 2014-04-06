@@ -301,6 +301,10 @@ public class Peer extends Thread {
 			
 			//Send Bitfield to Peer
 			Message bitfieldMessage = RUBT.generateBitfieldMessage();
+			System.out.println("SEND " + this.peerIDString + " CLIENT BITFIELD");
+			System.out.println("WITH THE FOLLOWING BITFIELD");
+			System.out.println(Arrays.toString(bitfieldMessage.getPayload()));
+			System.out.println();
 			writeToSocket(bitfieldMessage);
 			
 			try {
