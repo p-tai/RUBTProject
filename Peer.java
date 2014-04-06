@@ -158,6 +158,13 @@ public class Peer extends Thread {
 	}
 	
 	/**
+	 * @return The Peer's ID as a String
+	 */
+	public String getPeerIDString(){
+		return this.peerIDString;
+	}
+	
+	/**
 	 * @return The status of the Client choking the peer.
 	 */
 	public boolean isChokingLocal() {
@@ -367,19 +374,19 @@ public class Peer extends Thread {
 		byte classID;
 		Message incomingMessage = null;
 		
-		MessageTask incomingTask = new MessageTask(this,incomingMessage);
+		//MessageTask incomingTask = new MessageTask(this,incomingMessage);
 		
 		if(length == 0) {
 			//keep alive is the only packet you can receive with length zero
 			incomingMessage = Message.keepAlive;
-			this.RUBT.queueMessage(incomingTask);
+			this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 		} else if(length > 0) {
 			
 			//Read the next byte (this should be the classID of the message)
 			classID = this.incoming.readByte();
 			incomingMessage = new Message(length,classID);
-			
 			//Debug statement
+			//TODO Remove this and add it to the Client readQueue. 
 			System.out.println("Received " + Message.getMessageID(classID).toUpperCase() + " Message");
 			System.out.println("FROM " + this.peerIDString);
 			System.out.println();
@@ -390,22 +397,22 @@ public class Peer extends Thread {
 			switch(classID) {
 				case 0: //choke message
 					incomingMessage = Message.choke;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 1: //unchoke message
 					incomingMessage = Message.unchoke;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 2: //interested message
 					incomingMessage = Message.interested;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 3: //not interested message
 					incomingMessage = Message.uninterested;
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 					
 				case 4: case 5: case 6: case 7: case 8: 
@@ -413,7 +420,7 @@ public class Peer extends Thread {
 					byte[] temp = new byte[length];
 					this.incoming.readFully(temp);
 					incomingMessage.setPayload(temp);
-					this.RUBT.queueMessage(incomingTask);
+					this.RUBT.queueMessage(new MessageTask(this,incomingMessage));
 					break;
 				/*
 				case 8: //Cancel message

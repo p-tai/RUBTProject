@@ -31,7 +31,7 @@ import edu.rutgers.cs.cs352.bt.util.ToolKit;
 //DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
-public class Client {
+public class Client extends Thread{
 	
 	private byte[] clientID = new byte[20];
 		
@@ -48,6 +48,7 @@ public class Client {
 	private boolean[] packets;
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
+	private boolean userShutdown;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
@@ -83,6 +84,7 @@ public class Client {
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
+		this.userShutdown = false;
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.havePiece = new LinkedList<Integer>();
 		this.needPiece = new LinkedList<Integer>(); 
@@ -283,6 +285,7 @@ public class Client {
 	 */
 	public void disconnectFromTracker(){
 		if(tracker != null) {
+			this.userShutdown = true;
 			tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
 		}
 		//response can be ignored because we're disconnecting anyway
@@ -345,6 +348,25 @@ public class Client {
 			peer.start();
 		}
 		(new requestTracker()).run(this);;
+		this.start();
+	}
+	
+	/**
+	 * This runs the thread of reading the messages from the peer
+	 */
+	public void run(){
+		while(!this.userShutdown){
+			//System.out.println("LinkedBlockingQueue Size = " + this.messagesQueue.size());
+			readQueue();			
+		}
+		try {
+			System.out.println("CLIENT THEAD JOIN");
+			this.join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			System.out.println("CLIENT THREAD DID NOT JOIN PROPERLY");
+			e.printStackTrace();
+		}
 	}
 	
 	private void readQueue(){
@@ -354,10 +376,13 @@ public class Client {
 			/* DO NOTHING */
 			return;
 		}
+		System.out.println("Client: Read Queue");
 		MessageTask messageFromPeer = messagesQueue.poll();
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
-		
+		System.out.println("CLIENT CLASS");
+		System.out.println("MESSAGE RECIEVE FROM " + peer.getPeerIDString());
+		//System.out.println("MESSAGE: " + Arrays.toString(message.getBTMessage()));
 		if(message.getLength() == 0){
 			/* Keep Alive Message */
 			//TODO
@@ -390,6 +415,7 @@ public class Client {
 				break;
 			case 4: /* have */
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
+				pieceBuffer.mark();
 				pieceBuffer.put(message.getPayload());
 				pieceBuffer.reset();
 				int pieceIndex = pieceBuffer.getInt();
@@ -426,7 +452,7 @@ public class Client {
 				byte[] piece = peer.writeToInternalBuffer(temp,offset);
 				
 				//If the length of the buffer is equal to the piece, then check the SHA-1
-				if(piece.length == this.getPieceLength()) {
+				if(piece.length == getPieceLength()) {
 					//If the SHA-1 matches, then write it to the file
 					if(checkData(piece,pieceNo)) {
 						this.downloadsInProgress[pieceNo]=false;
