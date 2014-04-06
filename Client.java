@@ -46,14 +46,31 @@ public class Client extends Thread{
 	private boolean[] packets;
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
+	private boolean userQuit;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
 	
+	/**
+	 * The number of bytes download from peers.
+	 */
 	public int downloaded;
+	
+	/**
+	 * The number of bytes of what left to download
+	 */
 	public int left;
+	
+	/**
+	 * The number of bytes uploaded to all the peers
+	 */
 	public int uploaded;
+	
+	/**
+	 * The interval of sending the HTTP GET Request to the Tracker
+	 */
 	public int interval;
+
 	
 	private DataOutputStream request;
 	private DataInputStream  response;
@@ -85,6 +102,7 @@ public class Client extends Thread{
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.havePiece = new LinkedList<Integer>();
 		this.needPiece = new LinkedList<Integer>(); 
+		this.userQuit = false;
 		updateDownloaded();
 		genClientID();
 	}
@@ -103,6 +121,7 @@ public class Client extends Thread{
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.havePiece = new LinkedList<Integer>();
 		this.needPiece = new LinkedList<Integer>(); 
+		this.userQuit = false;
 		ToolKit.print(this.blocks);
 		updateDownloaded();
 		genClientID();
@@ -284,6 +303,7 @@ public class Client extends Thread{
 	public void disconnectFromTracker(){
 		if(tracker != null) {
 			tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
+			this.userQuit = true;
 		}
 		//response can be ignored because we're disconnecting anyway
 		System.out.println("Sent STOPPED event to tracker");
@@ -396,7 +416,18 @@ public class Client extends Thread{
 			this.peerHistory.put(peerID, peer);
 			peer.start();
 		}
-		(new requestTracker()).run(this);;
+		(new requestTracker()).run(this);
+		this.start();
+	}
+	
+	/**
+	 * Start the thread that reads the messages
+	 * from the peer
+	 */
+	public void run(){
+		while(this.userQuit == false){
+			readQueue();
+		}
 	}
 	
 	private void readQueue(){
@@ -409,7 +440,7 @@ public class Client extends Thread{
 		MessageTask messageFromPeer = messagesQueue.poll();
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
-		
+		System.out.println("Reading the peer messages");
 		if(message.getLength() == 0){
 			/* Keep Alive Message */
 			//TODO
