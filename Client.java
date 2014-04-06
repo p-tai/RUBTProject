@@ -135,7 +135,7 @@ public class Client extends Thread{
 	}
 	
 	public Message generateBitfieldMessage() {
-		Message bitfieldMessage = new Message(this.bitfield.length+1,(byte)6);
+		Message bitfieldMessage = new Message(((int)Math.ceil(bitfield.length / 8.0))+1,(byte)6);
 		bitfieldMessage.bitfield(convertBooleanBitfield(this.bitfield));
 		return bitfieldMessage;
 	}
@@ -168,26 +168,22 @@ public class Client extends Thread{
 	
 	private byte[] convertBooleanBitfield(boolean[] bitfield) {
 		//Calcuate the number of bytes needed to contain the bitfield
-		byte[] bytes = new byte[(int)Math.ceil( bitfield.length / 8.0 )];
+		byte[] bytes = new byte[(int)Math.ceil(bitfield.length / 8.0)];
 		for(int i = 0; i < bytes.length; i++) {
 			bytes[i] = (byte)0;
 			for(int j = 0; j < 8; j++) {
-				byte curr = (byte)0;			
-				//If you hit the full length of the bitfield array, finish.
-				if((i*8+j) >= bitfield.length) {
-					bytes[i]<<=(7-j);
+				if((i*8+j)==bitfield.length) {
 					break;
 				}
+				byte curr = (byte)0;
 				//If the boolean array contains a 1, set curr to 0x1.
 				if( bitfield[i*8+j] ) {
+					//bitwise or to append the bit to the end of the current byte
 					curr = (byte)1;
+					curr <<= (7-j);
+					bytes[i] = (byte)(bytes[i]|curr);
 				}
-				//bitwise calculation to append the bit to the end of the current byte
-				bytes[i] = (byte)(bytes[i]|curr);
-				//left shift for the next byte, unless you are already at the end of the current byte
-				if(j != 7) {
-					bytes[i]<<=1;
-				}
+				
 			} //for each bit in a byte
 		} //for each byte
 		return bytes;
