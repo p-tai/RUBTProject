@@ -305,17 +305,13 @@ public class Peer extends Thread {
 			System.out.println("HANDSHAKE RECEIVED");
 			System.out.println("FROM:" + this.peerIDString);
 			
-			//Send Bitfield to Peer
-			Message bitfieldMessage = RUBT.generateBitfieldMessage();
-			System.out.println("SEND " + this.peerIDString + " CLIENT BITFIELD");
-			System.out.println("WITH THE FOLLOWING BITFIELD");
-			System.out.println(Arrays.toString(bitfieldMessage.getPayload()));
-			System.out.println();
-			writeToSocket(bitfieldMessage);
-			
 				//Send Bitfield to Peer
 				if(this.RUBT.downloaded != 0) {
 					Message bitfieldMessage = RUBT.generateBitfieldMessage();
+					System.out.println("SEND " + this.peerIDString + " CLIENT BITFIELD");
+					System.out.println("WITH THE FOLLOWING BITFIELD");
+					System.out.println(Arrays.toString(bitfieldMessage.getPayload()));
+					System.out.println();
 					writeToSocket(bitfieldMessage);
 				}
 			} else {
