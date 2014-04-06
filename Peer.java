@@ -314,9 +314,14 @@ public class Peer extends Thread {
 		//In case the client and the peer threads both want to write to socket at the same time
 		synchronized(this.outgoing) {
 			try {
-				System.out.println("Sending message " + payload.getMessageID());
+				if(payload.getLength() == 0){
+					/* Keep Alive */
+					System.out.println("Sending Keep Alive to " + this.peerIDString);
+				}else{
+					System.out.println("Sending " + Message.getMessageID(payload.getMessageID()) + " " + this.peerIDString);
+				}
 				//get message payload, write to socket, then update the keep alive timer
-				this.outgoing.write(payload.getPayload());
+				this.outgoing.write(payload.getBTMessage());
 				this.outgoing.flush();
 				updateTimer();
 			} catch (IOException e) {

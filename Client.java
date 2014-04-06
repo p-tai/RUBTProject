@@ -29,7 +29,7 @@ import edu.rutgers.cs.cs352.bt.util.ToolKit;
 //DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
-public class Client {
+public class Client extends Thread{
 	
 	private byte[] clientID = new byte[20];
 		

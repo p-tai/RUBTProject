@@ -8,7 +8,7 @@ public class Message {
 	/**
 	 * The KeepAlive Message
 	 */
-	public static final Message keepAlive = new Message(0,(byte)-1);
+	public static final Message keepAlive = new Message(0,(byte)1);
 	
 	/**
 	 * The Choke Message
@@ -82,6 +82,10 @@ public class Message {
 		int messageLength = 4;
 		if (this.length > 0) {
 			messageLength += length;
+		}else{
+			ByteBuffer bt = ByteBuffer.allocate(4);
+			bt.putInt(0);
+			return bt.array();
 		}
 		ByteBuffer bt = ByteBuffer.allocate(length);
 		bt.putInt(length);
