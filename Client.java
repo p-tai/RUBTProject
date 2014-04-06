@@ -357,12 +357,14 @@ public class Client {
 		MessageTask messageFromPeer = messagesQueue.poll();
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
-		ByteBuffer pieceBuffer;
+		
 		if(message.getLength() == 0){
 			/* Keep Alive Message */
 			//TODO
 			return;
 		}
+		
+		ByteBuffer pieceBuffer;
 		
 		switch(message.getMessageID()){
 			case 0: /* choke */
@@ -393,12 +395,18 @@ public class Client {
 				peer.setPeerBooleanBitField(convert(bitfield));
 				break;
 			case 6: /* request */
-				//TODO: Send the Peer the requested piece.
-				//TODO: 1. Check to see you have the piece to begin with. 
-				//TODO: 2. Send. 
+				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
+				pieceBuffer.put(message.getPayload());
+				pieceIndex = pieceBuffer.getInt();
+				int beginIndex = pieceBuffer.getInt();
+				int lengthReq = pieceBuffer.getInt();
+				byte[] pieceRequested;
+				pieceRequested = this.readLocalData(pieceIndex,beginIndex,lengthReq);
+				Message pieceMessage = new Message((1+4+4+lengthReq),(byte)7); //Create a message with length 1+2 ints+length,7).
+				pieceMessage.piece(pieceIndex,beginIndex,pieceRequested);
 				break;
 			case 7: /* piece */
-				//TODO: Verify wit the SHA-1 and send a Have Message
+				//Reads the message
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
 				byte[] temp = new byte[message.getPayload().length - 8];
 				pieceBuffer.put(message.getPayload());
@@ -406,12 +414,20 @@ public class Client {
 				int pieceNo = pieceBuffer.getInt();
 				int offset = pieceBuffer.getInt();
 				pieceBuffer.get(temp);
+				
+				//Stores this in the peer's internal buffer
 				byte[] piece = peer.writeToInternalBuffer(temp);
+				
+				//If the length of the buffer is equal to the piece, then check the SHA-1
 				if(piece.length == this.getPieceLength()) {
+					//If the SHA-1 matches, then write it to the file
 					if(checkData(piece,pieceNo)) {
-						Message haveMessage = new Message((sizeof(byte)+sizeof(int)),4);
+						writeData(piece,pieceNo);
+						Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 						haveMessage.have(pieceNo);
-						peer.writeToSocket(haveMessage);
+						broadcastMessage(haveMessage);
+						//write this message to all peers
+						//peer.writeToSocket(haveMessage);
 					} else {
 						//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
 					}
@@ -759,6 +775,22 @@ public class Client {
         return null;
 	}
     
+    /**
+	 * This function will broadcast a message to all peers
+	 */
+    private void broadcastMessage(Message message) {
+		Iterator iter = this.peerHistory.entrySet().iterator();
+		Peer curr;
+		//Iterate through all the values in the list and send the message
+		while(iter.hasNext()) {
+			Map.Entry pair = (Map.Entry)iter.next();
+			curr = (Peer)pair.getValue();
+			if(curr != null) {
+				curr.writeToSocket(message);
+			}
+		}
+	}
+    
 	/**
 	 * @return true for success, otherwise false.
 	 */
@@ -781,18 +813,39 @@ public class Client {
     }
     
     /**
-     * Check the pieces with the torrentInfo.pieces_hash
+     * Write a piece of data at the offset given
      * @param dataPiece A piece of a file
-     * @param dataOffset Where the piece is located to the file (0-based piece index)
+     * @param pieceOffset Where the piece is located to the file (0-based piece index)
      */
-    private void writeData(byte[] dataPiece, int dataOffset) {
+    private void writeData(byte[] dataPiece, int pieceOffset) {
 		try {
-			this.dataFile.seek(dataOffset*this.getPieceLength());
+			this.dataFile.seek(pieceOffset*this.getPieceLength());
 			this.dataFile.write(dataPiece);
 		} catch (IOException e) {
 			System.err.println("ERROR IN WRITING TO FILE");
+			System.err.println("Piece Offset: " + pieceOffset);
+			System.err.println("Data Offset: " + pieceOffset*this.getPieceLength());
+		}
+	}
+	
+	/**
+     * Read the piece of data at the offset given
+     * @param dataOffset the zero-indexed piece index
+     * @param blockOffset zero-indexed byte index
+     * @param length number of bytes to read
+     * @return a byte[] with the requested data
+     */
+    private byte[] readLocalData(int dataOffset, int blockOffset, int length) {
+		byte[] retVal = new byte[length];
+		try {
+			this.dataFile.seek(dataOffset*this.getPieceLength()+blockOffset);
+			this.dataFile.read(retVal);
+			return retVal;
+		} catch (IOException e) {
+			System.err.println("ERROR IN READING PIECE FROM FILE");
 			System.err.println("Piece Offset: " + dataOffset);
-			System.err.println("Data Offset: " + dataOffset*this.getPieceLength());
+			System.err.println("Data Offset: " + dataOffset*this.getPieceLength()+blockOffset);
+			return null; //If you reach here, there was an error.
 		}
 	}
     
@@ -802,7 +855,7 @@ public class Client {
      * @param dataOffset Where the piece is located to the file
      * @return true for success, otherwise false
      */
-    public boolean checkData(byte[] dataPiece, int dataOffset) {
+    private boolean checkData(byte[] dataPiece, int dataOffset) {
         
         MessageDigest hasher = null;
         
