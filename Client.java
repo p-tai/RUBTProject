@@ -541,6 +541,14 @@ public class Client {
 		return torrentInfo.info_hash.array();
 	}
 	
+	
+	public static int getLastPieceLength() {
+		int temp = torrentInfo.file_length%torrentInfo.piece_length;
+		if (temp == 0) {
+			temp = torrentInfo.piece_length;
+		}
+		return temp;
+	}
 	/**
 	 * @return The Torrent Piece Length.
 	 */

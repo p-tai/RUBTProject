@@ -137,7 +137,9 @@ public class Peer extends Thread {
 		buffer.put(payload,byteOffset,payload.length);
 		byte[] retVal = buffer.array();
 		//Check if you have a full buffer. If so, reset the buffer.
-		if(retVal.length == RUBT.getPieceLength() || retVal.length == RUBT.getFileLength()%RUBT.getPieceLength()) {
+		if(retVal.length == RUBT.getPieceLength()) {
+			buffer.allocate(RUBT.getPieceLength());
+		} else if( retVal.length == RUBT.getLastPieceLength() ) {
 			buffer.allocate(RUBT.getPieceLength());
 		}
 		return retVal;
@@ -412,45 +414,7 @@ public class Peer extends Thread {
 					incomingMessage.setPayload(temp);
 					this.RUBT.queueMessage(incomingTask);
 					break;
-					
-				/*case 7: //piece message
-					try {
-						int pieceIndex = this.incoming.readInt();
-						int blockOffset = this.incoming.readInt();
-						System.out.printf("Receiving piece %d offset %d \n", pieceIndex, blockOffset );
-						length = length - 8; //Remove the length of the indexes and class ID
-						
-						byte[] payload = new byte[length];
-						this.incoming.readFully(payload);
-//						int blockIndex = pieceIndex + (int)Math.floor((blockOffset+1)/this.MAXIMUMLIMT);
-//						System.out.println("BlockIndex "+ blockIndex);
-						this.buffer.put(payload);
-						this.bytesRead += length;
-						
-						System.out.println("Read " + length + " bytes from peer " + this.peerID);
-						
-						if (this.bytesRead >= Client.getPieceLength() ) {
-							//check the piece data
-							//put the entire buffer into the LinkedBlockQueue if SHA correct
-							//If not, increment the number of failed downloads.
-							//If the number of failed downloads is 3, kill the peer connection because it has corrupt data
-							
-						}
-						this.dataFile.seek((long)pieceIndex*this.torrentInfo.piece_length+blockOffset);
-						this.dataFile.write(payload);
-						this.numPacketsDownloaded++;
-						this.packets[blockIndex] = true;
-						
-					
-						//if(blockIndex == this.numPacketsDownloaded) {
-						//	return true;
-						//}
-						incomingMessage.piece(pieceIndex, blockOffset, payload);
-						this.RUBT.queueMessage(incomingTask);
-						return true;
-					} catch(IOException e) {
-						System.err.println("Received an incorrect input from peer during piece download");
-					}
+				/*
 				case 8: //Cancel message
 					int reIndex = this.incoming.readInt();
 					int reOffset = this.incoming.readInt();
