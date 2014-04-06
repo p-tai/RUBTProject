@@ -29,7 +29,7 @@ import edu.rutgers.cs.cs352.bt.util.ToolKit;
 //DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
-public class Client extends Thread{
+public class Client {
 	
 	private byte[] clientID = new byte[20];
 		
@@ -46,7 +46,6 @@ public class Client extends Thread{
 	private boolean[] packets;
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
-	private boolean userShutdown;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
@@ -54,6 +53,7 @@ public class Client extends Thread{
 	public int downloaded;
 	public int left;
 	public int uploaded;
+	public int interval;
 	
 	private DataOutputStream request;
 	private DataInputStream  response;
@@ -82,7 +82,6 @@ public class Client extends Thread{
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
-		this.userShutdown = false;
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.havePiece = new LinkedList<Integer>();
 		this.needPiece = new LinkedList<Integer>(); 
@@ -271,6 +270,7 @@ public class Client extends Thread{
 		this.tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
 		this.peerList = tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "started");
 		this.peerHistory = new HashMap<byte[], Peer>();
+		this.interval = tracker.getInterval() * 1000;
 		if(this.peerList == null){
 			return false;
 		}
@@ -283,7 +283,6 @@ public class Client extends Thread{
 	 */
 	public void disconnectFromTracker(){
 		if(tracker != null) {
-			this.userShutdown = true;
 			tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
 		}
 		//response can be ignored because we're disconnecting anyway
@@ -331,7 +330,7 @@ public class Client extends Thread{
 
 					}//end of if 
 				}//end of void run()
-			}, new Date(), 10000);
+			}, new Date(), client.interval);
 		}// end of run
 	}//end of requestTracker method
 
@@ -358,25 +357,6 @@ public class Client extends Thread{
 			peer.start();
 		}
 		(new requestTracker()).run(this);;
-		this.start();
-	}
-	
-	/**
-	 * This runs the thread of reading the messages from the peer
-	 */
-	public void run(){
-		while(!this.userShutdown){
-			//System.out.println("LinkedBlockingQueue Size = " + this.messagesQueue.size());
-			readQueue();			
-		}
-		try {
-			System.out.println("CLIENT THEAD JOIN");
-			this.join();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			System.out.println("CLIENT THREAD DID NOT JOIN PROPERLY");
-			e.printStackTrace();
-		}
 	}
 	
 	private void readQueue(){
@@ -386,13 +366,10 @@ public class Client extends Thread{
 			/* DO NOTHING */
 			return;
 		}
-		System.out.println("Client: Read Queue");
 		MessageTask messageFromPeer = messagesQueue.poll();
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
-		System.out.println("CLIENT CLASS");
-		System.out.println("MESSAGE RECIEVE FROM " + peer.getPeerIDString());
-		//System.out.println("MESSAGE: " + Arrays.toString(message.getBTMessage()));
+		
 		if(message.getLength() == 0){
 			/* Keep Alive Message */
 			//TODO
@@ -425,7 +402,6 @@ public class Client extends Thread{
 				break;
 			case 4: /* have */
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
-				pieceBuffer.mark();
 				pieceBuffer.put(message.getPayload());
 				pieceBuffer.reset();
 				int pieceIndex = pieceBuffer.getInt();
@@ -462,7 +438,7 @@ public class Client extends Thread{
 				byte[] piece = peer.writeToInternalBuffer(temp,offset);
 				
 				//If the length of the buffer is equal to the piece, then check the SHA-1
-				if(piece.length == getPieceLength()) {
+				if(piece.length == this.getPieceLength()) {
 					//If the SHA-1 matches, then write it to the file
 					if(checkData(piece,pieceNo)) {
 						this.downloadsInProgress[pieceNo]=false;

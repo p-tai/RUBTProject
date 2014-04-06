@@ -314,6 +314,7 @@ public class Peer extends Thread {
 		//In case the client and the peer threads both want to write to socket at the same time
 		synchronized(this.outgoing) {
 			try {
+				System.out.println("Sending message " + payload.getMessageID());
 				//get message payload, write to socket, then update the keep alive timer
 				this.outgoing.write(payload.getPayload());
 				this.outgoing.flush();
@@ -324,7 +325,6 @@ public class Peer extends Thread {
 			}
 		}
 	}
-	
 	
 	/**
 	 * Main runnable thread process for the peer class.
@@ -345,9 +345,34 @@ public class Peer extends Thread {
 					writeToSocket(bitfieldMessage);
 				}
 			} else {
-			System.out.println("CONNECTION FAILURE");
+				System.out.println("CONNECTION FAILURE");
 			}
 		}
+		
+		/**
+		* Schedules a new anonymous implementation of a TimerTask that
+		* will start now and execute every 10 seconds afterward.
+		* Sourced from CS352 Sakai Forums on 3.29.14
+		* @author Rob Moore
+		*/
+		this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
+			public void run() {
+				// Let the peer figure out when to send a keepalive
+				Peer.this.checkAndSendKeepAlive();
+			}//run
+		}, 10000, 10000); //keepAlive Transmission Timer
+		
+		updateTimer();
+		
+		this.peerTimeoutTimer.scheduleAtFixedRate(new TimerTask(){
+			public void run() {
+				// Let the peer figure out when to send a keepalive
+				Peer.this.checkPeerTimeout();
+			}//run
+		}, 10000, 10000); //peerTimeout timer
+		
+		updatePeerTimeoutTimer();
+		
 		try {
 			//while the socket is connected
 			//read from socket (will block if it is empty)
@@ -360,12 +385,12 @@ public class Peer extends Thread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+				
 	}//run
 	
 	/**
 	 * This method is called on shutdown to close all of the data streams and sockets.
-	 */
+	 */	
 	public void shutdownPeer() {
 		//to be implemented
 		//Needs to close all input/output streams and then close the socket to peer.
@@ -373,6 +398,8 @@ public class Peer extends Thread {
 			this.incoming.close();
 			this.outgoing.close();
 			this.peerConnection.close();
+			this.keepAliveTimer.cancel(); 
+			this.peerTimeoutTimer.cancel(); 
 		} catch (Exception e) {
 			//Doesn't matter because the peer is closing anyway
 		}
@@ -456,42 +483,6 @@ public class Peer extends Thread {
 	}
 	
 	/**
-	 * Schedules a new anonymous implementation of a TimerTask that
-	 * will start now and execute every 10 seconds afterward.
-	 * Sourced from CS352 Sakai Forums on 3.29.14
-	 * @author Rob Moore
-	 */
-	private void updateTimer() {
-		try {
-			this.lastMessageTime = System.currentTimeMillis();
-			this.keepAliveTimer.cancel();
-			this.keepAliveTimer.scheduleAtFixedRate(new TimerTask(){
-				public void run() {
-					// Let the peer figure out when to send a keepalive
-					Peer.this.checkAndSendKeepAlive();
-				}//run
-			}, new Date(), 10000); //keepAliveTimer
-		} catch(Exception e) { 
-			//Catch this exception for now, caused by canceling the timer?
-		}//try
-	}//updateTimer
-	
-	private void updatePeerTimeoutTimer() {
-		try {
-			this.lastPeerTime = System.currentTimeMillis();
-			this.peerTimeoutTimer.cancel();
-			this.peerTimeoutTimer.scheduleAtFixedRate(new TimerTask(){
-				public void run() {
-					// Let the peer figure out when to kill the peer
-					Peer.this.checkPeerTimeout();
-				}//run
-			}, new Date(), 10000); //peerTimeoutTimer
-		} catch(Exception e) { 
-			//Catch this exception for now, caused by canceling the timer?
-		}//try
-	}//updatePeerTimeoutTimer
-	
-	/**
 	 * Sends a keep-alive message to the remote peer if the time between now
 	 * and the previous message exceeds the limit set by KEEP_ALIVE_TIMEOUT.
 	 * Sourced from CS352 Sakai Forums on 3.29.14
@@ -499,21 +490,27 @@ public class Peer extends Thread {
 	 */
 	protected void checkPeerTimeout(){
 		long now = System.currentTimeMillis();
-		if((now - this.lastPeerTime) > KEEP_ALIVE_TIMEOUT){
+		if((now - Peer.this.lastPeerTime) > KEEP_ALIVE_TIMEOUT*1.05){
 			//Peer timed out, should kill the peer
-			//Peer.this.shutdown();
-			// Validate that the timestamp was updated
-			System.out.println("PEER TIMED OUT");
+			Peer.this.shutdownPeer();
 		}
 	}//checkAndSendKeepAlive
 	
 	protected void checkAndSendKeepAlive(){
 		long now = System.currentTimeMillis();
-		if((now - this.lastMessageTime) > KEEP_ALIVE_TIMEOUT*0.2){
-			// The "sendMessage" method should update lastMessageTime
-			this.writeToSocket((Message.keepAlive));
-			// Validate that the timestamp was updated
-			System.out.println("Sent Keep-Alive");
+		if((now - Peer.this.lastMessageTime) > KEEP_ALIVE_TIMEOUT*0.25){
+			Peer.this.writeToSocket(Message.keepAlive);
 		}
 	}//checkAndSendKeepAlive
+	
+	private void updateTimer() {
+		//System.out.println("Updating message time");
+		this.lastMessageTime = System.currentTimeMillis();
+	}//updateTimer
+	
+	private void updatePeerTimeoutTimer() {
+		//System.out.println("Updating last packet from peer time");
+		this.lastPeerTime = System.currentTimeMillis();
+	}//updatePeerTimeoutTimer
+	
 }//Peer.java
