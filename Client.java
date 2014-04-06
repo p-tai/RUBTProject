@@ -415,8 +415,8 @@ public class Client extends Thread{
 				break;
 			case 4: /* have */
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
-				pieceBuffer.put(message.getPayload());
 				pieceBuffer.mark();
+				pieceBuffer.put(message.getPayload());
 				pieceBuffer.reset();
 				int pieceIndex = pieceBuffer.getInt();
 				peer.updatePeerBitfield(pieceIndex);
