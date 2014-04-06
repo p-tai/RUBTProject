@@ -28,7 +28,7 @@ public class Peer extends Thread {
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
 	private ByteBuffer buffer;
-	private int bytesDownloaded;
+	private int bytesRead;
 	
 	/**
 	 * Flags for local/remote choking/interested
@@ -75,7 +75,6 @@ public class Peer extends Thread {
 		this.remoteInterested = false;
 		this.torrentSHA = Client.getHash();
 		this.peerConnection = null;
-		this.bytesDownloaded = 0;
 	}
 
 	/*********************************
@@ -150,21 +149,14 @@ public class Peer extends Thread {
 			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
 		}
 		this.buffer.put(payload,byteOffset,payload.length);
-		this.bytesDownloaded += payload.length;
-		
-		byte[] currentBuffer = null;
-		
+		byte[] retVal = buffer.array();
 		//Check if you have a full buffer. If so, reset the buffer.
-		if(this.bytesDownloaded == RUBT.getPieceLength()) {
-			currentBuffer = buffer.array();
+		if(retVal.length == RUBT.getPieceLength()) {
 			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
-			this.bytesDownloaded = 0;
-		} else if( this.bytesDownloaded == RUBT.getLastPieceLength() ) {
-			currentBuffer = buffer.array();
+		} else if( retVal.length == RUBT.getLastPieceLength() ) {
 			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
-			this.bytesDownloaded = 0;
 		}
-		return currentBuffer;
+		return retVal;
 	}
 
 	/*********************************
@@ -237,6 +229,7 @@ public class Peer extends Thread {
 	public String toString(){
 		return "Peer ID: " + this.peerID + " Peer IP: " + this.peerIP + " Peer Port: " + this.peerPort;
 	}
+	
 	
 	/**
 	* Opens a connection to the peer.

@@ -30,7 +30,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.util.ToolKit;
 
-//DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
+//DEFINITION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
 public class Client extends Thread{
@@ -554,9 +554,11 @@ public class Client extends Thread{
 					byte[] peerID = iter.next();
 					Peer peer = this.client.peerHistory.get(peerID);
 					if(peer.getBitfields()[index] == true){
-						if(peer.amInterested() == false){
+						if(peer.isInterestedLocal() == false){
+							peer.setLocalInterested(true);
 							sendInterestedMessage(peer);
 						}
+						System.out.println(peer.isInterestedLocal());
 						this.processPiece.add(this.needPiece.poll());
 						Message message = new Message(13, (byte)6);
 						System.out.println("SEND A REQUEST MESSAGE TO ");
