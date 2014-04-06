@@ -38,12 +38,12 @@ public class Tracker {
 	/**
 	 * The Peers ByteBuffer
 	 */
-	private final ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
-	{ 'p', 'e', 'e', 'r', 's' });
+    private final ByteBuffer PEERS = ByteBuffer.wrap(new byte[]
+    { 'p', 'e', 'e', 'r', 's' });
         
-	/**
-	 * The IP ByteBuffer
-	 */
+    /**
+    * The IP ByteBuffer
+    */
     private final ByteBuffer IP = ByteBuffer.wrap(new byte[]
     { 'i', 'p' });
         
@@ -113,20 +113,20 @@ public class Tracker {
     	System.out.println("LEFT: " + left);
     	System.out.println("Event: " + event);
     	
-		try {
-			this.url = new URL(url,query);
-			System.out.println(url.toString());
-		} catch (MalformedURLException e1) {
-			//This is from this.url
-			System.out.println("FAILURE: INVALID URL");
-			return null;
-		}
+	try {
+		this.url = new URL(url,query);
+		System.out.println(url.toString());
+	} catch (MalformedURLException e1) {
+		//This is from this.url
+		System.out.println("FAILURE: INVALID URL");
+		return null;
+	}
     	
-    	if(left != 0){
-    		/* Get the Peer List */
-    		return getPeerList();
-    	}else{
-    		/* Send a Message */
+    	//if(left != 0){
+	/* Get the Peer List */
+	return getPeerList();
+    	/*}else{
+		//SendMessage
     		try {
 				HttpURLConnection httpConnection = (HttpURLConnection)url.openConnection();
 				httpConnection.disconnect();
@@ -137,6 +137,7 @@ public class Tracker {
 			}
     	}
     	return null;
+	*/
     }
     
     /**

@@ -153,6 +153,7 @@ public class RUBTClient extends Thread{
 			System.out.println("THE TRACKER IS DOWN!");
 			System.exit(1);
 		}
+		
 		client.connectToPeers();
 
 		(new RUBTClient()).run(client);
