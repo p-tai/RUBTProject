@@ -80,17 +80,15 @@ public class Message {
 	 */
 	public byte[] getBTMessage(){
 		int messageLength = 4;
-		if (this.length > 0) {
-			messageLength += length;
-		}else{
-			ByteBuffer bt = ByteBuffer.allocate(4);
-			bt.putInt(0);
+		if (this.length == 0) {
+			ByteBuffer bt = ByteBuffer.allocate(messageLength);
+			bt.putInt(this.length);
 			return bt.array();
 		}
-		ByteBuffer bt = ByteBuffer.allocate(length);
-		bt.putInt(length);
-		bt.put(messageID);
-		bt.put(payload);
+		ByteBuffer bt = ByteBuffer.allocate(messageLength+length);
+		bt.putInt(this.length);
+		bt.put(this.messageID);
+		bt.put(this.payload);
 		return bt.array();
 	}
 	
