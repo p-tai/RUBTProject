@@ -664,8 +664,12 @@ public class Client extends Thread{
 				//Stores this in the peer's internal buffer
 				byte[] piece = peer.writeToInternalBuffer(temp,offset);
 				
+				//Internal buffer will return a null if it is not of the correct length.
+				if (piece == null) {
+					break;
+				}
 				//If the length of the buffer is equal to the piece, then check the SHA-1
-				if(piece.length == this.getPieceLength()) {
+				if(piece.length==this.getPieceLength() || (pieceNo == (this.getNumPieces()-1) && piece.length==this.getLastPieceLength())) {
 					//If the SHA-1 matches, then write it to the file
 					if(checkData(piece,pieceNo)) {
 						this.downloadsInProgress[pieceNo]=false;
@@ -673,9 +677,8 @@ public class Client extends Thread{
 						writeData(piece,pieceNo);
 						Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 						haveMessage.have(pieceNo);
-						broadcastMessage(haveMessage);
 						//write this message to all peers
-						//peer.writeToSocket(haveMessage);
+						broadcastMessage(haveMessage);
 					} else {
 						//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
 					}
@@ -999,8 +1002,8 @@ public class Client extends Thread{
         //check SHA-1
         for(int i = 0; i < SHA1.length; i++) {
                 if(SHA1[i] != checkSHA1[i]){
-                        System.err.println("fail in loop at index " + i);
-                return false;
+                    System.err.println("fail in loop at index " + i);
+					return false;
                 }
         }
         return true;
