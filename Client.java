@@ -459,7 +459,7 @@ public class Client extends Thread{
 			double numberOfPieces = Math.ceil((double)(this.fileLength/this.pieceLength));
 			double numberOfIndexPerPiece = (this.pieceLength/this.client.MAXIMUMLIMT);	
 			double leftOver = this.fileLength - (this.pieceLength * numberOfPieces);
-			//TODO DEBUG
+			/*
 			System.out.println();
 			System.out.println("File Length = " + this.fileLength);
 			System.out.println("Piece Length = " + this.pieceLength);
@@ -467,8 +467,8 @@ public class Client extends Thread{
 			System.out.println("Number of Index Per Piece = " + numberOfIndexPerPiece);
 			System.out.println("LeftOver = " + leftOver);
 			System.out.println();
-			//TODO Remove this print statments
-			
+			TODO Remove this print statments
+			*/
 			if(isAllTrue(this.bitfield)){
 				/* Have the file */
 				// SEEDER
@@ -492,7 +492,7 @@ public class Client extends Thread{
 				}
 			}
 			
-			System.out.println(this.needPiece);
+			//System.out.println(this.needPiece);
 		}
 		
 		/**
@@ -654,6 +654,7 @@ public class Client extends Thread{
 				//Reads the message
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
 				byte[] temp = new byte[message.getPayload().length - 8];
+				pieceBuffer.mark();
 				pieceBuffer.put(message.getPayload());
 				pieceBuffer.reset();
 				int pieceNo = pieceBuffer.getInt();
@@ -989,7 +990,6 @@ public class Client extends Thread{
                 //ilegal piece length
                 return false;
         }
-        
         
         byte[] SHA1 = new byte[20];
         (this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
