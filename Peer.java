@@ -317,8 +317,10 @@ public class Peer extends Thread {
 				if(payload.getLength() == 0){
 					/* Keep Alive */
 					System.out.println("Sending Keep Alive to " + this.peerIDString);
+					System.out.println();
 				}else{
 					System.out.println("Sending " + Message.getMessageID(payload.getMessageID()) + " " + this.peerIDString);
+					System.out.println();
 				}
 				//get message payload, write to socket, then update the keep alive timer
 				this.outgoing.write(payload.getBTMessage());
