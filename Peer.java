@@ -66,6 +66,7 @@ public class Peer extends Thread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		this.peerBooleanBitField = new boolean[RUBT.getNumPieces()];
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
 		this.localChoking = true;
