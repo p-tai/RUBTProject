@@ -89,6 +89,8 @@ public class Peer extends Thread {
 		this.localChoking = localChoking;
 	}
 	
+	
+	
 	/**
 	 * The status of the Client being interested of the Peer. 
 	 * @param localInterested true = The Client is the Peer.
@@ -128,12 +130,14 @@ public class Peer extends Thread {
 	 * Writes a byte[] to the peer's internal buffer.
 	 * Also checks if the buffer is full.
 	 * @param payload The payload that will be written to buffer. Should come from a peer message.
+	 * @param byteOffset Offset to write into at the bfufer - should come from a peer message.
 	 * @return The entire contents of the buffer.
 	 */ 
-	public byte[] writeToInternalBuffer(byte[] payload) {
+	public byte[] writeToInternalBuffer(byte[] payload, int byteOffset) {
+		buffer.put(payload,byteOffset,payload.length);
 		byte[] retVal = buffer.array();
 		//Check if you have a full buffer. If so, reset the buffer.
-		if(retVal.length == RUBT.getPieceLength()) {
+		if(retVal.length == RUBT.getPieceLength() || retVal.length == RUBT.getFileLength()%RUBT.getPieceLength()) {
 			buffer.allocate(RUBT.getPieceLength());
 		}
 		return retVal;
@@ -169,6 +173,13 @@ public class Peer extends Thread {
 	 */
 	public boolean amChoked() {
 		return this.remoteChoking;
+	}
+	
+	/**
+	 * @return This peer's bitfield as a boolean array
+	 */
+	public boolean[] getBitfields() {
+		return this.peerBooleanBitField;
 	}
 	
 	/**
@@ -301,16 +312,12 @@ public class Peer extends Thread {
 		
 			if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
-			System.out.println("HANDSHAKE RECEIVED");
-			System.out.println("FROM:" + this.peerIDString);
+				System.out.println("HANDSHAKE RECEIVED");
+				System.out.println("FROM:" + this.peerIDString);
 			
 				//Send Bitfield to Peer
 				if(this.RUBT.downloaded != 0) {
 					Message bitfieldMessage = RUBT.generateBitfieldMessage();
-					System.out.println("SEND " + this.peerIDString + " CLIENT BITFIELD");
-					System.out.println("WITH THE FOLLOWING BITFIELD");
-					System.out.println(Arrays.toString(bitfieldMessage.getPayload()));
-					System.out.println();
 					writeToSocket(bitfieldMessage);
 				}
 			} else {

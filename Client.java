@@ -47,7 +47,7 @@ public class Client {
 	private boolean[] blocks;
 	private boolean[] packets;
 	private boolean[] bitfield;
-	private boolean[] downloadInProgress;
+	private boolean[] downloadsInProgress;
 	private int numBlocks = 0;
 	private double numPackets;
 	private int numPacketsDownloaded;
@@ -80,6 +80,7 @@ public class Client {
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
 		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
+		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
@@ -122,9 +123,11 @@ public class Client {
 	}
 	
 	
-	//Updates the downloaded values, left values, and uploaded values.
-	//Returns the number of bytes that have been successfully downloaded and confirmed to be correct
-	//Based on pieces that have been downloaded
+	/**
+	 * Updates the downloaded values, left values, and uploaded values.
+	 * Returns the number of bytes that have been successfully downloaded and confirmed to be correct
+	 * Based on pieces that have been downloaded
+	 **/
 	private void updateDownloaded() {
 		int retVal = 0;
 		
@@ -151,22 +154,18 @@ public class Client {
 		for(int i = 0; i < bytes.length; i++) {
 			bytes[i] = (byte)0;
 			for(int j = 0; j < 8; j++) {
-				byte curr = (byte)0;
-				
+				byte curr = (byte)0;			
 				//If you hit the full length of the bitfield array, finish.
 				if((i*8+j) >= bitfield.length) {
 					bytes[i]<<=(7-j);
 					break;
 				}
-				
-				//If the boolean array contains a 1, set curr to 1.
+				//If the boolean array contains a 1, set curr to 0x1.
 				if( bitfield[i*8+j] ) {
 					curr = (byte)1;
 				}
-				
 				//bitwise calculation to append the bit to the end of the current byte
 				bytes[i] = (byte)(bytes[i]|curr);
-				
 				//left shift for the next byte, unless you are already at the end of the current byte
 				if(j != 7) {
 					bytes[i]<<=1;
@@ -176,8 +175,8 @@ public class Client {
 		return bytes;
 	}
 	
-	/*
-	* verify sha1 hashes right match with otrrentinfo.. .match with all pieces
+	/**
+	 * verify sha1 hashes right match with otrrentinfo.. .match with all pieces
 	 * then set bitfield
 	 * make bitfield
 	 * of things that are donwloaded or not
@@ -379,9 +378,14 @@ public class Client {
 			case 2: /* interested */
 				//TODO: The Client can send a Unchoke or Choke Message to the Peer.
 				peer.setRemoteInterested(true);
+				peer.setLocalChoking(false);
 				peer.writeToSocket(Message.unchoke);
 				break;
 			case 3: /* not interested */
+				if(peer.isChokingLocal() == false) {
+					peer.setLocalChoking(true);
+					peer.writeToSocket(Message.choke);
+				}
 				peer.setRemoteInterested(false);
 				break;
 			case 4: /* have */
@@ -396,15 +400,17 @@ public class Client {
 				peer.setPeerBooleanBitField(convert(bitfield));
 				break;
 			case 6: /* request */
-				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
-				pieceBuffer.put(message.getPayload());
-				pieceIndex = pieceBuffer.getInt();
-				int beginIndex = pieceBuffer.getInt();
-				int lengthReq = pieceBuffer.getInt();
-				byte[] pieceRequested;
-				pieceRequested = this.readLocalData(pieceIndex,beginIndex,lengthReq);
-				Message pieceMessage = new Message((1+4+4+lengthReq),(byte)7); //Create a message with length 1+2 ints+length,7).
-				pieceMessage.piece(pieceIndex,beginIndex,pieceRequested);
+				if(peer.isChokingLocal() == false) {
+					pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
+					pieceBuffer.put(message.getPayload());
+					pieceIndex = pieceBuffer.getInt();
+					int beginIndex = pieceBuffer.getInt();
+					int lengthReq = pieceBuffer.getInt();
+					byte[] pieceRequested;
+					pieceRequested = this.readLocalData(pieceIndex,beginIndex,lengthReq);
+					Message pieceMessage = new Message((1+4+4+lengthReq),(byte)7); //Create a message with length 1+2 ints+length,7).
+					pieceMessage.piece(pieceIndex,beginIndex,pieceRequested);
+				}
 				break;
 			case 7: /* piece */
 				//Reads the message
@@ -417,12 +423,14 @@ public class Client {
 				pieceBuffer.get(temp);
 				
 				//Stores this in the peer's internal buffer
-				byte[] piece = peer.writeToInternalBuffer(temp);
+				byte[] piece = peer.writeToInternalBuffer(temp,offset);
 				
 				//If the length of the buffer is equal to the piece, then check the SHA-1
 				if(piece.length == this.getPieceLength()) {
 					//If the SHA-1 matches, then write it to the file
 					if(checkData(piece,pieceNo)) {
+						this.downloadsInProgress[pieceNo]=false;
+						this.bitfield[pieceNo]=true;
 						writeData(piece,pieceNo);
 						Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 						haveMessage.have(pieceNo);
@@ -541,11 +549,25 @@ public class Client {
 	}
 	
 	/**
+	 * @return The file length as per the torrent info file
+	 */
+	public int getFileLength(){
+		return this.torrentInfo.file_length;
+	}
+	
+	/**
+	 * @return The number of pieces as per the torrent info file
+	 */
+	public int getNumPieces() {
+		return this.torrentInfo.piece_hashes.length;
+	}
+	
+	/**
 	 * After handshaking, the Client starts download message from the 
 	 * peers. 
 	 * @return true for success, otherwise false
 	 */
-	private boolean downloading(){
+	private boolean beginDownload(){
 		//System.out.println("ALL SYSTEMS GO!");
 		//System.out.println("DOWNLOADING PACKETS!");
 		this.packets = new boolean[this.blocks.length*2];
@@ -798,9 +820,10 @@ public class Client {
 	 * @param pieceIndex zero based piece index
 	 * @param peer the peer to download from
 	 */
-	private void getPiece(int pieceIndex, Peer remotePeer ) {
+	private boolean getPiece(int pieceIndex, Peer remotePeer ) {
+		this.downloadsInProgress[pieceIndex] = true;
 		if(remotePeer.amChoked()) {
-			remotePeer.writeToSocket(Message.unchoke);
+			return false;
 		}
 		Message request;
 		int length;
@@ -828,15 +851,11 @@ public class Client {
 			leftToRequest-=length;
 			remotePeer.writeToSocket(request);
 		}
+		
+		return true;
 	}
     
-    private int getFileLength(){
-		return this.torrentInfo.file_length;
-	}
-	
-	private int getNumPieces() {
-		return this.torrentInfo.piece_hashes.length;
-	}
+    
 	/**
 	 * @return true for success, otherwise false.
 	 */
@@ -893,6 +912,23 @@ public class Client {
 			System.err.println("Data Offset: " + dataOffset*this.getPieceLength()+blockOffset);
 			return null; //If you reach here, there was an error.
 		}
+	}
+    
+    /**
+     * Checks the current bitfield and the remote bitfield for a piece to download
+     * @return the zero based index of the piece to download, or -1 if no piece to download
+     */ 
+    private int findPieceToDownload(Peer remote) {
+		boolean[] peerBitfield = remote.getBitfields();
+		for(int i = 0; i < peerBitfield.length; i++) {
+			if(this.bitfield[i] == false && peerBitfield[i] == true && this.downloadsInProgress[i] == false) {
+				if(remote.amChoked()) {
+					remote.writeToSocket(Message.interested);
+				}
+				return i;
+			}
+		}
+		return -1;
 	}
     
     /**

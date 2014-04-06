@@ -9,4 +9,4 @@ RUN:
 
 clean:
 	rm *.class
-	rm a.img
+	rm -f a.img
