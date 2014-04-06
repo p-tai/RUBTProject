@@ -28,7 +28,7 @@ public class Peer extends Thread {
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
 	private ByteBuffer buffer;
-	private int bytesRead;
+	private int bytesDownloaded;
 	
 	/**
 	 * Flags for local/remote choking/interested
@@ -61,6 +61,7 @@ public class Peer extends Thread {
 		this.clientID = RUBT.getClientID();
 		this.peerID = peerID;
 		try {
+			//FOR DEBUG PURPOSES ONLY (to make peer id human readable)
 			this.peerIDString = new String(peerID, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
@@ -149,14 +150,19 @@ public class Peer extends Thread {
 			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
 		}
 		this.buffer.put(payload,byteOffset,payload.length);
-		byte[] retVal = buffer.array();
+		this.bytesDownloaded += payload.length;
+		byte[] currentBuffer = null;
+		
 		//Check if you have a full buffer. If so, reset the buffer.
-		if(retVal.length == RUBT.getPieceLength()) {
+		if(this.bytesDownloaded == RUBT.getPieceLength()) {
+			currentBuffer = buffer.array();
 			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
-		} else if( retVal.length == RUBT.getLastPieceLength() ) {
+		} else if( this.bytesDownloaded == RUBT.getLastPieceLength() ) {
+			currentBuffer = buffer.array();
 			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
+			this.bytesDownloaded = 0;
 		}
-		return retVal;
+		return currentBuffer;
 	}
 
 	/*********************************
