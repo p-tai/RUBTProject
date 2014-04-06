@@ -90,8 +90,6 @@ public class Peer extends Thread {
 		this.localChoking = localChoking;
 	}
 	
-	
-	
 	/**
 	 * The status of the Client being interested of the Peer. 
 	 * @param localInterested true = The Client is the Peer.
@@ -135,13 +133,16 @@ public class Peer extends Thread {
 	 * @return The entire contents of the buffer.
 	 */ 
 	public byte[] writeToInternalBuffer(byte[] payload, int byteOffset) {
-		buffer.put(payload,byteOffset,payload.length);
+		if(this.buffer == null) {
+			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
+		}
+		this.buffer.put(payload,byteOffset,payload.length);
 		byte[] retVal = buffer.array();
 		//Check if you have a full buffer. If so, reset the buffer.
 		if(retVal.length == RUBT.getPieceLength()) {
-			buffer.allocate(RUBT.getPieceLength());
+			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
 		} else if( retVal.length == RUBT.getLastPieceLength() ) {
-			buffer.allocate(RUBT.getPieceLength());
+			this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
 		}
 		return retVal;
 	}
