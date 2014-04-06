@@ -519,6 +519,16 @@ public class Client extends Thread{
 		 */
 		private void sendInterestedMessage(Peer peer){
 			peer.writeToSocket(Message.interested);
+			try {
+				sleep(10000);
+				while(!peer.amChoked()){
+					System.out.println("Client unchoke");
+					return;
+				}
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			return;
 		}
 		
