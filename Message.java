@@ -42,17 +42,15 @@ public class Message {
 	private final byte messageID;
 	private byte[] payload;
 	
+	/**
+	 * Constructor for Message class.
+	 * @param length = length of the payload + 1 byte for the class id
+	 * @param id = class ID of the message
+	 */ 
 	public Message(final int length, final byte id) {
 		this.length = length;
 		this.messageID = id;
-		this.payload = null;
-		//ByteBuffer payloadBuff = ByteBuffer.allocate(5);
-		//payloadBuff.putInt(length);
-		//if(id != -1) {
-		//	payloadBuff.put(id);
-		//}
-		//payload = payloadBuff.array();
-			
+		this.payload = null;	
 	}
 	
 	/**
@@ -174,8 +172,11 @@ public class Message {
 		this.payload = responseBuff.array();
 	}
 	
-	/*
-	 * Function that will return a byte[] containing a handshake.
+	/**
+	 * Generates a handshake message payload for handshaking with a Bittorrent peer.
+	 * @param SHA1 : The sha-1 of the
+	 * @param peerID : the byte[] containing the LOCAL peer's peerID
+	 * @return byte[] containing a handshake message
 	 */
 	public static byte[] handshakeMessage(final byte[] SHA1, final byte[] peerID){
 		byte[] handshake = new byte[68];
