@@ -58,6 +58,7 @@ public class Peer extends Thread {
 	 */
 	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort){
 		this.RUBT = RUBT;
+		this.buffer.allocate(RUBT.getPieceLength());
 		this.clientID = RUBT.getClientID();
 		this.peerID = peerID;
 		try {
@@ -121,6 +122,21 @@ public class Peer extends Thread {
 	 */
 	public void setPeerBooleanBitField(boolean[] peerBooleanBitField){
 		this.peerBooleanBitField = peerBooleanBitField;
+	}
+	
+	/**
+	 * Writes a byte[] to the peer's internal buffer.
+	 * Also checks if the buffer is full.
+	 * @param payload The payload that will be written to buffer. Should come from a peer message.
+	 * @return The entire contents of the buffer.
+	 */ 
+	public byte[] writeToInternalBuffer(byte[] payload) {
+		byte[] retVal = buffer.array();
+		//Check if you have a full buffer. If so, reset the buffer.
+		if(retVal.length == RUBT.getPieceLength()) {
+			buffer.allocate(RUBT.getPieceLength());
+		}
+		return retVal;
 	}
 	
 	/*********************************
@@ -371,7 +387,8 @@ public class Peer extends Thread {
 					this.RUBT.queueMessage(incomingTask);
 					break;
 					
-				case 4: case 5: case 6: case 7: case 8: //have message message. bitfield message, request message, piece message, cancel message
+				case 4: case 5: case 6: case 7: case 8: 
+				//have message message. bitfield message, request message, piece message, cancel message
 					byte[] temp = new byte[length];
 					this.incoming.readFully(temp);
 					incomingMessage.setPayload(temp);

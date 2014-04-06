@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -356,6 +357,7 @@ public class Client {
 		MessageTask messageFromPeer = messagesQueue.poll();
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
+		ByteBuffer pieceBuffer;
 		if(message.getLength() == 0){
 			/* Keep Alive Message */
 			//TODO
@@ -380,10 +382,14 @@ public class Client {
 				peer.setRemoteInterested(false);
 				break;
 			case 4: /* have */
-				peer.updatePeerBitfield(message.getPayload()[5]);
+				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
+				pieceBuffer.put(message.getPayload());
+				pieceBuffer.reset();
+				int pieceIndex = pieceBuffer.getInt();
+				peer.updatePeerBitfield(pieceIndex);
 				break;
 			case 5: /* bitfield */
-				byte[] bitfield = Arrays.copyOfRange(message.getPayload(), 5, message.getPayload().length);
+				byte[] bitfield = message.getPayload();
 				peer.setPeerBooleanBitField(convert(bitfield));
 				break;
 			case 6: /* request */
@@ -392,9 +398,28 @@ public class Client {
 				//TODO: 2. Send. 
 				break;
 			case 7: /* piece */
-				//TODO: Verify wit the SHA-1 and send a Have Message.
+				//TODO: Verify wit the SHA-1 and send a Have Message
+				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
+				byte[] temp = new byte[message.getPayload().length - 8];
+				pieceBuffer.put(message.getPayload());
+				pieceBuffer.reset();
+				int pieceNo = pieceBuffer.getInt();
+				int offset = pieceBuffer.getInt();
+				pieceBuffer.get(temp);
+				byte[] piece = peer.writeToInternalBuffer(temp);
+				if(piece.length == this.getPieceLength()) {
+					if(checkData(piece,pieceNo)) {
+						Message haveMessage = new Message((sizeof(byte)+sizeof(int)),4);
+						haveMessage.have(pieceNo);
+						peer.writeToSocket(haveMessage);
+					} else {
+						//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
+					}
+				}
+				
 				break;
 			case 8: /* cancel */
+				//TODO: STOP THE SEND OF A PIECE IF THERE IS ONE
 				//TODO: The Peer already have the piece. 
 				//TODO: 
 				break;
@@ -754,6 +779,22 @@ public class Client {
             
         }
     }
+    
+    /**
+     * Check the pieces with the torrentInfo.pieces_hash
+     * @param dataPiece A piece of a file
+     * @param dataOffset Where the piece is located to the file (0-based piece index)
+     */
+    private void writeData(byte[] dataPiece, int dataOffset) {
+		try {
+			this.dataFile.seek(dataOffset*this.getPieceLength());
+			this.dataFile.write(dataPiece);
+		} catch (IOException e) {
+			System.err.println("ERROR IN WRITING TO FILE");
+			System.err.println("Piece Offset: " + dataOffset);
+			System.err.println("Data Offset: " + dataOffset*this.getPieceLength());
+		}
+	}
     
     /**
      * Check the pieces with the torrentInfo.pieces_hash
