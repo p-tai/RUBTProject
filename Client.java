@@ -30,7 +30,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.util.ToolKit;
 
-//DEFINATION: THERE ARE N-BLOCKS THAT MAKE THE FILES
+//DEFINITION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
 public class Client extends Thread{
