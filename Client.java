@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
+
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.util.ToolKit;
 
@@ -544,6 +545,13 @@ public class Client extends Thread{
 			}
 			System.out.println("Need Piece size == " + this.needPiece.size());
 			while(!this.needPiece.isEmpty()){
+				try {
+					//TODO Remove this
+					sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				Set<byte[]> keys = this.client.peerHistory.keySet();
 				Iterator<byte[]> iter = keys.iterator();
 				String[] request = this.needPiece.peek().split(":");
