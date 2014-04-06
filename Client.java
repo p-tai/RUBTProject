@@ -466,29 +466,31 @@ public class Client extends Thread{
 			System.out.println("LeftOver = " + leftOver);
 			System.out.println();
 			//TODO Remove this print statments
+			
 			if(isAllTrue(this.bitfield)){
 				/* Have the file */
 				// SEEDER
-			}else if(isAllFalse(this.bitfield)){
-				/* Have no file */
-				//TODO I think I can reduced this down into one
-				for(int i = 0; i < numberOfPieces; i++){
+				return;
+			}
+			
+			for(int i = 0; i < numberOfPieces; i++){
+				if(this.bitfield[i] == false){
 					for(int z = 0; z < numberOfIndexPerPiece; z++){
 						String requestMessage = i + ":" + 
 							(z * this.client.MAXIMUMLIMT) + ":" + this.client.MAXIMUMLIMT;
 						this.needPiece.add(requestMessage);
-					}
+					}						
 				}
-				
-				if((int)leftOver != 0){
-					String requestMessage = ((int)numberOfPieces) + ":" + 0 + ":" + (int)leftOver; 
-					this.needPiece.add(requestMessage);
-				}
-				System.out.println(this.needPiece);
-			}else{
-				/* Have some of the pieces */
-				//TODO
 			}
+			
+			if((int)leftOver != 0){
+				if(this.bitfield[(int) numberOfPieces] == false){
+					String requestMessage = ((int)numberOfPieces) + ":" + 0 + ":" + (int)leftOver; 
+					this.needPiece.add(requestMessage);					
+				}
+			}
+			
+			System.out.println(this.needPiece);
 		}
 		
 		/**
@@ -517,6 +519,7 @@ public class Client extends Thread{
 		 */
 		private void sendInterestedMessage(Peer peer){
 			peer.writeToSocket(Message.interested);
+			return;
 		}
 		
 		/**
@@ -527,7 +530,8 @@ public class Client extends Thread{
 				/* Seeder */
 				return;
 			}
-			if(!this.needPiece.isEmpty()){
+			System.out.println("Need Piece size == " + this.needPiece.size());
+			while(!this.needPiece.isEmpty()){
 				Set<byte[]> keys = this.client.peerHistory.keySet();
 				Iterator<byte[]> iter = keys.iterator();
 				String[] request = this.needPiece.peek().split(":");
@@ -538,7 +542,9 @@ public class Client extends Thread{
 					byte[] peerID = iter.next();
 					Peer peer = this.client.peerHistory.get(peerID);
 					if(peer.getBitfields()[index] == true){
-						//TESTING
+						if(peer.amInterested() == false){
+							sendInterestedMessage(peer);
+						}
 						this.processPiece.add(this.needPiece.poll());
 						Message message = new Message(13, (byte)6);
 						System.out.println("SEND A REQUEST MESSAGE TO ");
@@ -548,6 +554,7 @@ public class Client extends Thread{
 						System.out.println("BEGIN: " + begin);
 						System.out.println("LENGTH: " + length);
 						message.request(index, begin, length);
+						peer.writeToSocket(message);
 						break;
 					}
 				}
