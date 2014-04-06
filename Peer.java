@@ -74,6 +74,7 @@ public class Peer extends Thread {
 		this.remoteChoking = true;
 		this.remoteInterested = false;
 		this.torrentSHA = Client.getHash();
+		this.peerConnection = null;
 	}
 	
 	/*********************************
@@ -272,10 +273,14 @@ public class Peer extends Thread {
 	
 	/**
 	 * Function to write a message to the outgoing socket.
+	 * @param payload message to be sent to peer
 	 */
 	public void writeToSocket(Message payload){
+		
+		//In case the client and the peer threads both want to write to socket at the same time
 		synchronized(this.outgoing) {
 			try {
+				//get message payload, write to socket, then update the keep alive timer
 				this.outgoing.write(payload.getPayload());
 				this.outgoing.flush();
 				updateTimer();
@@ -289,34 +294,37 @@ public class Peer extends Thread {
 	
 	/**
 	 * Main runnable thread process for the peer class.
-	 * Will continously try to read from the incoming socket.
+	 * Will connect and handshake continously try to read from the incoming socket.
 	 */
 	public void run() {
-		connect();
+		if(this.peerConnection == null) {
+			connect();
 		
-		if(handshake(this.torrentSHA) == true){
+			if(handshake(this.torrentSHA) == true){
 //			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
-			System.out.println("HANDSHAKE RECEIVED");
-			System.out.println("FROM:" + this.peerIDString);
+				System.out.println("HANDSHAKE RECEIVED");
+				System.out.println("FROM:" + this.peerIDString);
 			
-			//Send Bitfield to Peer
-			Message bitfieldMessage = RUBT.generateBitfieldMessage();
-			writeToSocket(bitfieldMessage);
-			
-			try {
-				//while the socket is connected
-				//read from socket (will block if it is empty)
-				//parse message
-				while(readSocketInputStream()){
-					//Update the PEER TIMEOUT timer to a new value (because we received a packet).
-					updatePeerTimeoutTimer();
-				}//while
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}else{
+				//Send Bitfield to Peer
+				if(this.RUBT.downloaded != 0) {
+					Message bitfieldMessage = RUBT.generateBitfieldMessage();
+					writeToSocket(bitfieldMessage);
+				}
+			} else {
 			System.out.println("CONNECTION FAILURE");
+			}
+		}
+		try {
+			//while the socket is connected
+			//read from socket (will block if it is empty)
+			//parse message
+			while(readSocketInputStream()){
+				//Update the PEER TIMEOUT timer to a new value (because we received a packet).
+				updatePeerTimeoutTimer();
+			}//while
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 	}//run

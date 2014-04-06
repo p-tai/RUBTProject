@@ -182,7 +182,7 @@ public class Client {
 	 * of things that are donwloaded or not
 	 * RETURNS BITFIELD.
 	 */
-
+	
 	private boolean[] checkfile(TorrentInfo torrent, RandomAccessFile datafile){
 	    boolean[] lovefield = new boolean[this.torrentInfo.piece_hashes.length];
 	    try{
@@ -439,7 +439,7 @@ public class Client {
 				//TODO: The Peer already have the piece. 
 				//TODO: 
 				break;
-			case 9: /* quit */
+			case 9: /* Unofficial quit */
 				
 				break;
 			default:
@@ -785,6 +785,7 @@ public class Client {
 		while(iter.hasNext()) {
 			Map.Entry pair = (Map.Entry)iter.next();
 			curr = (Peer)pair.getValue();
+			//Should check to see if the peer has not been killed because of bad messages.
 			if(curr != null) {
 				curr.writeToSocket(message);
 			}
