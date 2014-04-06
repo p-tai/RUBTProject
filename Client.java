@@ -414,9 +414,18 @@ public class Client extends Thread{
 		}
 		(new requestTracker()).run(this);
 		this.start();
+		(new requestPieces(this)).start();
 	}
 	
 	private static class requestPieces extends Thread{
+
+		/**********************************
+		 * Request 
+		 * Length Prefix: 13
+		 * MessageID: 6
+		 * Payload: <index><begin><length>
+		 **********************************/
+		
 		
 		private Client client;
 		
@@ -428,7 +437,6 @@ public class Client extends Thread{
 			this.client = client;
 			this.client.havePiece = new LinkedList<String>();
 			this.client.needPiece = new LinkedList<String>();
-			
 		}
 		
 		/**
@@ -460,7 +468,7 @@ public class Client extends Thread{
 		MessageTask messageFromPeer = messagesQueue.poll();
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
-		System.out.println("Reading the peer messages");
+		//System.out.println("Reading the peer messages");
 		if(message.getLength() == 0){
 			/* Keep Alive Message */
 			//TODO
