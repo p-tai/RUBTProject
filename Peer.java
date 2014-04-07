@@ -27,7 +27,7 @@ public class Peer extends Thread {
 	private Socket peerConnection;
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
-	private ByteBuffer buffer;
+	private byte[] buffer;
 	private boolean[] blocksDownloaded;
 	
 	/**
@@ -57,7 +57,7 @@ public class Peer extends Thread {
 	 */
 	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort){
 		this.RUBT = RUBT;
-		this.buffer.allocate(RUBT.getPieceLength());
+		this.buffer = new byte[RUBT.getPieceLength()];
 		this.clientID = RUBT.getClientID();
 		this.peerID = peerID;
 		try {
@@ -146,15 +146,23 @@ public class Peer extends Thread {
 	 * @return The entire contents of the buffer or null.
 	 */ 
 	public byte[] writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
-		if(this.buffer == null) {
+		resetByteBuffer(pieceOffset);
+		/*if(this.buffer != null) {
 			resetByteBuffer(pieceOffset);
+		}*/
+		//this.buffer.put(payload,blockOffset,payload.length);
+		System.out.println("Write Method");
+		for(int i = 0; i < payload.length; i++){
+			buffer[i+pieceOffset] = payload[i];
 		}
-		this.buffer.put(payload,blockOffset,payload.length);
-		this.blocksDownloaded[blockOffset%RUBT.MAXIMUMLIMT] = true;
 		
+		if(this.blocksDownloaded == null){
+			System.out.println("its null");
+		}
+		this.blocksDownloaded[(int)Math.ceil(blockOffset/RUBT.MAXIMUMLIMT)] = true;
 		//Check if you have a full buffer. If so, reset the buffer.
 		if(isAllTrue(this.blocksDownloaded)) {
-			return buffer.array();
+			return buffer;
 		} else {
 			return null;
 		}
@@ -169,7 +177,7 @@ public class Peer extends Thread {
 			//if this is the last piece, special case.
 			this.blocksDownloaded = new boolean[RUBT.getLastPieceBlockCount()];
 		}
-		this.buffer = ByteBuffer.allocate(RUBT.getPieceLength());
+		this.buffer = new byte[RUBT.getPieceLength()];
 		this.blocksDownloaded = new boolean[RUBT.getNumBlocks()];
 	}
 	

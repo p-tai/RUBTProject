@@ -545,6 +545,7 @@ public class Client extends Thread{
 			}
 			System.out.println("Need Piece size == " + this.needPiece.size());
 			while(!this.needPiece.isEmpty()){
+				System.out.println(Arrays.toString(this.bitfield));
 				try {
 					//TODO Remove this
 					sleep(1000);
@@ -678,6 +679,7 @@ public class Client extends Thread{
 				
 				//Internal buffer will return a null if it is not of the correct length.
 				if (piece == null) {
+					System.out.println("Piece == null");
 					break;
 				} else { //If the length of the buffer is equal to the piece, then check the SHA-1
 					//If the SHA-1 matches, then write it to the file
