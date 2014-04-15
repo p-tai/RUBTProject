@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class Peer extends Thread {
+public class Peer extends Thread implements Comparable{
 
 	private final Client RUBT;
 	private final byte[] clientID;
@@ -559,5 +559,22 @@ public class Peer extends Thread {
 		//System.out.println("Updating last packet from peer time");
 		this.lastPeerTime = System.currentTimeMillis();
 	}//updatePeerTimeoutTimer
+
+	@Override
+	public int compareTo(Object e) {
+		if(e == null || !(e instanceof Peer)){
+			return 1;
+		}
+		
+		Peer peer = (Peer)e;
+		byte[] peerID = peer.getPeerID();
+		for(int i = 0; i < this.peerID.length; i++){
+			if(this.peerID[i] != peerID[i]){
+				return 1;
+			}
+		}
+		
+		return 0;
+	}
 	
 }//Peer.java
