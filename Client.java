@@ -503,8 +503,8 @@ public class Client extends Thread{
 			//System.out.println("Need Piece size == " + this.needPiece.size());
 			while(!this.needPiece.isEmpty()){
 				//System.out.println(Arrays.toString(this.bitfield));
-				Set<byte[]> keys = this.client.peerHistory.keySet();
-				Iterator<byte[]> iter = keys.iterator();
+				Iterator<Peer> iter = this.client.peerHistory.iterator();
+				//Iterator<byte[]> iter = keys.iterator();
 				String[] request = this.needPiece.peek().split(":");
 				int index = Integer.valueOf(request[0]);
 				int begin = Integer.valueOf(request[1]);
@@ -517,8 +517,9 @@ public class Client extends Thread{
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-					byte[] peerID = iter.next();
-					Peer peer = this.client.peerHistory.get(peerID);
+					//byte[] peerID = iter.next();
+					//Peer peer = this.client.peerHistory.get(peerID);
+					Peer peer = iter.next();
 					int pieceIndex = this.client.findPieceToDownload(peer);
 					if (pieceIndex == -1) {
 						continue;
@@ -800,7 +801,7 @@ public class Client extends Thread{
 	 * This function will broadcast a message to all peers
 	 */
     private void broadcastMessage(Message message) {
-		Iterator iter = this.peerHistory.entrySet().iterator();
+		Iterator<Peer> iter = this.peerHistory.iterator();
 		Peer curr;
 		//Iterate through all the values in the list and send the message
 		while(iter.hasNext()) {
