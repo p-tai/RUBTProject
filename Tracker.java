@@ -9,6 +9,12 @@ import edu.rutgers.cs.cs352.bt.util.*;
 
 public class Tracker {
 	
+	
+	/**
+	 * Client Object
+	 */
+	private Client client;
+	
 	/**
 	 * The Tracker URL
 	 */
@@ -72,12 +78,14 @@ public class Tracker {
     
     /**
      * The Tracker Constructor
+     * @param client The Client
      * @param url torrentInfo.announce_url
      * @param infoHash torrentInfo.info_hash.array() 
      * @param clientID The Client ID
      * @param listenPort The open socket that takes incoming messages.
      */
-    public Tracker(URL url, byte[] infoHash, byte[] clientID, int listenPort){ 
+    public Tracker(Client client, URL url, byte[] infoHash, byte[] clientID, int listenPort){ 
+    	this.client = client;
     	this.url = url;
     	this.infoHash = infoHash;
     	this.clientID = clientID;
@@ -92,7 +100,7 @@ public class Tracker {
      * @param event i.e. "started", "completed", "stopped", or Empty String
      * @return A List of Peers
      */
-    public Map<byte[], String> sendHTTPGet(int upload, int download, int left, String event){
+    public ArrayList<Peer> sendHTTPGet(int upload, int download, int left, String event){
     	String query = "";
 		query = URLify(query,"announce?info_hash", this.infoHash);
 		query = URLify(query,"&peer_id",this.clientID);
@@ -189,7 +197,7 @@ public class Tracker {
 	/**
 	 * @return The List of Peers
 	 */
-	private Map<byte[], String> getPeerList(){/* This is based on the create() */
+	private ArrayList<Peer> getPeerList(){/* This is based on the create() */
 		URLConnection connnection = null;
 		InputStream getStream = null;
 		HttpURLConnection httpConnection = null;
@@ -227,8 +235,8 @@ public class Tracker {
 	 * @param response The decode response
 	 * @return The List of Peers from the Tracker
 	 */
-	private Map<byte[], String> captureResponse(Map<ByteBuffer, Object> response){
-		Map<byte[], String> peerMap = new HashMap<byte[], String>();
+	private ArrayList<Peer> captureResponse(Map<ByteBuffer, Object> response){
+		ArrayList<Peer> peerArrayList = new ArrayList<Peer>();
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)response.get(PEERS);
 		this.interval = (Integer)response.get(INTERVALS);
 		for(int i = 0; i < peers.size(); i++){
@@ -238,10 +246,11 @@ public class Tracker {
 			if(peerIPAddress.contains("128.6.171.130") || peerIPAddress.contains("128.6.171.131")){
 				int port = Integer.valueOf((Integer)(peerList.get(PORT)));
 				peerIPAddress =  peerIPAddress + ":" + Integer.toString(port);
-				peerMap.put(peerID, peerIPAddress);				
+				Peer peer = new Peer(this.client, peerID, peerIPAddress, port);
+				peerArrayList.add(peer);
 			}
 		}
-		return peerMap;
+		return peerArrayList;
 	}
 	
 	/**

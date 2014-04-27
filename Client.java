@@ -82,8 +82,8 @@ public class Client extends Thread{
 	
 	private ServerSocket listenSocket;
 	
-	private Map<byte[], String> peerList;
-	private Map<byte[], Peer> peerHistory;
+	private ArrayList<Peer> peerList;
+	private ArrayList<Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	
 	private LinkedBlockingQueue<String> processPiece;
@@ -288,9 +288,9 @@ public class Client extends Thread{
 	 */
 	
 	public boolean connectToTracker(final int port){
-		this.tracker = new Tracker(this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
+		this.tracker = new Tracker(this, this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), clientID, port);
 		this.peerList = tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "started");
-		this.peerHistory = new HashMap<byte[], Peer>();
+		this.peerHistory = new ArrayList<Peer>();
 		this.interval = tracker.getInterval() * 1000;
 		if(this.peerList == null){
 			return false;
@@ -335,43 +335,12 @@ public class Client extends Thread{
 				public void run() {
 					if(System.currentTimeMillis() - lastRequestSent > client.tracker.getInterval()){
 						client.updateDownloaded();
-						Map<byte[], String> peerList = client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "");
+						ArrayList<Peer> peerList = client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "");
 						if(peerList == null){
 							return;
 						}
-						Map<byte[], Peer> peerHistory = client.peerHistory;
-						ArrayList<String> peerListString = new ArrayList<String>(peerList.values());
-						ArrayList<Peer> peerHistoryPeer = new ArrayList<Peer>(peerHistory.values());
-						boolean found = false;
-						for(int i = 0; i < peerListString.size(); i++){
-							String[] ipPort = peerListString.get(i).split(":");
-							for(int z = 0; z < peerHistoryPeer.size(); z++){
-								Peer peer = peerHistoryPeer.get(z);
-								if(ipPort[0].equals(peer.getPeerIP()) && 
-										ipPort[1].equals(String.valueOf(peer.getPeerPort()))){
-									found = true;
-									break;
-								}
-							}
-							if(found == true){
-								//System.out.println("Same Peer");
-								found = false;
-							}else{
-								//Add a new Peer
-								System.out.println("Found a new Peer");
-								byte[] peerID = findByteArray(peerList, peerListString.get(i));
-								Peer newPeer = new Peer(client, peerID, ipPort[0], Integer.valueOf(ipPort[1]));
-								peerHistory.put(peerID, newPeer);
-								//TODO When we found a new peer, should we automatically 
-								//connect to it. 
-							}
-						}
-						/*Iterator it = peerList.entrySet().iterator();
-						while(it.hasNext()){
-							Map.Entry pairs = (Map.Entry)it.next();
-							System.out.println(pairs.getKey() + " = " + pairs.getValue());
-							it.remove();
-						}*///end of while 
+						ArrayList<Peer> peerHistory = client.peerHistory;
+						
 					}//end of if 
 				}//end of void run()
 				
@@ -406,18 +375,11 @@ public class Client extends Thread{
 			return;
 		}
 		System.out.println("Connecting to Peers");
-		Set<byte[]> keys = peerList.keySet();
-		Iterator<byte[]> iter = keys.iterator();
-		while(iter.hasNext()){
-			byte[] peerID = iter.next();
-			if(this.peerHistory.containsKey(peerID)){
-				continue;
-			}
-			String[] ipPort = peerList.get(peerID).split(":");
-			Peer peer = new Peer(this, peerID, ipPort[0], Integer.valueOf(ipPort[1]));
-			this.peerHistory.put(peerID, peer);
-			peer.start();
+		for(int i = 0; i < this.peerList.size(); i++){
+			this.peerList.get(i).start();
 		}
+		
+		//Start the Request the peers list from the tracker
 		(new requestTracker()).run(this);
 		this.start();
 		(new requestPieces(this)).start();
