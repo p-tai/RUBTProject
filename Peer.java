@@ -55,10 +55,10 @@ public class Peer extends Thread {
 	 * @param peerIP The Peer's IP
 	 * @param peerPort The Peer's Port
 	 */
-	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort){
+	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort) {
 		this.RUBT = RUBT;
-		this.buffer = new byte[RUBT.getPieceLength()];
 		this.clientID = RUBT.getClientID();
+		//this.buffer = null;
 		this.peerID = peerID;
 		try {
 			//FOR DEBUG PURPOSES ONLY (to make peer id human readable)
@@ -146,39 +146,39 @@ public class Peer extends Thread {
 	 * @return The entire contents of the buffer or null.
 	 */ 
 	public byte[] writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
-		resetByteBuffer(pieceOffset);
-		/*if(this.buffer != null) {
-			resetByteBuffer(pieceOffset);
-		}*/
+		if(this.buffer == null || this.blocksDownloaded == null) {
+			createByteBuffer(pieceOffset);
+		}
 		//this.buffer.put(payload,blockOffset,payload.length);
-		System.out.println("Write Method");
+		
 		for(int i = 0; i < payload.length; i++){
-			buffer[i+pieceOffset] = payload[i];
+			buffer[i+blockOffset] = payload[i];
 		}
 		
-		if(this.blocksDownloaded == null){
-			System.out.println("its null");
-		}
 		this.blocksDownloaded[(int)Math.ceil(blockOffset/RUBT.MAXIMUMLIMT)] = true;
 		//Check if you have a full buffer. If so, reset the buffer.
-		if(isAllTrue(this.blocksDownloaded)) {
+		//if(isAllTrue(this.blocksDownloaded)) {
 			return buffer;
+		//} else {
+		//	return null;
+		//}
+	}
+	
+	public void createByteBuffer(int pieceOffset){
+		//System.out.println("THE PIECE LENGTH IS: " + RUBT.getPieceLength() );
+		if(pieceOffset == this.RUBT.getNumPieces()-1) {
+			//if this is the last piece, special case.
+			this.buffer = new byte[RUBT.getLastPieceLength()];
+			this.blocksDownloaded = new boolean[RUBT.getLastPieceBlockCount()];
 		} else {
-			return null;
+			this.buffer = new byte[RUBT.getPieceLength()];
+			this.blocksDownloaded = new boolean[RUBT.getNumBlocks()];
 		}
 	}
 	
-	public void resetByteBuffer(int pieceOffset){
-		if(pieceOffset == -1) {
-			this.buffer = null;
-		}
-		System.out.println("THE PIECE LENGTH IS: " + RUBT.getPieceLength() );
-		if(pieceOffset == this.RUBT.getNumPieces()-1) {
-			//if this is the last piece, special case.
-			this.blocksDownloaded = new boolean[RUBT.getLastPieceBlockCount()];
-		}
-		this.buffer = new byte[RUBT.getPieceLength()];
-		this.blocksDownloaded = new boolean[RUBT.getNumBlocks()];
+	public void resetByteBuffer() {
+		this.buffer = null;
+		this.blocksDownloaded = null;
 	}
 	
 	private boolean isAllTrue(boolean[] blocks){

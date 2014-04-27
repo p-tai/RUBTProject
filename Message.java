@@ -1,7 +1,7 @@
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-//TODO Add Cancel Function
+//TODO Add Cancel method and function?
 
 public class Message {
 
@@ -76,7 +76,7 @@ public class Message {
 	}
 	
 	/**
-	 * @return The Peer Message
+	 * @return The Peer message as a byte array (in the format it would be sent across a network)
 	 */
 	public byte[] getBTMessage(){
 		int messageLength = 4;

@@ -100,11 +100,11 @@ public class Client extends Thread{
 		//this.numPacketsDownloaded = 0;
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
-		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
-		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
+		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
+		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		//this.havePiece = new LinkedList<Integer>();
 		//this.needPiece = new LinkedList<Integer>(); 
 		this.userQuit = false;
@@ -124,6 +124,7 @@ public class Client extends Thread{
 		this.bitfield = checkfile(torrent, file);
 		this.url = this.torrentInfo.announce_url;
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
+		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		//this.havePiece = new LinkedList<Integer>();
 		//this.needPiece = new LinkedList<Integer>(); 
 		this.userQuit = false;
@@ -208,34 +209,34 @@ public class Client extends Thread{
 	        int piece_length = this.torrentInfo.piece_length;
 	        //System.out.println("What the love is the piecelength: " + piece_length);
 	        int dividend = (int)Math.ceil((double)datafile.length() / (double)this.torrentInfo.piece_length);
-	        System.out.println("Dividend: " + dividend);
+	        //System.out.println("Dividend: " + dividend);
 	        byte[] readbyte = new byte[piece_length];
 
-	        System.out.println("DATAFILE LENGTH: " + datafile.length());
-	        System.out.println("LOVE YOU: " + piece_length * (dividend-1));
+	        //System.out.println("DATAFILE LENGTH: " + datafile.length());
+	        //System.out.println("LOVE YOU: " + piece_length * (dividend-1));
 	        int lastlength = (int)datafile.length() % piece_length;
-	        System.out.println("lastlength::: " + lastlength);
+	        //System.out.println("lastlength::: " + lastlength);
 
 	        for(int i = 0; i < dividend; i++){
 	            boolean datacheck = false;
 	            if(i == dividend-1){
 	                byte[] readbyte2 = new byte[lastlength];
-	                System.out.println("What the love is happening");
+	                //System.out.println("What the love is happening");
 	                int loveoffset = i * piece_length;
 	                datafile.seek((long)loveoffset);
-	                System.out.println("I is " + i + " and loveoffset is " + loveoffset);
+	                //System.out.println("I is " + i + " and loveoffset is " + loveoffset);
 	                datafile.read(readbyte2, 0, lastlength);
 	                datacheck = checkData(readbyte2, i);
-	                System.out.println("Datacheck:: " + datacheck);
+	                //System.out.println("Datacheck:: " + datacheck);
 
 	            }//end of if
 	            else{
 	                int loveoffset = i * piece_length;
 	                datafile.seek((long)loveoffset);
-	                System.out.println("I is " + i + " and loveoffset is " + loveoffset);
+	                //System.out.println("I is " + i + " and loveoffset is " + loveoffset);
 	                datafile.read(readbyte, 0, piece_length);
 	                datacheck = checkData(readbyte, i);
-	                System.out.println("Datacheck:: " + datacheck);
+	                //System.out.println("Datacheck:: " + datacheck);
 	            }//end of else
 	            lovefield[i] = datacheck;
 	        }//end of for 
@@ -522,15 +523,9 @@ public class Client extends Thread{
 		 */
 		private void sendInterestedMessage(Peer peer){
 			peer.writeToSocket(Message.interested);
-			try {
-				sleep(10000);
-				while(!peer.amChoked()){
-					System.out.println("Client unchoke");
-					return;
-				}
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			while(!peer.amChoked()){
+				System.out.println("Client unchoke");
+				return;
 			}
 			return;
 		}
@@ -543,16 +538,9 @@ public class Client extends Thread{
 				/* Seeder */
 				return;
 			}
-			System.out.println("Need Piece size == " + this.needPiece.size());
+			//System.out.println("Need Piece size == " + this.needPiece.size());
 			while(!this.needPiece.isEmpty()){
-				System.out.println(Arrays.toString(this.bitfield));
-				try {
-					//TODO Remove this
-					sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				//System.out.println(Arrays.toString(this.bitfield));
 				Set<byte[]> keys = this.client.peerHistory.keySet();
 				Iterator<byte[]> iter = keys.iterator();
 				String[] request = this.needPiece.peek().split(":");
@@ -560,8 +548,23 @@ public class Client extends Thread{
 				int begin = Integer.valueOf(request[1]);
 				int length = Integer.valueOf(request[2]);
 				while(iter.hasNext()){
+					try {
+					//TODO Remove this
+					sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 					byte[] peerID = iter.next();
 					Peer peer = this.client.peerHistory.get(peerID);
+					int pieceIndex = this.client.findPieceToDownload(peer);
+					if (pieceIndex == -1) {
+						continue;
+					}
+					this.client.getPiece(pieceIndex, peer);
+					
+					/*
+					
 					if(peer.getBitfields()[index] == true){
 						if(peer.isInterestedLocal() == false){
 							peer.setLocalInterested(true);
@@ -580,6 +583,7 @@ public class Client extends Thread{
 						peer.writeToSocket(message);
 						break;
 					}
+					*/
 				}
 			}
 		}
@@ -617,10 +621,15 @@ public class Client extends Thread{
 		switch(message.getMessageID()){
 			case 0: /* choke */
 				peer.setRemoteChoking(true);
+				//stop current download
+				//set respective flag to 0.
 				break;
 			case 1: /* unchoke */
 				peer.setRemoteChoking(false);
-				//TODO: Look at the Peer bitfield and compare that to the Client bitfield.
+				int index = findPieceToDownload(peer);
+				if(index!=-1) {
+					getPiece(index,peer);
+				}
 				//TODO: Request for pieces that the client do not have. 
 				break;
 			case 2: /* interested */
@@ -674,22 +683,17 @@ public class Client extends Thread{
 				
 				//Stores this in the peer's internal buffer
 				byte[] piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
-				
-				System.out.println("Made it past the error");
-				
+				System.out.println("PIECE NUMBER " + pieceNo);
 				//Internal buffer will return a null if it is not of the correct length.
-				if (piece == null) {
-					System.out.println("Piece == null");
-					break;
-				} else { //If the length of the buffer is equal to the piece, then check the SHA-1
+				//if (piece == null) {
+				//	break;
+				//} else { //If the length of the buffer is equal to the piece, then check the SHA-1
 					//If the SHA-1 matches, then write it to the file
-					System.out.println("CHECKING PIECE " + pieceNo + checkData(piece,pieceNo));
-					
 					if(checkData(piece,pieceNo)) {
 						this.downloadsInProgress[pieceNo]=false;
 						this.bitfield[pieceNo]=true;
 						writeData(piece,pieceNo);
-						peer.resetByteBuffer(-1); //reset byte buffer for the next piece
+						peer.resetByteBuffer(); //reset byte buffer for the next piece
 						Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 						haveMessage.have(pieceNo);
 						//write this message to all peers
@@ -697,7 +701,7 @@ public class Client extends Thread{
 					} else {
 						//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
 					}
-				}
+				//}
 				
 				break;
 			case 8: /* cancel */
@@ -764,30 +768,6 @@ public class Client extends Thread{
 		Random randGen = new Random();
 		for(int i = 3; i < 20; i++){
 			this.clientID[i] = (byte)randGen.nextInt(9);
-		}
-	}
-	
-	/**
-	 * Sends a interested message to the peer.
-	 * @return true for success, otherwise false.
-	 */
-	private boolean interested(){
-		try {
-			System.out.println("SENDING INTERESTED MESSAGE");
-			this.request.write(Message.interested.getPayload());
-			byte[] message = new byte[5];
-			this.response.readFully(message);
-			if(Message.getMessageID(message[4]).equals("unchoke")){
-				System.out.println("RESPONSE: UNCHOKED");
-				return true;
-			}
-			
-			return true;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
-			System.out.println("FAILURE OF SENDING INTERESTED MESSAGE!");
-			return false;	
 		}
 	}
 	
@@ -877,10 +857,10 @@ public class Client extends Thread{
 	 * @param peer the peer to download from
 	 */
 	private boolean getPiece(int pieceIndex, Peer remotePeer ) {
-		this.downloadsInProgress[pieceIndex] = true;
 		if(remotePeer.amChoked()) {
 			return false;
 		}
+		this.downloadsInProgress[pieceIndex] = true;
 		Message request;
 		int length;
 		int blockOffset = 0;
@@ -902,10 +882,17 @@ public class Client extends Thread{
 			} else {
 				length = leftToRequest;
 			}
-			request = new Message((length+1),(byte)6);
+			request = new Message(13,(byte)6);
 			request.request(pieceIndex,blockOffset,length);
 			leftToRequest-=length;
 			remotePeer.writeToSocket(request);
+			try {
+				//TODO Remove this
+				sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		return true;
@@ -1010,13 +997,15 @@ public class Client extends Thread{
                 return false;
         }
 
-        if(dataPiece.length > this.torrentInfo.piece_length) {
-                System.err.println("illegal piece length");
+        if(dataPiece.length != this.torrentInfo.piece_length || 
+        (dataPiece.length==this.getLastPieceLength() && dataOffset==this.getNumPieces()-1)) {
+                //System.err.println("illegal piece length");
                 //ilegal piece length
                 return false;
         }
         
         byte[] SHA1 = new byte[20];
+        System.out.println("Piece offset = " + dataOffset);
         (this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
         
         byte[] checkSHA1 = hasher.digest(dataPiece);

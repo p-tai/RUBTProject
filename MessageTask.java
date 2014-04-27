@@ -1,6 +1,4 @@
 /**
- * 
- * 
  * Simple container class for messages received from peers.
  * Passed to RUBTClient for processing.
  * 
