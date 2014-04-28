@@ -45,8 +45,15 @@ public class Peer extends Thread implements Comparable{
 	private static final long KEEP_ALIVE_TIMEOUT = 120000;
 	private Timer keepAliveTimer = new Timer();
 	private Timer peerTimeoutTimer = new Timer();
+	private Timer rateChecker = new Timer();
 	private long lastMessageTime = System.currentTimeMillis();
 	private long lastPeerTime = System.currentTimeMillis();
+	private double downloadRate;
+	private double uploadRate;
+	private int recentBytesDownloaded;
+	private static Object DLCountLock = new Object();
+	private int recentBytesUploaded;
+	private static Object ULCountLock = new Object();
 	
 	/**
 	 * Peer's Constructor
@@ -75,6 +82,10 @@ public class Peer extends Thread implements Comparable{
 		this.remoteInterested = false;
 		this.torrentSHA = Client.getHash();
 		this.peerConnection = null;
+		this.uploadRate = 0.0;
+		this.downloadRate = 0.0;
+		this.recentBytesDownloaded = 0;
+		this.recentBytesUploaded = 0;
 	}
 
 	/*********************************
@@ -151,7 +162,9 @@ public class Peer extends Thread implements Comparable{
 		
 		//Write the payload to the piece
 		this.pieceInProgress.writeToBuffer(pieceOffset,blockOffset,payload);
-		
+		synchronized(this.DLCountLock){
+			this.recentBytesDownloaded+=payload.length;
+		}
 		return this.pieceInProgress;
 	}
 	
@@ -175,6 +188,14 @@ public class Peer extends Thread implements Comparable{
 	 */
 	public String getPeerIP(){
 		return this.peerIP;
+	}
+	
+	public double getDownloadRate() {
+		return this.downloadRate;
+	}
+	
+	public double getUploadRate() {
+		return this.uploadRate;
 	}
 	
 	/**
@@ -341,6 +362,14 @@ public class Peer extends Thread implements Comparable{
 					System.out.println();
 				}
 				//get message payload, write to socket, then update the keep alive timer
+				
+				//If the message payload is a piece message, update the uploaded bytes counter
+				if(payload.getMessageID() == 7) {
+					synchronized(this.ULCountLock) {
+						this.recentBytesUploaded += payload.getLength();
+					}
+				}
+					
 				this.outgoing.write(payload.getBTMessage());
 				this.outgoing.flush();
 				updateTimer();
@@ -400,6 +429,13 @@ public class Peer extends Thread implements Comparable{
 		
 		updatePeerTimeoutTimer();
 		
+		//Checks the upload and download rates every 10 seconds
+		this.rateChecker.scheduleAtFixedRate(new TimerTask(){
+			public void run() {
+				Peer.this.updateRates();
+			}//run
+		}, 10000, 10000); //peerTimeout timer
+		
 		try {
 			//while the socket is connected
 			//read from socket (will block if it is empty) and parse message
@@ -426,6 +462,7 @@ public class Peer extends Thread implements Comparable{
 			this.peerConnection.close();
 			this.keepAliveTimer.cancel();
 			this.peerTimeoutTimer.cancel();
+			this.rateChecker.cancel();
 		} catch (Exception e) {
 			//Doesn't matter because the peer is closing anyway
 		}
@@ -525,6 +562,29 @@ public class Peer extends Thread implements Comparable{
 			Peer.this.writeToSocket(Message.keepAlive);
 		}
 	}//checkAndSendKeepAlive
+	
+	
+	private void updateRates() {
+		//System.out.println("Updating download/upload rates");
+		//Takes a weighted average of the current download rate and the historical download rate
+		synchronized((Peer)this.ULCountLock) {
+			if(this.uploadRate != 0) {
+				this.uploadRate = (this.uploadRate + (this.recentBytesUploaded)/10.0) / 2;
+			} else {
+				this.uploadRate = this.recentBytesUploaded/10.0;
+			}
+			this.recentBytesUploaded = 0;
+		}
+		
+		synchronized((Peer)this.DLCountLock) {
+			if(this.downloadRate != 0) {
+				this.downloadRate = (this.downloadRate + (this.recentBytesDownloaded)/10.0) / 2;
+			} else {
+				this.downloadRate = this.recentBytesDownloaded/10.0;
+			}
+			this.recentBytesDownloaded = 0;
+		}
+	}//updateRate
 	
 	private void updateTimer() {
 		//System.out.println("Updating message time");
