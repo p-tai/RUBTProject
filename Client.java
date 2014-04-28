@@ -78,7 +78,7 @@ public class Client extends Thread{
 
 	
 	private DataOutputStream request;
-	private DataInputStream  response;
+	private DataInputStream response;
 	
 	private ServerSocket listenSocket;
 	
@@ -91,7 +91,7 @@ public class Client extends Thread{
 	private LinkedBlockingQueue<String> needPiece;
 	
 	/**
-	 * Client Constructor
+	 * Client Constructor. Default constructor when the target output file does NOT exist.
 	 * @param filePath Source of the torrent file
 	 * @param saveName The file you want to save in.
 	 */
@@ -100,6 +100,7 @@ public class Client extends Thread{
 		//this.numPacketsDownloaded = 0;
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
+		
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
@@ -114,7 +115,7 @@ public class Client extends Thread{
 	
 	/**
 	 * Client Constructor
-	 * This is called when the file already exist. 
+	 * This is called when the target output file already exists (to resume the download). 
 	 * @param torrent Source of the torrent file
 	 * @param file The RandomAccessFile file
 	 */
@@ -125,8 +126,6 @@ public class Client extends Thread{
 		this.url = this.torrentInfo.announce_url;
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
-		//this.havePiece = new LinkedList<Integer>();
-		//this.needPiece = new LinkedList<Integer>(); 
 		this.userQuit = false;
 		ToolKit.print(this.blocks);
 		updateDownloaded();
@@ -645,26 +644,27 @@ public class Client extends Thread{
 				pieceBuffer.get(temp);
 				
 				//Stores this in the peer's internal buffer
-				byte[] piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
+				Piece piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
 				System.out.println("PIECE NUMBER " + pieceNo);
-				//Internal buffer will return a null if it is not of the correct length.
-				//if (piece == null) {
-				//	break;
-				//} else { //If the length of the buffer is equal to the piece, then check the SHA-1
-					//If the SHA-1 matches, then write it to the file
-					if(checkData(piece,pieceNo)) {
+				
+				//Check if the piece is finished
+				if(piece.isFull()) {
+					//Check if the payload was correct according to the SHA
+					if(this.checkData(piece.getData(),piece.getPieceIndex())){
+						//if so, write it to the random access file and reset the state of the piece
+						this.writeData(piece.getData(), piece.getPieceIndex());
 						this.downloadsInProgress[pieceNo]=false;
 						this.bitfield[pieceNo]=true;
-						writeData(piece,pieceNo);
-						peer.resetByteBuffer(); //reset byte buffer for the next piece
+						writeData(piece.getData(),pieceNo);
+						peer.resetPiece(); //reset piece for the next piece
 						Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 						haveMessage.have(pieceNo);
 						//write this message to all peers
 						broadcastMessage(haveMessage);
-					} else {
-						//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
 					}
-				//}
+				} else {
+					//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
+				}
 				
 				break;
 			case 8: /* cancel */
@@ -741,23 +741,29 @@ public class Client extends Thread{
 		return torrentInfo.info_hash.array();
 	}
 	
-	
-	public static int getLastPieceLength() {
-		int temp = torrentInfo.file_length%torrentInfo.piece_length;
-		if (temp == 0) {
-			temp = torrentInfo.piece_length;
-		}
-		return temp;
-	}
-	
-	public static int getLastPieceBlockCount() {
-		return (int)(Math.ceil(getLastPieceLength()/MAXIMUMLIMT));
-	}
 	/**
+	 * @param the zero-based piece index
 	 * @return The Torrent Piece Length.
 	 */
-	public static int getPieceLength(){
-		return torrentInfo.piece_length;
+	public static int getPieceLength(int pieceIndex){
+		//if the piece is the last piece, return the last piece size, otherwise, default piece size.
+		if(pieceIndex == (torrentInfo.piece_hashes.length-1)) {
+			int temp = torrentInfo.file_length%torrentInfo.piece_length;
+			if (temp == 0) {
+				temp = torrentInfo.piece_length;
+			}
+			return temp;
+		} else {
+			return torrentInfo.piece_length;
+		}
+	}
+	
+	/**
+	 * @param the zero-based piece index
+	 * @return The number of blocks for that one piece.
+	 */
+	public static int getNumBlocks(int pieceIndex) {
+		return ((int)(Math.ceil(getPieceLength(pieceIndex)/MAXIMUMLIMT)));
 	}
 	
 	/**
@@ -774,9 +780,6 @@ public class Client extends Thread{
 		return torrentInfo.piece_hashes.length;
 	}
 
-	public static int getNumBlocks() {
-		return ((int)(Math.ceil(getPieceLength()/MAXIMUMLIMT)));
-	}
 	/*********************************
 	 * Client->Tracker Private Functions
 	 ********************************/
@@ -828,16 +831,7 @@ public class Client extends Thread{
 		int length;
 		int blockOffset = 0;
 		//Check if this is the oddball final piece)
-		int leftToRequest = this.getPieceLength();
-		if(pieceIndex == this.getNumPieces()-1) {
-			leftToRequest = (this.getFileLength()%this.getPieceLength());
-			if(leftToRequest == 0) {
-				leftToRequest = this.getPieceLength();
-			}
-		} else {
-			leftToRequest = this.getPieceLength();
-		}
-		
+		int leftToRequest = this.getPieceLength(pieceIndex);
 		
 		while(leftToRequest>0) {
 			if(leftToRequest > this.MAXIMUMLIMT) {
@@ -889,33 +883,35 @@ public class Client extends Thread{
      * @param pieceOffset Where the piece is located to the file (0-based piece index)
      */
     private void writeData(byte[] dataPiece, int pieceOffset) {
-		try {
-			this.dataFile.seek(pieceOffset*this.getPieceLength());
-			this.dataFile.write(dataPiece);
-		} catch (IOException e) {
-			System.err.println("ERROR IN WRITING TO FILE");
-			System.err.println("Piece Offset: " + pieceOffset);
-			System.err.println("Data Offset: " + pieceOffset*this.getPieceLength());
+		synchronized(this.dataFile) {
+			try {
+				this.dataFile.seek(pieceOffset*this.getPieceLength(pieceOffset));
+				this.dataFile.write(dataPiece);
+			} catch (IOException e) {
+				System.err.println("ERROR IN WRITING TO FILE");
+				System.err.println("Piece Offset: " + pieceOffset);
+				System.err.println("Data Offset: " + pieceOffset*this.getPieceLength(pieceOffset));
+			}
 		}
 	}
 	
 	/**
      * Read the piece of data at the offset given
-     * @param dataOffset the zero-indexed piece index
+     * @param pieceOffset the zero-indexed piece index
      * @param blockOffset zero-indexed byte index
      * @param length number of bytes to read
      * @return a byte[] with the requested data
      */
-    private byte[] readLocalData(int dataOffset, int blockOffset, int length) {
+    private byte[] readLocalData(int pieceOffset, int blockOffset, int length) {
 		byte[] retVal = new byte[length];
 		try {
-			this.dataFile.seek(dataOffset*this.getPieceLength()+blockOffset);
+			this.dataFile.seek(pieceOffset*this.getPieceLength(pieceOffset)+blockOffset);
 			this.dataFile.read(retVal);
 			return retVal;
 		} catch (IOException e) {
 			System.err.println("ERROR IN READING PIECE FROM FILE");
-			System.err.println("Piece Offset: " + dataOffset);
-			System.err.println("Data Offset: " + dataOffset*this.getPieceLength()+blockOffset);
+			System.err.println("Piece Offset: " + pieceOffset);
+			System.err.println("Data Offset: " + pieceOffset*this.getPieceLength(pieceOffset)+blockOffset);
 			return null; //If you reach here, there was an error.
 		}
 	}
@@ -960,8 +956,7 @@ public class Client extends Thread{
                 return false;
         }
 
-        if(dataPiece.length != this.torrentInfo.piece_length || 
-        (dataPiece.length==this.getLastPieceLength() && dataOffset==this.getNumPieces()-1)) {
+        if(dataPiece.length != this.torrentInfo.piece_length || dataPiece.length != this.getPieceLength(torrentInfo.piece_hashes.length-1)) {
                 //System.err.println("illegal piece length");
                 //ilegal piece length
                 return false;

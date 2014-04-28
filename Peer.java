@@ -27,7 +27,7 @@ public class Peer extends Thread implements Comparable{
 	private Socket peerConnection;
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
-	private byte[] buffer;
+	private Piece pieceInProgress;
 	private boolean[] blocksDownloaded;
 	
 	/**
@@ -58,7 +58,6 @@ public class Peer extends Thread implements Comparable{
 	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort) {
 		this.RUBT = RUBT;
 		this.clientID = RUBT.getClientID();
-		//this.buffer = null;
 		this.peerID = peerID;
 		try {
 			//FOR DEBUG PURPOSES ONLY (to make peer id human readable)
@@ -145,40 +144,21 @@ public class Peer extends Thread implements Comparable{
 	 * @param blockOffset Offset to write into at the buffer - should come from a peer message.
 	 * @return The entire contents of the buffer or null.
 	 */ 
-	public byte[] writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
-		if(this.buffer == null || this.blocksDownloaded == null) {
-			createByteBuffer(pieceOffset);
-		}
-		//this.buffer.put(payload,blockOffset,payload.length);
-		
-		for(int i = 0; i < payload.length; i++){
-			buffer[i+blockOffset] = payload[i];
+	public Piece writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
+		if(this.pieceInProgress == null) {
+			this.pieceInProgress = new Piece(pieceOffset, this.RUBT.getPieceLength(pieceOffset), this.RUBT.getNumBlocks(pieceOffset));
 		}
 		
-		this.blocksDownloaded[(int)Math.ceil(blockOffset/RUBT.MAXIMUMLIMT)] = true;
-		//Check if you have a full buffer. If so, reset the buffer.
-		//if(isAllTrue(this.blocksDownloaded)) {
-			return buffer;
-		//} else {
-		//	return null;
-		//}
+		//Write the payload to the piece
+		this.pieceInProgress.writeToBuffer(pieceOffset,blockOffset,payload);
+		
+		return this.pieceInProgress;
 	}
 	
-	public void createByteBuffer(int pieceOffset){
-		//System.out.println("THE PIECE LENGTH IS: " + RUBT.getPieceLength() );
-		if(pieceOffset == this.RUBT.getNumPieces()-1) {
-			//if this is the last piece, special case.
-			this.buffer = new byte[RUBT.getLastPieceLength()];
-			this.blocksDownloaded = new boolean[RUBT.getLastPieceBlockCount()];
-		} else {
-			this.buffer = new byte[RUBT.getPieceLength()];
-			this.blocksDownloaded = new boolean[RUBT.getNumBlocks()];
+	public void resetPiece(){
+		if(this.pieceInProgress.isFull()) {
+			this.pieceInProgress = null;
 		}
-	}
-	
-	public void resetByteBuffer() {
-		this.buffer = null;
-		this.blocksDownloaded = null;
 	}
 	
 	private boolean isAllTrue(boolean[] blocks){
@@ -265,6 +245,7 @@ public class Peer extends Thread implements Comparable{
 	public void connect(){
 		System.out.println("Connecting to " + this.peerIDString);
 		try {
+			//System.out.println(this.peerIP.split(":")[0]);
 			this.peerConnection = new Socket(this.peerIP, this.peerPort);
 			
 			System.out.println("Opening Output Stream to " + this.peerIDString);
@@ -293,9 +274,7 @@ public class Peer extends Thread implements Comparable{
 	private boolean handshake(byte[] infoHash){
 		try {
 			//Sends an outgoing message to the connected Peer.
-			System.out.println();
-			System.out.println("SENDING A HANDSHAKE TO" + this.peerIDString);
-			System.out.println();
+			System.out.println("\nSENDING A HANDSHAKE TO" + this.peerIDString + "\n");
 			outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
 			this.outgoing.flush();
 			
@@ -350,7 +329,6 @@ public class Peer extends Thread implements Comparable{
 	 * @param payload message to be sent to peer
 	 */
 	public void writeToSocket(Message payload){
-		
 		//In case the client and the peer threads both want to write to socket at the same time
 		synchronized(this.outgoing) {
 			try {
@@ -378,11 +356,13 @@ public class Peer extends Thread implements Comparable{
 	 * Will connect and handshake continously try to read from the incoming socket.
 	 */
 	public void run() {
+		
+		//Check if the peer exists. If not, connect. If it does, just keep the current socket (they handshaked with us)
 		if(this.peerConnection == null) {
 			connect();
 		
 			if(handshake(this.torrentSHA) == true){
-//			System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
+			//System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 				System.out.println("HANDSHAKE RECEIVED");
 				System.out.println("FROM:" + this.peerIDString);
 			
@@ -422,8 +402,7 @@ public class Peer extends Thread implements Comparable{
 		
 		try {
 			//while the socket is connected
-			//read from socket (will block if it is empty)
-			//parse message
+			//read from socket (will block if it is empty) and parse message
 			while(readSocketInputStream()){
 				//Update the PEER TIMEOUT timer to a new value (because we received a packet).
 				updatePeerTimeoutTimer();
@@ -431,7 +410,7 @@ public class Peer extends Thread implements Comparable{
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}//try
 				
 	}//run
 	
@@ -440,13 +419,13 @@ public class Peer extends Thread implements Comparable{
 	 */	
 	public void shutdownPeer() {
 		//to be implemented
-		//Needs to close all input/output streams and then close the socket to peer.
+		//close all input/output streams and then close the socket to peer.
 		try {
 			this.incoming.close();
 			this.outgoing.close();
 			this.peerConnection.close();
-			this.keepAliveTimer.cancel(); 
-			this.peerTimeoutTimer.cancel(); 
+			this.keepAliveTimer.cancel();
+			this.peerTimeoutTimer.cancel();
 		} catch (Exception e) {
 			//Doesn't matter because the peer is closing anyway
 		}
@@ -455,14 +434,11 @@ public class Peer extends Thread implements Comparable{
 	private boolean readSocketInputStream() throws IOException {
 		
 		//NEED TO DO: Check if the connection still exists.  If not, return false
-		//NEED TO DO: Pass the message up to the client class into a LinkedBlockedQueue
 		
 		int length = this.incoming.readInt();
 		//System.out.println("Length = " + length);
 		byte classID;
 		Message incomingMessage = null;
-		
-		//MessageTask incomingTask = new MessageTask(this,incomingMessage);
 		
 		if(length == 0) {
 			//keep alive is the only packet you can receive with length zero

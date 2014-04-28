@@ -129,23 +129,10 @@ public class Tracker {
 		System.out.println("FAILURE: INVALID URL");
 		return null;
 	}
-    	
-    	//if(left != 0){
+
 	/* Get the Peer List */
 	return getPeerList();
-    	/*}else{
-		//SendMessage
-    		try {
-				HttpURLConnection httpConnection = (HttpURLConnection)url.openConnection();
-				httpConnection.disconnect();
-			} catch (IOException e) {
-				// This is from HttpURLConnection
-				System.out.println("FAILURE: CONNECTION");
-				e.printStackTrace();
-			}
-    	}
-    	return null;
-	*/
+
     }
     
     /**
@@ -245,7 +232,7 @@ public class Tracker {
 			String peerIPAddress = new String(((ByteBuffer)peerList.get(IP)).array());
 			if(peerIPAddress.contains("128.6.171.130") || peerIPAddress.contains("128.6.171.131")){
 				int port = Integer.valueOf((Integer)(peerList.get(PORT)));
-				peerIPAddress =  peerIPAddress + ":" + Integer.toString(port);
+				peerIPAddress = peerIPAddress;
 				Peer peer = new Peer(this.client, peerID, peerIPAddress, port);
 				peerArrayList.add(peer);
 			}

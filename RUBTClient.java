@@ -17,8 +17,7 @@ import java.net.*;
 import java.lang.*;
 
 /**
- * For le error checking
- * 
+ * For le error checking 
  */
 public class RUBTClient extends Thread{
 
