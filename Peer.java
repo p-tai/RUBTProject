@@ -434,7 +434,7 @@ public class Peer extends Thread implements Comparable{
 			public void run() {
 				Peer.this.updateRates();
 			}//run
-		}, 10000, 10000); //peerTimeout timer
+		}, 2000, 2000); //peerTimeout timer
 		
 		try {
 			//while the socket is connected
@@ -569,18 +569,18 @@ public class Peer extends Thread implements Comparable{
 		//Takes a weighted average of the current download rate and the historical download rate
 		synchronized((Peer)this.ULCountLock) {
 			if(this.uploadRate != 0) {
-				this.uploadRate = (this.uploadRate + (this.recentBytesUploaded)/10.0) / 2;
+				this.uploadRate = this.uploadRate*.65 + (this.recentBytesUploaded)/2.0)*.35;
 			} else {
-				this.uploadRate = this.recentBytesUploaded/10.0;
+				this.uploadRate = this.recentBytesUploaded/2.0;
 			}
 			this.recentBytesUploaded = 0;
 		}
 		
 		synchronized((Peer)this.DLCountLock) {
 			if(this.downloadRate != 0) {
-				this.downloadRate = (this.downloadRate + (this.recentBytesDownloaded)/10.0) / 2;
+				this.downloadRate = this.downloadRate*.65 + (this.recentBytesDownloaded)/2.0)*.35;
 			} else {
-				this.downloadRate = this.recentBytesDownloaded/10.0;
+				this.downloadRate = this.recentBytesDownloaded/2.0;
 			}
 			this.recentBytesDownloaded = 0;
 		}
