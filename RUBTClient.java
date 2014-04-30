@@ -66,8 +66,7 @@ public class RUBTClient extends Thread{
 				line = in.readLine();    
 				if (line.equals(QUIT)) {    
 					client.disconnectFromTracker();
-					System.out.println("You are now quiting the program");     
-					System.exit(1);
+					return;
 				}    //end of if
 			}  //end of while
 
@@ -151,7 +150,7 @@ public class RUBTClient extends Thread{
 		int port = client.openSocket();
 		if(client.connectToTracker(port) == false){
 			System.out.println("THE TRACKER IS DOWN!");
-			System.exit(1);
+			return;
 		}
 		
 		//Connect the tracker
