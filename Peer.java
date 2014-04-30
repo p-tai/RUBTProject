@@ -355,6 +355,13 @@ public class Peer extends Thread{
 		this.peerBooleanBitField[pieceIndex] = true;
 	}
 	
+	/**
+	 * enqueueMessage: 
+	 * Method for the client to reach the linkedblockingqueue that will hold all messages
+	 */
+	public void enqueueMessage(Message message) {
+		this.writer.enqueue(message);
+	}
 	
 	/**
 	 * Function to write a message to the outgoing socket.
@@ -391,6 +398,10 @@ public class Peer extends Thread{
 		}
 	}
 	
+	/**
+	 * Private class that has a thread and a LinkedBlockingQueue
+	 * It will continuously read from the queue and send it through it's peer's outgoing data stream.
+	 */
 	private class PeerWriter extends Thread {
 
 		private LinkedBlockingQueue<Message> messageQueue;
@@ -452,6 +463,7 @@ public class Peer extends Thread{
 			}
 		}
 		
+		//Intialize the socket writer
 		writer = new PeerWriter(this.outgoing);
 		
 		/**
