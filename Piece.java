@@ -19,7 +19,7 @@ public class Piece {
 		this.pieceNumber = pieceNumber;
 		this.bytesWritten = 0;
 		this.dataBuffer = new byte[pieceSize];
-	}
+	}//Piece Constructor
 	
 	/**
 	 * writeToBuffer:
@@ -41,7 +41,7 @@ public class Piece {
 		//Increment the amount of bytes written to the data buffer
 		bytesWritten+=length;
 		
-	}
+	}//writeToBuffer
 	
 	/**
 	 * Checks if the buffer has been filled with valid data
@@ -70,4 +70,4 @@ public class Piece {
 	public String toString(){
 		return "Piece Number: " + this.pieceNumber + " Bytes written: " + this.bytesWritten;
 	}
-}
+}//Piece.java
