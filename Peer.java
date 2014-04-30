@@ -465,6 +465,7 @@ public class Peer extends Thread implements Comparable{
 		
 		//Intialize the socket writer
 		writer = new PeerWriter(this.outgoing);
+		writer.start();
 		
 		/**
 		* Schedules a new anonymous implementation of a TimerTask that
@@ -518,17 +519,22 @@ public class Peer extends Thread implements Comparable{
 		//to be implemented
 		//close all input/output streams and then close the socket to peer.
 		try {
+			
 			//kill the I/O streams
 			this.incoming.close();
 			this.outgoing.close();
-			//kill the writer thread
+			
+			//kill the writer thread with a poison message
 			this.writer.enqueue(Message.KILL_PEER_MESSAGE);
+			
 			//kill the socket
 			this.peerConnection.close();
+			
 			//cancel all the timers
 			this.keepAliveTimer.cancel();
 			this.peerTimeoutTimer.cancel();
 			this.rateChecker.cancel();
+			
 		} catch (Exception e) {
 			//Doesn't matter because the peer is closing anyway
 		}
@@ -583,7 +589,7 @@ public class Peer extends Thread implements Comparable{
 					break;
 					
 				case 4: case 5: case 6: case 7: case 8: 
-				//have message message. bitfield message, request message, piece message, cancel message
+				//have message. bitfield message, request message, piece message, cancel message
 					byte[] temp = new byte[length];
 					this.incoming.readFully(temp);
 					incomingMessage.setPayload(temp);
