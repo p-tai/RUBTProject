@@ -329,7 +329,10 @@ public class Client extends Thread{
 			
 			this.requestTracker.scheduleAtFixedRate(new TimerTask(){;
 
-				@Override
+				/**
+				 * Sends the HTTP GET Request to the tracker based on
+				 * the tracker interval. It 
+				 */
 				public void run() {
 					if(System.currentTimeMillis() - lastRequestSent > client.tracker.getInterval()){
 						client.updateDownloaded();
@@ -560,6 +563,8 @@ public class Client extends Thread{
 			/* DO NOTHING */
 			return;
 		}
+		
+		
 		MessageTask messageFromPeer = messagesQueue.poll();
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
