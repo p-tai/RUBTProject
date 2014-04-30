@@ -51,9 +51,9 @@ public class Peer extends Thread implements Comparable{
 	private double downloadRate;
 	private double uploadRate;
 	private int recentBytesDownloaded;
-	private static Object DLCountLock = new Object();
+	private Object DLCountLock = new Object();
 	private int recentBytesUploaded;
-	private static Object ULCountLock = new Object();
+	private Object ULCountLock = new Object();
 	
 	/**
 	 * Peer's Constructor
@@ -191,11 +191,20 @@ public class Peer extends Thread implements Comparable{
 	}
 	
 	public double getDownloadRate() {
-		return this.downloadRate;
+		double retVal;
+		synchronized(this.DLCountLock) {
+			retVal = this.downloadRate;
+		}
+		return retVal;
 	}
 	
 	public double getUploadRate() {
-		return this.uploadRate;
+		double retVal;
+		synchronized(this.ULCountLock) {
+			retVal = this.uploadRate;
+		}
+		return retVal;
+		
 	}
 	
 	/**
@@ -569,7 +578,11 @@ public class Peer extends Thread implements Comparable{
 		//Takes a weighted average of the current download rate and the historical download rate
 		synchronized((Peer)this.ULCountLock) {
 			if(this.uploadRate != 0) {
-				this.uploadRate = this.uploadRate*.65 + (this.recentBytesUploaded)/2.0)*.35;
+				this.uploadRate = this.uploadRate*.65+this.recentBytesUploaded/2.0*.35;
+				this.recentBytesUploaded = 0.0;
+			} else if(this.recentBytesUploaded == 0){
+				//you aren't uploading any data
+				this.uploadRate=0.0
 			} else {
 				this.uploadRate = this.recentBytesUploaded/2.0;
 			}
@@ -578,7 +591,11 @@ public class Peer extends Thread implements Comparable{
 		
 		synchronized((Peer)this.DLCountLock) {
 			if(this.downloadRate != 0) {
-				this.downloadRate = this.downloadRate*.65 + (this.recentBytesDownloaded)/2.0)*.35;
+				this.downloadRate = this.downloadRate*.65+this.recentBytesDownloaded/2.0*.35;
+				this.recentBytesDownloaded = 0.0;
+			} else if(this.recentBytesUploaded == 0){
+				//you aren't downloading any data
+				this.downloadRate = 0.0
 			} else {
 				this.downloadRate = this.recentBytesDownloaded/2.0;
 			}
