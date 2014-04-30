@@ -90,7 +90,7 @@ public class Tracker {
     	this.infoHash = infoHash;
     	this.clientID = clientID;
     	this.listenPort = listenPort;
-    }
+    }//Tracker constructor
     
     /**
      * Sending a HTTP GET Message to the Tracker
@@ -101,6 +101,7 @@ public class Tracker {
      * @return A List of Peers
      */
     public ArrayList<Peer> sendHTTPGet(int upload, int download, int left, String event){
+		//Create a HTTP Get request's URL out of the given inputs
     	String query = "";
 		query = URLify(query,"announce?info_hash", this.infoHash);
 		query = URLify(query,"&peer_id",this.clientID);
@@ -109,29 +110,30 @@ public class Tracker {
 		query = URLify(query,"&downloaded", Integer.toString(download));
 		query = URLify(query,"&left", Integer.toString(left));
 		
+		//If there was an event for this, then append the event to the HTTP get request's URL
     	if(event.length() > 0){
     		/* When event == started, completed, or stopped*/
     		query = URLify(query, "&event", event);
     	}
     	
+    	//Print statement for debug purposes
     	System.out.println("SENDING A HTTP GET REQUEST TO THE TRACKER ");
     	System.out.println("WITH THE FOLLOWING PARAMATER: ");
     	System.out.println("UPLOAD: " + upload );
     	System.out.println("DOWNLOAD: " + download);
     	System.out.println("LEFT: " + left);
     	System.out.println("Event: " + event);
-    	
-	try {
-		this.url = new URL(url,query);
-		System.out.println(url.toString());
-	} catch (MalformedURLException e1) {
-		//This is from this.url
-		System.out.println("FAILURE: INVALID URL");
-		return null;
-	}
+		try {
+			this.url = new URL(url,query);
+			System.out.println(url.toString());
+		} catch (MalformedURLException e1) {
+			//This is from this.url
+			System.out.println("FAILURE: INVALID URL");
+			return null;
+		}
 
-	/* Get the Peer List */
-	return getPeerList();
+		/* Get the Peer List */
+		return getPeerList();
 
     }
     
@@ -164,7 +166,7 @@ public class Tracker {
 		}
                 
         String reply = base+queryID+"=";
-                
+        
         for(int i = 0; i<query.length; i++) {
 			if((query[i] &0x80) == 0x80) { //if the byte data has the most significant byte set (e.g. it is negative)
 				reply = reply+"%";
@@ -192,21 +194,27 @@ public class Tracker {
 		byte[] getStreamBytes;
 		
 		try{
+			//Open an HTTP Connection to the given URL and send the HTTP get request
 			httpConnection = (HttpURLConnection)url.openConnection();
-			
 			getStream = httpConnection.getInputStream();
 			dataStream = new DataInputStream(getStream);
 			
 			getStreamBytes = new byte[httpConnection.getContentLength()];
-			dataStream.readFully(getStreamBytes);//TODO read causes an IOError
-			
+			dataStream.readFully(getStreamBytes);//read causes an IOError
+			//Decode the returned data using Bencoder
 			Map<ByteBuffer, Object> response = (Map<ByteBuffer, Object>) Bencoder2.decode(getStreamBytes);
+			
+			//If there was no response, then the tracker is down or no one is connected
 			if(response == null){
 				System.out.println("FAILURE: NO PEER LIST");
 				return null;
 			}		
+			
+			//Cleanup I/Ostreams
 			getStream.close();
 			dataStream.close();
+			
+			//Parse the input and then return it
 			return captureResponse(response);
 		}catch(IOException e){
 			System.out.println("");
@@ -214,6 +222,7 @@ public class Tracker {
 		}catch(BencodingException e){
 			e.printStackTrace();
 		}
+		
 		return null;
 	}
 	
@@ -224,15 +233,22 @@ public class Tracker {
 	 */
 	private ArrayList<Peer> captureResponse(Map<ByteBuffer, Object> response){
 		ArrayList<Peer> peerArrayList = new ArrayList<Peer>();
+		//Typecast the response of the HTTP get request
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)response.get(PEERS);
+		//Parse out the interval
 		this.interval = (Integer)response.get(INTERVALS);
+		
+		//Loop through all the peers and then parse them into the proper objects
 		for(int i = 0; i < peers.size(); i++){
 			Map<ByteBuffer, Object> peerList = peers.get(i);
 			byte[] peerID = ((ByteBuffer)peerList.get(PEERID)).array();
 			String peerIPAddress = new String(((ByteBuffer)peerList.get(IP)).array());
+			//Filter out the desired class-related clients only
 			if(peerIPAddress.contains("128.6.171.130") || peerIPAddress.contains("128.6.171.131")){
+				//More parsing of data into the proper types
 				int port = Integer.valueOf((Integer)(peerList.get(PORT)));
 				peerIPAddress = peerIPAddress;
+				//Create a new peer using the parsed information and then add it to the peerList
 				Peer peer = new Peer(this.client, peerID, peerIPAddress, port);
 				peerArrayList.add(peer);
 			}
