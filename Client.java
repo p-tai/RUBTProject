@@ -326,7 +326,6 @@ public class Client extends Thread{
 		 * @param client The Client Object
 		 */
 		public void run(final Client client){
-			System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 			
 			this.requestTracker.scheduleAtFixedRate(new TimerTask(){;
 
@@ -338,27 +337,20 @@ public class Client extends Thread{
 						if(peerList == null){
 							return;
 						}
+						
 						ArrayList<Peer> peerHistory = client.peerHistory;
+						if(!peerList.isEmpty()){
+							for(int i = 0; i < peerList.size(); i++){
+								Peer peer = peerList.get(i);
+								if(!peerHistory.contains(peer)){
+									peerHistory.add(peer);
+									peer.start();
+								}
+							}	
+						}
 						
 					}//end of if 
 				}//end of void run()
-				
-				private byte[] findByteArray(Map<byte[], String> peerList, String ipPort){
-					if(peerList == null){
-						return null;
-					}
-					
-					Set<byte[]> keys = peerList.keySet();
-					Iterator<byte[]> iter = keys.iterator();
-					while(iter.hasNext()){
-						byte[] peerID = iter.next();
-						if(peerList.get(peerID).equals(ipPort)){
-							return peerID;
-						}
-					}
-					
-					return null;
-				}
 				
 			}, new Date(), client.interval);
 		}// end of run

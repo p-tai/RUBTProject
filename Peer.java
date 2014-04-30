@@ -13,7 +13,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Peer extends Thread implements Comparable{
+public class Peer extends Thread{
 
 	private final Client RUBT;
 	private final byte[] clientID;
@@ -672,21 +672,22 @@ public class Peer extends Thread implements Comparable{
 		this.lastPeerTime = System.currentTimeMillis();
 	}//updatePeerTimeoutTimer
 
-	@Override
-	public int compareTo(Object e) {
-		if(e == null || !(e instanceof Peer)){
-			return 1;
+
+	public boolean equals(Object obj){
+		if(obj == null || !(obj instanceof Peer)){
+			return false;
 		}
 		
-		Peer peer = (Peer)e;
+		Peer peer = (Peer)obj;
 		byte[] peerID = peer.getPeerID();
+		
 		for(int i = 0; i < this.peerID.length; i++){
 			if(this.peerID[i] != peerID[i]){
-				return 1;
+				return false;
 			}
 		}
 		
-		return 0;
+		return true;
 	}
 	
 }//Peer.java
