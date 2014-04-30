@@ -62,12 +62,12 @@ public class RUBTClient extends Thread{
 		try{
 			final InputStreamReader input = new InputStreamReader(System.in);
 			final BufferedReader in = new BufferedReader(input);    
-			while (!(line.equals(QUIT))) {    
+			while (!(line.toLowerCase().equals(QUIT))) {    
 				line = in.readLine();    
 				if (line.equals(QUIT)) {    
 					client.disconnectFromTracker();
 					System.out.println("You are now quiting the program");     
-					System.exit(1);    
+					System.exit(1);
 				}    //end of if
 			}  //end of while
 
@@ -97,6 +97,7 @@ public class RUBTClient extends Thread{
 				int whichpicint = (int)Math.random()*10;
 				
 				System.out.println();
+				System.out.println("You are now quiting the program");
 				System.out.println();
 
 				if(whichpicint % 2 == 0){
@@ -118,7 +119,7 @@ public class RUBTClient extends Thread{
 				}//end of else odd
 
 				System.out.println();
-
+				
 			}//end of run
 		});//end of new thread runtime thingie :3
 
@@ -153,8 +154,10 @@ public class RUBTClient extends Thread{
 			System.exit(1);
 		}
 		
+		//Connect the tracker
 		client.connectToPeers();
 
+		//Start running the shutdown hook as a seperate thread.
 		(new RUBTClient()).run(client);
 		return;
 

@@ -639,7 +639,7 @@ public class Peer extends Thread{
 	private void updateRates() {
 		//System.out.println("Updating download/upload rates");
 		
-		synchronized((Peer)this.ULCountLock) {
+		synchronized(this.ULCountLock) {
 			//If we have been downloading consistently...
 			if(this.uploadRate != 0) {
 				//Takes a weighted average of the current upload rate and the historical upload rate
@@ -659,7 +659,7 @@ public class Peer extends Thread{
 			this.recentBytesUploaded = 0;
 		}
 		
-		synchronized((Peer)this.DLCountLock) {
+		synchronized(this.DLCountLock) {
 			//If we have been downloading consistently...
 			if(this.downloadRate != 0) {
 				//Takes a weighted average of the current download rate and the historical download rate

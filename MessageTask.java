@@ -8,7 +8,6 @@
  *
  */
 public class MessageTask {
-  //locals
   private final Peer peer;
   private final Message message;
   

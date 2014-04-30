@@ -187,7 +187,7 @@ public class Message {
 	 * @param peerID : the byte[] containing the LOCAL peer's peerID
 	 * @return byte[] containing a handshake message
 	 */
-	public static byte[] handshakeMessage(final byte[] SHA1, final byte[] peerID){
+	public static byte[] handshakeMessage(final byte[] SHA1, final byte[] peerID) {
 		byte[] handshake = new byte[68];
         handshake[0] = 19;
         handshake[1] = 'B';
