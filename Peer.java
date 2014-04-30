@@ -11,6 +11,7 @@ import edu.rutgers.cs.cs352.bt.util.*;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Peer extends Thread implements Comparable{
 
@@ -27,6 +28,7 @@ public class Peer extends Thread implements Comparable{
 	private Socket peerConnection;
 	private DataOutputStream outgoing;
 	private DataInputStream incoming;
+	private PeerWriter writer;
 	private Piece pieceInProgress;
 	private boolean[] blocksDownloaded;
 	
@@ -359,7 +361,7 @@ public class Peer extends Thread implements Comparable{
 	 * @param payload message to be sent to peer
 	 */
 	public void writeToSocket(Message payload){
-		//In case the client and the peer threads both want to write to socket at the same time
+		//In case the client, peer, or peerWriter threads wantto write to socket at the same time
 		synchronized(this.outgoing) {
 			try {
 				if(payload.getLength() == 0){
@@ -389,6 +391,42 @@ public class Peer extends Thread implements Comparable{
 		}
 	}
 	
+	private class PeerWriter extends Thread {
+
+		private LinkedBlockingQueue<Message> messageQueue;
+		private DataOutputStream outgoing;
+		
+		/**
+		 * PeerWriter Constructor
+		 * @param dataoutputstream = the stream to write out all data to
+		 */
+		public PeerWriter(DataOutputStream outgoing) {
+			this.outgoing = outgoing;
+			this.messageQueue = new LinkedBlockingQueue<Message>();
+		}//peerWriter constuctor
+		
+		/**
+		 * Public method to add a message to the peerWriter's internal queue
+		 */
+		public void enqueue(Message message) {
+			messageQueue.add(message);
+		}//enqueue
+		
+		/**
+		 * Main runnable thread for the peerWriter private class
+		 */
+		public void run(){
+			Message current;
+			//if the queue contains a poison, exit the thread, otherwise just keep going
+			while( (current = messageQueue.poll()) != Message.KILL_PEER_MESSAGE ) {
+				if( current != null ) {
+					Peer.this.writeToSocket(current);
+				}
+			}
+		}//run
+		
+	}//peerWriter
+	
 	/**
 	 * Main runnable thread process for the peer class.
 	 * Will connect and handshake continously try to read from the incoming socket.
@@ -398,7 +436,7 @@ public class Peer extends Thread implements Comparable{
 		//Check if the peer exists. If not, connect. If it does, just keep the current socket (they handshaked with us)
 		if(this.peerConnection == null) {
 			connect();
-		
+
 			if(handshake(this.torrentSHA) == true){
 			//System.out.println("Connected to PeerID: " + Arrays.toString(this.peerID));
 				System.out.println("HANDSHAKE RECEIVED");
@@ -413,6 +451,8 @@ public class Peer extends Thread implements Comparable{
 				System.out.println("CONNECTION FAILURE");
 			}
 		}
+		
+		writer = new PeerWriter(this.outgoing);
 		
 		/**
 		* Schedules a new anonymous implementation of a TimerTask that
@@ -466,9 +506,14 @@ public class Peer extends Thread implements Comparable{
 		//to be implemented
 		//close all input/output streams and then close the socket to peer.
 		try {
+			//kill the I/O streams
 			this.incoming.close();
 			this.outgoing.close();
+			//kill the writer thread
+			this.writer.enqueue(Message.KILL_PEER_MESSAGE);
+			//kill the socket
 			this.peerConnection.close();
+			//cancel all the timers
 			this.keepAliveTimer.cancel();
 			this.peerTimeoutTimer.cancel();
 			this.rateChecker.cancel();
@@ -575,32 +620,46 @@ public class Peer extends Thread implements Comparable{
 	
 	private void updateRates() {
 		//System.out.println("Updating download/upload rates");
-		//Takes a weighted average of the current download rate and the historical download rate
+		
 		synchronized((Peer)this.ULCountLock) {
+			//If we have been downloading consistently...
 			if(this.uploadRate != 0) {
+				//Takes a weighted average of the current upload rate and the historical upload rate
 				this.uploadRate = this.uploadRate*.65+this.recentBytesUploaded/2.0*.35;
-				this.recentBytesUploaded = 0.0;
+				//reset the recent counter
+				this.recentBytesUploaded = 0;
+				
 			} else if(this.recentBytesUploaded == 0){
-				//you aren't uploading any data
-				this.uploadRate=0.0
+				//you aren't uploading any data, reset the upload rate to 0
+				this.uploadRate=0.0;
+				
 			} else {
+				//if you just started downloading, just set the rate = to the window rate / 2 seconds
 				this.uploadRate = this.recentBytesUploaded/2.0;
+				
 			}
 			this.recentBytesUploaded = 0;
 		}
 		
 		synchronized((Peer)this.DLCountLock) {
+			//If we have been downloading consistently...
 			if(this.downloadRate != 0) {
+				//Takes a weighted average of the current download rate and the historical download rate
 				this.downloadRate = this.downloadRate*.65+this.recentBytesDownloaded/2.0*.35;
-				this.recentBytesDownloaded = 0.0;
+				//reset the recent counter
+				this.recentBytesDownloaded = 0;
+				
 			} else if(this.recentBytesUploaded == 0){
-				//you aren't downloading any data
-				this.downloadRate = 0.0
+				//you aren't downloading any data reset the download rate
+				this.downloadRate = 0.0;
+				
 			} else {
+				//if you just started downloading, just set the rate = to the window rate / 2 seconds
 				this.downloadRate = this.recentBytesDownloaded/2.0;
 			}
 			this.recentBytesDownloaded = 0;
 		}
+		
 	}//updateRate
 	
 	private void updateTimer() {

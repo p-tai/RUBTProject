@@ -595,7 +595,8 @@ public class Client extends Thread{
 				//TODO: Request for pieces that the client do not have. 
 				break;
 			case 2: /* interested */
-				//TODO: The Client can send a Unchoke or Choke Message to the Peer.
+				//check the current number of choked peers and consider unchoking the peer.
+				//might want to write a method for this.
 				peer.setRemoteInterested(true);
 				peer.setLocalChoking(false);
 				peer.writeToSocket(Message.unchoke);
@@ -669,11 +670,9 @@ public class Client extends Thread{
 				break;
 			case 8: /* cancel */
 				//TODO: STOP THE SEND OF A PIECE IF THERE IS ONE
-				//TODO: The Peer already have the piece. 
-				//TODO: 
 				break;
 			case 9: /* Unofficial quit */
-				
+				//TODO: iterate through all peers and shutdown all peers, announce to tracker, quit
 				break;
 			default:
 				System.out.println("Unknown Message");

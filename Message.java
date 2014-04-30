@@ -5,6 +5,8 @@ import java.util.Arrays;
 
 public class Message {
 
+
+	public static final Message KILL_PEER_MESSAGE = new Message(0,(byte)-1);
 	/**
 	 * The KeepAlive Message
 	 */
