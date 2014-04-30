@@ -483,7 +483,7 @@ public class Client extends Thread{
 		 * @param peer The Peer Object
 		 */
 		private void sendInterestedMessage(Peer peer){
-			peer.writeToSocket(Message.interested);
+			peer.enqueueMessage(Message.interested);
 			while(!peer.amChoked()){
 				System.out.println("Client unchoke");
 				return;
@@ -542,7 +542,7 @@ public class Client extends Thread{
 						System.out.println("BEGIN: " + begin);
 						System.out.println("LENGTH: " + length);
 						message.request(index, begin, length);
-						peer.writeToSocket(message);
+						peer.enqueueMessage(message);
 						break;
 					}
 					*/
@@ -599,12 +599,12 @@ public class Client extends Thread{
 				//might want to write a method for this.
 				peer.setRemoteInterested(true);
 				peer.setLocalChoking(false);
-				peer.writeToSocket(Message.unchoke);
+				peer.enqueueMessage(Message.unchoke);
 				break;
 			case 3: /* not interested */
 				if(peer.isChokingLocal() == false) {
 					peer.setLocalChoking(true);
-					peer.writeToSocket(Message.choke);
+					peer.enqueueMessage(Message.choke);
 				}
 				peer.setRemoteInterested(false);
 				break;
@@ -811,7 +811,7 @@ public class Client extends Thread{
 			curr = (Peer)pair.getValue();
 			//Should check to see if the peer has not been killed because of bad messages.
 			if(curr != null) {
-				curr.writeToSocket(message);
+				curr.enqueueMessage(message);
 			}
 		}
 	}
@@ -841,14 +841,7 @@ public class Client extends Thread{
 			request = new Message(13,(byte)6);
 			request.request(pieceIndex,blockOffset,length);
 			leftToRequest-=length;
-			remotePeer.writeToSocket(request);
-			try {
-				//TODO Remove this
-				sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			remotePeer.enqueueMessage(request);
 		}
 		
 		return true;
@@ -924,7 +917,7 @@ public class Client extends Thread{
 		for(int i = 0; i < peerBitfield.length; i++) {
 			if(this.bitfield[i] == false && peerBitfield[i] == true && this.downloadsInProgress[i] == false) {
 				if(remote.amChoked()) {
-					remote.writeToSocket(Message.interested);
+					remote.enqueueMessage(Message.interested);
 				}
 				return i;
 			}
