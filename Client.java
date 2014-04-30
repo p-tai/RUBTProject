@@ -770,6 +770,14 @@ public class Client extends Thread{
 	public static int getNumPieces() {
 		return torrentInfo.piece_hashes.length;
 	}
+	
+	public void shutdown() {
+		//iter all peers, shut down
+		Iterator<Peer> iter = this.peerHistory.iterator();
+		while(iter.hasNext()) {
+			(iter.next()).shutdownPeer();
+		}
+	}
 
 	/*********************************
 	 * Client->Tracker Private Functions

@@ -21,6 +21,8 @@ import java.lang.*;
  */
 public class RUBTClient extends Thread{
 
+	private static Client client;
+
 	private static TorrentInfo parseTorrentInfo(String filename) {
 		try {
 			//Create input streams and file streams
@@ -50,12 +52,17 @@ public class RUBTClient extends Thread{
 		}   
 	}
 	
+	private static void shutdown(){
+		client.disconnectFromTracker();
+		client.shutdown();
+	}
+	
 	/**
 	 * Cited: http://stackoverflow.com/questions/12234526/java-writing-unittest-for-exiting-a-program-when-user-type-quit-in-the-console
 	 * User: David Wallace
 	 * Time: 4, 05, 2014
 	 */
-	public void run(Client client){
+	private void run(Client client){
 		String line = "";
 		String QUIT = "quit";
 
@@ -65,9 +72,8 @@ public class RUBTClient extends Thread{
 			while (!(line.toLowerCase().equals(QUIT))) {    
 				line = in.readLine();    
 				if (line.equals(QUIT)) {    
-					client.disconnectFromTracker();
-					System.out.println("You are now quiting the program");     
-					System.exit(1);
+					System.out.println("You are now quiting the program");
+					this.shutdown();
 				}    //end of if
 			}  //end of while
 
@@ -119,6 +125,7 @@ public class RUBTClient extends Thread{
 				}//end of else odd
 
 				System.out.println();
+				//RUBTClient.this.shutdown();
 				
 			}//end of run
 		});//end of new thread runtime thingie :3
@@ -135,7 +142,6 @@ public class RUBTClient extends Thread{
 
 		//Open the torrent file specified
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
-		Client client;
 		try {
 			RandomAccessFile file = new RandomAccessFile(outputPath,"r");
 			/* The File exist */
