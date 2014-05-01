@@ -390,7 +390,9 @@ public class Peer extends Thread {
 	 * that will hold all messages
 	 */
 	public void enqueueMessage(Message message) {
-		this.writer.enqueue(message);
+		if(this.writer != null) {
+			this.writer.enqueue(message);
+		}
 	}
 
 	/**

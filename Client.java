@@ -52,9 +52,6 @@ public class Client extends Thread{
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
 	private boolean userQuit;
-	private int numBlocks = 0;
-	private double numPackets;
-	private int numPacketsDownloaded;
 
 	/**
 	 * The number of bytes download from peers.
@@ -97,7 +94,6 @@ public class Client extends Thread{
 	 */
 	public Client(TorrentInfo torrent, String saveName){
 		System.out.println("Booting");
-		//this.numPacketsDownloaded = 0;
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
 		this.url = this.torrentInfo.announce_url;
@@ -105,10 +101,7 @@ public class Client extends Thread{
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
-		//this.havePiece = new LinkedList<Integer>();
-		//this.needPiece = new LinkedList<Integer>(); 
 		this.userQuit = false;
-		
 		updateDownloaded();
 		genClientID();
 	}
@@ -127,7 +120,7 @@ public class Client extends Thread{
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.userQuit = false;
-		ToolKit.print(this.blocks);
+		//ToolKit.print(this.blocks);
 		updateDownloaded();
 		genClientID();
 	}
@@ -352,11 +345,10 @@ public class Client extends Thread{
 
 						ArrayList<Peer> peerHistory = client.peerHistory;
 						if(!peerList.isEmpty()){
-							for(int i = 0; i < peerList.size(); i++){
-								Peer peer = peerList.get(i);
+							for(Peer peer: peerList) {
 								if(!peerHistory.contains(peer)){
 									peerHistory.add(peer);
-									//peer.start();
+									peer.start();
 								}
 							}	
 						}
@@ -378,8 +370,8 @@ public class Client extends Thread{
 			return;
 		}
 		System.out.println("Connecting to Peers");
-		for(int i = 0; i < this.peerList.size(); i++){
-			this.peerList.get(i).start();
+		for(Peer peer: peerList) {
+			peer.start();
 		}
 
 		//Start the Request the peers list from the tracker
@@ -459,18 +451,24 @@ public class Client extends Thread{
 			while(this.keepDownloading) {
 				try {
 					Peer current = this.needPiece.take();
+
 					if(this.isAllTrue(this.client.getBitfield())) {
 						this.keepDownloading = false;
 						continue;
 					}
+
 					int pieceIndex = this.client.findPieceToDownload(current);
-					this.client.getPiece(pieceIndex,current);
+					if(pieceIndex >= 0) {
+						this.client.getPiece(pieceIndex,current);
+					}
 				} catch (InterruptedException ie) {
 					// Whatever
 				}
 			}
-		}
-	}
+			System.out.println("UPDATE: DOWNLOAD COMPLETED");
+			return;
+		}//run
+	}//PieceRequester
 
 	/**
 	 * Start the thread that reads the messages
@@ -484,8 +482,6 @@ public class Client extends Thread{
 	}
 
 	private void readQueue(){
-		//TODO: This should be call by a run method.
-		//TODO: Check to see this method works.
 		MessageTask messageFromPeer;
 		try{ 
 			messageFromPeer = this.messagesQueue.take();
@@ -514,9 +510,7 @@ public class Client extends Thread{
 			//set respective flag to 0.
 			break;
 		case 1: /* unchoke */
-			peer.setRemoteChoking(false);
-			int index = findPieceToDownload(peer);
-			//TODO: Request for pieces that the client do not have. 
+			peer.setRemoteChoking(false); 
 			break;
 		case 2: /* interested */
 			//check the current number of choked peers and consider unchoking the peer.
@@ -597,7 +591,7 @@ public class Client extends Thread{
 
 			break;
 		case 8: /* cancel */
-			//TODO: STOP THE SEND OF A PIECE IF THERE IS ONE
+			//TODO: Stop sending the piece if there is one?
 			break;
 		default:
 			System.out.println("Unknown Message");
@@ -764,17 +758,24 @@ public class Client extends Thread{
 	 * @param pieceIndex zero based piece index
 	 * @param peer the peer to download from
 	 */
-	boolean getPiece(int pieceIndex, Peer remotePeer ) {
+	void getPiece(int pieceIndex, Peer remotePeer ) {
 		if(remotePeer.amChoked()) {
-			return false;
+			remotePeer.enqueueMessage(Message.unchoke);
 		}
+
+		if(!remotePeer.amInterested()) {
+			remotePeer.enqueueMessage(Message.interested);
+		}
+		
 		this.downloadsInProgress[pieceIndex] = true;
 		Message request;
 		int length;
 		int blockOffset = 0;
-		//Check if this is the oddball final piece)
+
+		//get the amount of bytes for this piece
 		int leftToRequest = this.getPieceLength(pieceIndex);
 
+		//Request pieces based on the block size (MAXIMUMLIMT) until there is nothing left to request
 		while(leftToRequest>0) {
 			if(leftToRequest > MAXIMUMLIMT) {
 				length = MAXIMUMLIMT;
@@ -786,8 +787,6 @@ public class Client extends Thread{
 			leftToRequest-=length;
 			remotePeer.enqueueMessage(request);
 		}
-
-		return true;
 	}
 
 
@@ -859,9 +858,6 @@ public class Client extends Thread{
 		boolean[] peerBitfield = remote.getBitfields();
 		for(int i = 0; i < peerBitfield.length; i++) {
 			if(this.bitfield[i] == false && peerBitfield[i] == true && this.downloadsInProgress[i] == false) {
-				if(remote.amChoked()) {
-					remote.enqueueMessage(Message.interested);
-				}
 				return i;
 			}
 		}
