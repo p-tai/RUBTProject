@@ -141,9 +141,9 @@ public class RUBTClient extends Thread{
 		//Open the torrent file specified
 		TorrentInfo torrent = parseTorrentInfo(torrentPath);
 		try {
-			RandomAccessFile file = new RandomAccessFile(outputPath,"r");
-			/* The File exist */
-			//System.out.println("The file exist");
+			RandomAccessFile file = new RandomAccessFile(outputPath,"rw");
+			/* The File exists */
+			//System.out.println("The file exists");
 			client = new Client(torrent, file);
 		} catch (FileNotFoundException e) {
 			/* The File does not exist */

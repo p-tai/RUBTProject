@@ -90,7 +90,7 @@ public class Client extends Thread{
 	 * @param saveName The file you want to save in.
 	 */
 	public Client(TorrentInfo torrent, String saveName){
-		System.out.println("Booting");
+		System.out.println("No output file detected. \n Booting");
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
 		this.url = this.torrentInfo.announce_url;
@@ -110,10 +110,11 @@ public class Client extends Thread{
 	 * @param file The RandomAccessFile file
 	 */
 	public Client(TorrentInfo torrent, RandomAccessFile file){
-		System.out.println("Booting");
+		System.out.println("Previous file detected. \n Booting");
 		this.torrentInfo = torrent;
 		this.bitfield = checkfile(torrent, file);
 		this.url = this.torrentInfo.announce_url;
+		this.dataFile = file;
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.userQuit = false;
@@ -578,21 +579,20 @@ public class Client extends Thread{
 					this.writeData(piece.getData(), piece.getPieceIndex());
 					this.downloadsInProgress[pieceNo]=false;
 					(this.bitfield)[pieceNo]=true;
-					writeData(piece.getData(),pieceNo);
 					peer.resetPiece(); //reset piece for the next piece
 					Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 					haveMessage.have(pieceNo);
 					//write this message to all peers
 					broadcastMessage(haveMessage);
 					this.pieceRequester.queueForDownload(peer);
+				} else {
+					System.err.println("...........SHA- UNSUCCESSFUL");
+					//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
+					this.downloadsInProgress[pieceNo]=false;
+					this.pieceRequester.queueForDownload(peer);
+					peer.resetPiece();
 				}
-			} else {
-				//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
-				System.err.println("...........SHA- UNSUCCESSFUL");
-				this.downloadsInProgress[pieceNo]=false;
-				this.pieceRequester.queueForDownload(peer);
 			}
-
 			break;
 		case 8: /* cancel */
 			//TODO: Stop sending the piece if there is one?
@@ -766,7 +766,8 @@ public class Client extends Thread{
 	 * @param pieceIndex zero based piece index
 	 * @param peer the peer to download from
 	 */
-	void getPiece(int pieceIndex, Peer remotePeer ) {
+	synchronized void getPiece(int pieceIndex, Peer remotePeer ) {
+		
 		if(remotePeer.amChoked()) {
 			remotePeer.enqueueMessage(Message.unchoke);
 		}
@@ -807,7 +808,6 @@ public class Client extends Thread{
 			this.dataFile = new RandomAccessFile(this.saveName,"rw");
 			return true;
 		} catch( FileNotFoundException e) {
-
 			try { //If the file does not exist, create it and call createFile again
 				FileWriter fileStream = new FileWriter(this.saveName);
 				createFile();
@@ -897,11 +897,11 @@ public class Client extends Thread{
 		}
 
 		byte[] SHA1 = new byte[20];		
-		(this.torrentInfo.piece_hashes)[dataOffset].get(SHA1);
+		this.torrentInfo.piece_hashes[dataOffset].get(SHA1);
 		
 		byte[] checkSHA1 = hasher.digest(dataPiece);
 		
-		System.out.println("Piece offset = " + dataOffset + " SHA " + checkSHA1 + " vs " + (this.torrentInfo.piece_hashes)[dataOffset].get(SHA1));
+		System.out.println("Piece offset = " + dataOffset);// + " SHA " + checkSHA1 + " vs " + SHA1);
 		
 		if(SHA1.length != checkSHA1.length) {
 			return false;

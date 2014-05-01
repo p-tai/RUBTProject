@@ -35,7 +35,7 @@ public class Piece {
 		}
 		
 		//System method for copying an array into another array
-		System.arraycopy(this.dataBuffer,byteOffset,dataToWrite,0, dataToWrite.length);
+		System.arraycopy(dataToWrite,0,this.dataBuffer,byteOffset, dataToWrite.length);
 		//Increment the amount of bytes written to the data buffer
 		this.bytesWritten+=dataToWrite.length;
 		
