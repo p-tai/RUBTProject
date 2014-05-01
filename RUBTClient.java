@@ -161,7 +161,7 @@ public class RUBTClient extends Thread{
 		//Connect the tracker
 		System.out.println("Handshaking with PEERS");
 		client.connectToPeers();
-		sleep(100);
+		sleep(1000);
 		System.out.println("Beginning Download Thread...");
 		client.startPeerDownloads();
 

@@ -175,8 +175,7 @@ public class Peer extends Thread {
 	 *            message.
 	 * @return The entire contents of the buffer or null.
 	 */
-	public Piece writeToInternalBuffer(byte[] payload, int pieceOffset,
-			int blockOffset) {
+	public Piece writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
 		if (this.pieceInProgress == null) {
 			this.pieceInProgress = new Piece(pieceOffset,
 					this.RUBT.getPieceLength(pieceOffset),
@@ -643,11 +642,9 @@ public class Peer extends Thread {
 			classID = this.incoming.readByte();
 			incomingMessage = new Message(length, classID);
 			// Debug statement
-			// TODO Remove this and add it to the Client readQueue.
-			System.out.println("Received "
-					+ Message.responses[classID].toUpperCase() + " Message");
-			System.out.println("FROM " + this.peerIDString);
-			System.out.println();
+			System.out.println("Received " + Message.responses[classID].toUpperCase() + " Message from " + this.peerPort);
+			
+			
 			// Length includes the classID. We are using length to determine how
 			// many bytes are left.
 			length--;
