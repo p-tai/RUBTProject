@@ -52,7 +52,7 @@ public class Message {
 	public Message(final int length, final byte id) {
 		this.length = length;
 		this.messageID = id;
-		this.payload = null;	
+		this.payload = null;
 	}
 	
 	/**
@@ -92,7 +92,7 @@ public class Message {
 			bt.put(this.messageID);
 			return bt.array();
 		}
-		ByteBuffer bt = ByteBuffer.allocate(messageLength+length);
+		ByteBuffer bt = ByteBuffer.allocate(messageLength+this.length);
 		bt.putInt(this.length);
 		bt.put(this.messageID);
 		bt.put(this.payload);

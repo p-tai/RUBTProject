@@ -72,7 +72,7 @@ public class RUBTClient extends Thread{
 			while (!(line.toLowerCase().equals(QUIT))) {    
 				line = in.readLine();    
 				if (line.equals(QUIT)) {    
-					this.shutdown();
+					RUBTClient.shutdown();
 					return;
 				}    //end of if
 			}  //end of while
@@ -162,6 +162,7 @@ public class RUBTClient extends Thread{
 		
 		//Connect the tracker
 		client.connectToPeers();
+		client.startPeerDownloads();
 
 		//Start running the shutdown hook as a seperate thread.
 		(new RUBTClient()).run(client);

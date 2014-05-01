@@ -124,8 +124,8 @@ public class Tracker {
     	System.out.println("LEFT: " + left);
     	System.out.println("Event: " + event);
 		try {
-			this.url = new URL(url,query);
-			System.out.println(url.toString());
+			this.url = new URL(this.url,query);
+			System.out.println(this.url.toString());
 		} catch (MalformedURLException e1) {
 			//This is from this.url
 			System.out.println("FAILURE: INVALID URL");
@@ -140,15 +140,16 @@ public class Tracker {
     /**
      * Method will append a queryID and query to a URL using proper URL-encoded format
      */ 
-    private String URLify(String base, String queryID, String query) {
-        
-		if(base==null) {
+    private String URLify(String url, String queryID, String query) {
+        String base;
+		if(url==null) {
 			base = "";
+        } else {
+        	base = url;
         }
                 
         try{
-			query = URLEncoder.encode(query, "UTF-8");
-            return (base+queryID+"="+query);
+            return (base+queryID+"="+URLEncoder.encode(query, "UTF-8"));
         } catch (UnsupportedEncodingException e) {
 			System.out.println("URL formation error:" + e.getMessage());
         }
@@ -159,10 +160,12 @@ public class Tracker {
     /**
      * Method will append a queryID and a byte array query to a URL using proper URL-encoded format
      */ 
-	private String URLify(String base, String queryID, byte[] query) {
-                
-		if(base==null) {
+	private String URLify(String url, String queryID, byte[] query) {
+        String base;
+		if(url==null) {
 			base = "";
+		} else {
+			base = url;
 		}
                 
         String reply = base+queryID+"=";
@@ -171,7 +174,7 @@ public class Tracker {
 			if((query[i] &0x80) == 0x80) { //if the byte data has the most significant byte set (e.g. it is negative)
 				reply = reply+"%";
                 //Mask the upper byte and lower byte and turn them into the correct chars
-                reply = reply + HEXCHARS[(query[i]&0xF0)>>>4]+HEXCHARS[query[i]&0x0F];
+                reply = reply + this.HEXCHARS[(query[i]&0xF0)>>>4]+this.HEXCHARS[query[i]&0x0F];
             }else{
 				try{ //If the byte is a valid ascii character, use URLEncoder
 					reply = reply + URLEncoder.encode(new String(new byte[] {query[i]}),"UTF-8");
@@ -195,7 +198,7 @@ public class Tracker {
 		
 		try{
 			//Open an HTTP Connection to the given URL and send the HTTP get request
-			httpConnection = (HttpURLConnection)url.openConnection();
+			httpConnection = (HttpURLConnection)this.url.openConnection();
 			getStream = httpConnection.getInputStream();
 			dataStream = new DataInputStream(getStream);
 			
@@ -234,20 +237,19 @@ public class Tracker {
 	private ArrayList<Peer> captureResponse(Map<ByteBuffer, Object> response){
 		ArrayList<Peer> peerArrayList = new ArrayList<Peer>();
 		//Typecast the response of the HTTP get request
-		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)response.get(PEERS);
+		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)response.get(this.PEERS);
 		//Parse out the interval
-		this.interval = (Integer)response.get(INTERVALS);
+		this.interval = (Integer)response.get(this.INTERVALS);
 		
 		//Loop through all the peers and then parse them into the proper objects
 		for(int i = 0; i < peers.size(); i++){
 			Map<ByteBuffer, Object> peerList = peers.get(i);
-			byte[] peerID = ((ByteBuffer)peerList.get(PEERID)).array();
-			String peerIPAddress = new String(((ByteBuffer)peerList.get(IP)).array());
+			byte[] peerID = ((ByteBuffer)peerList.get(this.PEERID)).array();
+			String peerIPAddress = new String(((ByteBuffer)peerList.get(this.IP)).array());
 			//Filter out the desired class-related clients only
 			if(peerIPAddress.contains("128.6.171.130") || peerIPAddress.contains("128.6.171.131")){
 				//More parsing of data into the proper types
-				int port = Integer.valueOf((Integer)(peerList.get(PORT)));
-				peerIPAddress = peerIPAddress;
+				int port = Integer.valueOf((Integer)(peerList.get(this.PORT)));
 				//Create a new peer using the parsed information and then add it to the peerList
 				Peer peer = new Peer(this.client, peerID, peerIPAddress, port);
 				peerArrayList.add(peer);

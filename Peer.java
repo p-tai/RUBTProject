@@ -88,7 +88,7 @@ public class Peer extends Thread {
 		this.localInterested = false;
 		this.remoteChoking = true;
 		this.remoteInterested = false;
-		this.torrentSHA = Client.getHash();
+		this.torrentSHA = this.RUBT.getHash();
 		this.peerConnection = null;
 		this.uploadRate = 0.0;
 		this.downloadRate = 0.0;
@@ -183,7 +183,7 @@ public class Peer extends Thread {
 		}
 
 		// Write the payload to the piece
-		this.pieceInProgress.writeToBuffer(pieceOffset, blockOffset, payload);
+		this.pieceInProgress.writeToBuffer(blockOffset, payload);
 		synchronized (this.DLCountLock) {
 			this.recentBytesDownloaded += payload.length;
 		}
@@ -305,12 +305,12 @@ public class Peer extends Thread {
 
 			System.out.println("Opening Output Stream to " + this.peerIDString);
 			this.outgoing = new DataOutputStream(
-					peerConnection.getOutputStream());
+					this.peerConnection.getOutputStream());
 
 			System.out.println("Opening Input Stream to " + this.peerIDString);
-			this.incoming = new DataInputStream(peerConnection.getInputStream());
+			this.incoming = new DataInputStream(this.peerConnection.getInputStream());
 
-			if (peerConnection == null || this.outgoing == null
+			if (this.peerConnection == null || this.outgoing == null
 					|| this.incoming == null) {
 				System.err.println("Input/Output Stream Creation Failed");
 			}
@@ -335,7 +335,7 @@ public class Peer extends Thread {
 			// Sends an outgoing message to the connected Peer.
 			System.out.println("\nSENDING A HANDSHAKE TO" + this.peerIDString
 					+ "\n");
-			outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
+			this.outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
 			this.outgoing.flush();
 
 			// Allocate space for the response and read it
@@ -411,7 +411,7 @@ public class Peer extends Thread {
 					System.out.println();
 				} else {
 					System.out.println("Sending "
-							+ Message.getMessageID(payload.getMessageID())
+							+ payload.getMessageID()
 							+ " " + this.peerIDString);
 					System.out.println();
 				}
@@ -461,7 +461,7 @@ public class Peer extends Thread {
 		 * Public method to add a message to the peerWriter's internal queue
 		 */
 		public void enqueue(Message message) {
-			messageQueue.add(message);
+			this.messageQueue.add(message);
 		}// enqueue
 
 		private boolean keepRunning = true;
@@ -476,7 +476,7 @@ public class Peer extends Thread {
 			// keep going
 			while (this.keepRunning) {
 				try {
-					final Message current = messageQueue.take();
+					final Message current = this.messageQueue.take();
 
 					if (current == Message.KILL_PEER_MESSAGE) {
 						this.keepRunning = false;
@@ -511,7 +511,7 @@ public class Peer extends Thread {
 
 				// Send Bitfield to Peer
 				if (this.RUBT.downloaded != 0) {
-					Message bitfieldMessage = RUBT.generateBitfieldMessage();
+					Message bitfieldMessage = this.RUBT.generateBitfieldMessage();
 					writeToSocket(bitfieldMessage);
 				}
 			} else {
@@ -520,8 +520,8 @@ public class Peer extends Thread {
 		}
 
 		// Intialize the socket writer
-		writer = new PeerWriter(this.outgoing);
-		writer.start();
+		this.writer = new PeerWriter(this.outgoing);
+		this.writer.start();
 
 		/**
 		 * Schedules a new anonymous implementation of a TimerTask that will
@@ -621,7 +621,7 @@ public class Peer extends Thread {
 			// Debug statement
 			// TODO Remove this and add it to the Client readQueue.
 			System.out.println("Received "
-					+ Message.getMessageID(classID).toUpperCase() + " Message");
+					+ Message.responses[classID].toUpperCase() + " Message");
 			System.out.println("FROM " + this.peerIDString);
 			System.out.println();
 			// Length includes the classID. We are using length to determine how
@@ -701,8 +701,8 @@ public class Peer extends Thread {
 		}
 	}// checkAndSendKeepAlive
 
-	private void updateRates() {
-		System.out.println("Updating download/upload rates");
+	void updateRates() {
+		//System.out.println("Updating download/upload rates");
 
 		synchronized (this.ULCountLock) {
 			// If we have been downloading consistently...

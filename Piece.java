@@ -5,7 +5,7 @@ public class Piece {
 	private int pieceNumber;
 	private int bytesWritten;
 	//Used a byte[] instead of a bytebuffer
-	private byte[] dataBuffer; 
+	private byte[] dataBuffer;
 	
 	
 	/**
@@ -28,18 +28,18 @@ public class Piece {
 	 * @param length = the length of the array 
 	 * @param dataToWrite = the data that should be written to the buffer
 	 */
-	public void writeToBuffer(int byteOffset, int length, byte[] dataToWrite) {
+	public void writeToBuffer(int byteOffset, byte[] dataToWrite) {
 		
 		//Error check
-		if(byteOffset+length > dataBuffer.length || length != dataToWrite.length) {
+		if(byteOffset+dataToWrite.length > this.dataBuffer.length) {
 			System.out.println("ERROR:" + this + " writeToBuffer illegal parameters!");
 			return;
 		}
 		
 		//System method for copying an array into another array
-		System.arraycopy(dataBuffer,byteOffset,dataToWrite,0, length);
+		System.arraycopy(this.dataBuffer,byteOffset,dataToWrite,0, dataToWrite.length);
 		//Increment the amount of bytes written to the data buffer
-		bytesWritten+=length;
+		this.bytesWritten+=dataToWrite.length;
 		
 	}//writeToBuffer
 	
@@ -61,7 +61,7 @@ public class Piece {
 	 * Getter for the data buffer
 	 */
 	public byte[] getData() {
-		return dataBuffer;
+		return this.dataBuffer;
 	}
 	
 	/**
