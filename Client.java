@@ -461,6 +461,7 @@ public class Client extends Thread{
 					if(pieceIndex >= 0) {
 						this.client.getPiece(pieceIndex,current);
 					}
+					System.out.println("GET PIECE INDEX RETURNED " + current + ": " + pieceIndex);
 				} catch (InterruptedException ie) {
 					// Whatever
 				}

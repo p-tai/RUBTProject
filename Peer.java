@@ -406,17 +406,16 @@ public class Peer extends Thread {
 		// socket at the same time
 		synchronized (this.outgoing) {
 			try {
+				/*
+				//Keep Alive
 				if (payload.getLength() == 0) {
-					/* Keep Alive */
-					System.out.println("Sending Keep Alive to "
-							+ this.peerIDString);
-					System.out.println();
+					System.out.println("Sending Keep Alive to " + this.peerIDString+"\n");
 				} else {
-					System.out.println("Sending "
-							+ payload.getMessageID()
-							+ " " + this.peerIDString);
-					System.out.println();
+					System.out.println("Sending " + payload.getMessageID() + " " + this.peerIDString + "\n");
 				}
+				*/
+				System.out.println("Sending " + payload.getMessageID() + " " + this.peerIDString + "\n");
+				
 				// get message payload, write to socket, then update the keep
 				// alive timer
 
@@ -479,11 +478,12 @@ public class Peer extends Thread {
 			while (this.keepRunning) {
 				try {
 					final Message current = this.messageQueue.take();
-
+					
 					if (current == Message.KILL_PEER_MESSAGE) {
 						this.keepRunning = false;
 						continue;
 					}
+					sleep(10);
 					Peer.this.writeToSocket(current);
 				} catch (InterruptedException ie) {
 					// Whatever
@@ -605,7 +605,7 @@ public class Peer extends Thread {
 
 		// NEED TO DO: Check if the connection still exists. If not, return
 		// false
-
+		
 		int length = this.incoming.readInt();
 		// System.out.println("Length = " + length);
 		byte classID;
