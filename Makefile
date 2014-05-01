@@ -9,4 +9,4 @@ RUN:
 
 clean:
 	rm *.class
-	rm -f a.img
+	rm -f a.img test.avi test.mp3

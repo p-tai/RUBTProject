@@ -433,7 +433,9 @@ public class Peer extends Thread {
 				} else if (Message.responses[payload.getMessageID()].equals("pieces")) {
 					synchronized (this.ULCountLock) {
 						this.concurrentSends-=1;
-						this.ULCountLock.notifyAll();
+						if(this.concurrentSends <= 1) {
+							this.ULCountLock.notifyAll();
+						}
 						this.recentBytesUploaded += payload.getLength();
 					}
 				}
@@ -627,6 +629,9 @@ public class Peer extends Thread {
 		} catch (EOFException e) {
 			System.err.println(this.peerPort + "'s socket was closed.");
 			return false;
+		} catch (SocketException e) {
+			System.err.println(this.peerPort + "'s socket was closed.");
+			return false;
 		}
 		// System.out.println("Length = " + length);
 		byte classID;
@@ -690,7 +695,9 @@ public class Peer extends Thread {
 				if(classID == 7) {
 					synchronized(this.DLCountLock) {
 						this.concurrentRequests-=1;
-						(this.DLCountLock).notifyAll();
+						if(this.concurrentRequests <= 1) {
+							(this.DLCountLock).notifyAll();
+						}
 					}
 				}
 			case 8:

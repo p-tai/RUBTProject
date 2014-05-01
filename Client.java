@@ -99,7 +99,9 @@ public class Client extends Thread{
 		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.userQuit = false;
+		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
 		updateDownloaded();
+		//generate a random Client ID, begins with the letters AAA
 		genClientID();
 	}
 
@@ -112,14 +114,16 @@ public class Client extends Thread{
 	public Client(TorrentInfo torrent, RandomAccessFile file){
 		System.out.println("Previous file detected. \n Booting");
 		this.torrentInfo = torrent;
-		this.bitfield = checkfile(torrent, file);
 		this.url = this.torrentInfo.announce_url;
 		this.dataFile = file;
+		this.bitfield = checkfile(torrent, file);
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.userQuit = false;
 		//ToolKit.print(this.blocks);
+		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
 		updateDownloaded();
+		//generate a random Client ID, begins with the letters AAA
 		genClientID();
 	}
 
@@ -179,7 +183,7 @@ public class Client extends Thread{
 					curr <<= (7-j);
 					bytes[i] = (byte)(bytes[i]|curr);
 				}
-
+				
 			} //for each bit in a byte
 		} //for each byte
 		return bytes;
@@ -194,48 +198,50 @@ public class Client extends Thread{
 	 */
 
 	private boolean[] checkfile(TorrentInfo torrent, RandomAccessFile datafile){
-		boolean[] lovefield = new boolean[this.torrentInfo.piece_hashes.length];
-		try{
-			int piece_length = this.torrentInfo.piece_length;
-			//System.out.println("What the love is the piecelength: " + piece_length);
-			int dividend = (int)Math.ceil((double)datafile.length() / (double)this.torrentInfo.piece_length);
-			//System.out.println("Dividend: " + dividend);
-			byte[] readbyte = new byte[piece_length];
-
-			//System.out.println("DATAFILE LENGTH: " + datafile.length());
-			//System.out.println("LOVE YOU: " + piece_length * (dividend-1));
-			int lastlength = (int)datafile.length() % piece_length;
-			//System.out.println("lastlength::: " + lastlength);
-
-			for(int i = 0; i < dividend; i++){
-				boolean datacheck = false;
-				if(i == dividend-1){
-					byte[] readbyte2 = new byte[lastlength];
-					//System.out.println("What the love is happening");
-					int loveoffset = i * piece_length;
-					datafile.seek((long)loveoffset);
-					//System.out.println("I is " + i + " and loveoffset is " + loveoffset);
-					datafile.read(readbyte2, 0, lastlength);
-					datacheck = checkData(readbyte2, i);
-					//System.out.println("Datacheck:: " + datacheck);
-
-				}//end of if
-				else{
-					int loveoffset = i * piece_length;
-					datafile.seek((long)loveoffset);
-					//System.out.println("I is " + i + " and loveoffset is " + loveoffset);
-					datafile.read(readbyte, 0, piece_length);
-					datacheck = checkData(readbyte, i);
-					//System.out.println("Datacheck:: " + datacheck);
-				}//end of else
-				lovefield[i] = datacheck;
-			}//end of for 
-		}//end of try
-		catch(IOException e){
-			System.out.println("IOEXCEPTION CHECKFILE");
-		}//end of catch
-		return lovefield;
-
+		//initialize a boolean array with length equal to the number of pieces
+		boolean[] bitfield = new boolean[this.torrentInfo.piece_hashes.length];
+		
+		int piece_length = this.torrentInfo.piece_length;
+		
+		//get space for the byte[] that will store each piece
+		byte[] readbyte = new byte[piece_length];
+		
+		//variable that will calculate the starting position to read from for each piece
+		long offset = 0;
+		
+		//loop through all of the pieces in the data file
+		for(int i = 0; i < bitfield.length; i++) {
+			try {
+				//If the datafile is not long enough, it cannot contain the correct data
+				if(offset > datafile.length()) {
+					bitfield[i] = false;
+					continue;
+				}
+				//Otherwise, seek to the offset and then check the data
+				datafile.seek(offset);
+				
+				//In the event you are on the final piece
+				if(i == bitfield.length-1) {
+					readbyte = new byte[getPieceLength(i)];
+				}
+				
+				//Read the data into the readbyte byte[]
+				datafile.read(readbyte);
+				
+				//Check the data using checkData, requires the byte[] and the piece offset (which is i)
+				bitfield[i] = checkData(readbyte,i);
+				
+			} catch(IOException e){
+				//Should not occur because the index will never be negative or out of bounds
+				System.err.println("IOEXCEPTION CHECKFILE");
+			}
+			
+			//This recalcuate the new byte offset
+			offset += getPieceLength(i);
+			System.out.println("index " + i + " is " + bitfield[i]);
+		}
+		
+		return bitfield;
 	}//end of checkfile
 
 	/**
@@ -293,6 +299,7 @@ public class Client extends Thread{
 	 *	Send a "stopped" event to the tracker
 	 */
 	public void disconnectFromTracker(){
+		this.updateDownloaded();
 		if(this.tracker != null) {
 			this.tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
 			this.userQuit = true;
@@ -748,16 +755,10 @@ public class Client extends Thread{
 	 * This function will broadcast a message to all peers
 	 */
 	private void broadcastMessage(Message message) {
-		Iterator<Peer> iter = this.peerHistory.iterator();
-		Peer curr;
-		//Iterate through all the values in the list and send the message
-		while(iter.hasNext()) {
-			Map.Entry pair = (Map.Entry)iter.next();
-			curr = (Peer)pair.getValue();
+		for(Peer peer: this.peerHistory) {
+			//Iterate through all the values in the list and send the message
 			//Should check to see if the peer has not been killed because of bad messages.
-			if(curr != null) {
-				curr.enqueueMessage(message);
-			}
+			peer.enqueueMessage(message);
 		}
 	}
 
@@ -828,7 +829,8 @@ public class Client extends Thread{
 	private void writeData(byte[] dataPiece, int pieceOffset) {
 		synchronized(this.dataFile) {
 			try {
-				this.dataFile.seek(pieceOffset*this.getPieceLength(pieceOffset));
+				long index = pieceOffset*this.getPieceLength(0);
+				this.dataFile.seek(index);
 				this.dataFile.write(dataPiece);
 			} catch (IOException e) {
 				System.err.println("ERROR IN WRITING TO FILE");
