@@ -1,20 +1,17 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 
-import edu.rutgers.cs.cs352.bt.util.*;
-
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Peer extends Thread {
 
+	private final static int MAX_CONCURRENT_SENDS = 3;
 	private final Client RUBT;
 	private final byte[] clientID;
 	private final byte[] peerID;
@@ -22,6 +19,9 @@ public class Peer extends Thread {
 	private final byte[] torrentSHA;
 	private final String peerIP;
 	private int peerPort;
+	
+	private int concurrentSends;
+	private int concurrentRequests;
 
 	private boolean[] peerBooleanBitField;
 
@@ -30,7 +30,6 @@ public class Peer extends Thread {
 	private DataInputStream incoming;
 	private PeerWriter writer;
 	private Piece pieceInProgress;
-	private boolean[] blocksDownloaded;
 
 	/**
 	 * Flags for local/remote choking/interested
@@ -94,6 +93,8 @@ public class Peer extends Thread {
 		this.downloadRate = 0.0;
 		this.recentBytesDownloaded = 0;
 		this.recentBytesUploaded = 0;
+		this.concurrentSends = 0;
+		this.concurrentRequests = 0;
 	}
 
 	/*********************************
@@ -406,23 +407,34 @@ public class Peer extends Thread {
 		// socket at the same time
 		synchronized (this.outgoing) {
 			try {
-				/*
+				
 				//Keep Alive
 				if (payload.getLength() == 0) {
-					System.out.println("Sending Keep Alive to " + this.peerIDString+"\n");
+					//System.out.println("Sending Keep Alive to " + this.peerIDString+"\n");
 				} else {
-					System.out.println("Sending " + payload.getMessageID() + " " + this.peerIDString + "\n");
+					System.out.println("Sending " + Message.responses[payload.getMessageID()] + " message to Peer: " + this.peerPort + "\n");
 				}
-				*/
-				System.out.println("Sending " + payload.getMessageID() + " " + this.peerIDString + "\n");
 				
 				// get message payload, write to socket, then update the keep
 				// alive timer
 
 				// If the message payload is a piece message, update the
 				// uploaded bytes counter
-				if (payload.getMessageID() == 7) {
+				if (Message.responses[payload.getMessageID()].equals("request")) {
+					synchronized (this.DLCountLock) {
+						this.concurrentRequests+=1;
+						while(this.concurrentRequests > MAX_CONCURRENT_SENDS) {
+							try {
+								(this.DLCountLock).wait();
+							} catch (InterruptedException ie) {
+								//Whatever
+							}
+						}
+					}
+				} else if (Message.responses[payload.getMessageID()].equals("pieces")) {
 					synchronized (this.ULCountLock) {
+						this.concurrentSends-=1;
+						this.ULCountLock.notifyAll();
 						this.recentBytesUploaded += payload.getLength();
 					}
 				}
@@ -430,8 +442,10 @@ public class Peer extends Thread {
 				this.outgoing.write(payload.getBTMessage());
 				this.outgoing.flush();
 				updateTimer();
+			} catch (SocketException e) {
+				System.err.println(this.peerPort + "'s socket was closed.");
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				//TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -462,7 +476,11 @@ public class Peer extends Thread {
 		 * Public method to add a message to the peerWriter's internal queue
 		 */
 		public void enqueue(Message message) {
-			this.messageQueue.add(message);
+			try {
+				this.messageQueue.put(message);
+			} catch (InterruptedException ie) {
+				//TODO something with this exception
+			}
 		}// enqueue
 
 		private boolean keepRunning = true;
@@ -483,7 +501,6 @@ public class Peer extends Thread {
 						this.keepRunning = false;
 						continue;
 					}
-					sleep(10);
 					Peer.this.writeToSocket(current);
 				} catch (InterruptedException ie) {
 					// Whatever
@@ -603,10 +620,15 @@ public class Peer extends Thread {
 
 	private boolean readSocketInputStream() throws IOException {
 
-		// NEED TO DO: Check if the connection still exists. If not, return
-		// false
+		int length;
 		
-		int length = this.incoming.readInt();
+		// Check if the connection still exists. If not, return false
+		try {
+			length = this.incoming.readInt();
+		} catch (EOFException e) {
+			System.err.println(this.peerPort + "'s socket was closed.");
+			return false;
+		}
 		// System.out.println("Length = " + length);
 		byte classID;
 		Message incomingMessage = null;
@@ -655,7 +677,25 @@ public class Peer extends Thread {
 			case 4:
 			case 5:
 			case 6:
+				if(classID==6) {
+					synchronized(this.ULCountLock) {
+						this.concurrentSends+=1;
+						while(this.concurrentSends > MAX_CONCURRENT_SENDS) {
+							try {
+								(this.ULCountLock).wait();
+							} catch (InterruptedException ie) {
+								//Whatever
+							}
+						}
+					}
+				}
 			case 7:
+				if(classID == 7) {
+					synchronized(this.DLCountLock) {
+						this.concurrentRequests-=1;
+						(this.DLCountLock).notifyAll();
+					}
+				}
 			case 8:
 				// have message. bitfield message, request message, piece
 				// message, cancel message

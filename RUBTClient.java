@@ -13,8 +13,6 @@ import edu.rutgers.cs.cs352.bt.exceptions.BencodingException;
 import edu.rutgers.cs.cs352.bt.util.Bencoder2;
 import edu.rutgers.cs.cs352.bt.util.ToolKit;
 
-import java.net.*;
-import java.lang.*;
 
 /**
  * For le error checking 
@@ -163,6 +161,7 @@ public class RUBTClient extends Thread{
 		//Connect the tracker
 		System.out.println("Handshaking with PEERS");
 		client.connectToPeers();
+		sleep(100);
 		System.out.println("Beginning Download Thread...");
 		client.startPeerDownloads();
 

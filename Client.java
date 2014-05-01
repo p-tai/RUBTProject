@@ -15,21 +15,19 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
+
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
-import java.util.Set;
+
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
-import edu.rutgers.cs.cs352.bt.util.ToolKit;
+
 
 //DEFINITION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
@@ -47,8 +45,7 @@ public class Client extends Thread{
 	private RandomAccessFile dataFile;
 
 	public final static int MAXIMUMLIMT = 16384;
-	private boolean[] blocks;
-	private boolean[] packets;
+	
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
 	private boolean userQuit;
@@ -370,7 +367,7 @@ public class Client extends Thread{
 			return;
 		}
 		System.out.println("Connecting to Peers");
-		for(Peer peer: peerList) {
+		for(Peer peer: this.peerList) {
 			peer.start();
 		}
 
@@ -408,7 +405,11 @@ public class Client extends Thread{
 		 * @param peer - the peer that needs to get a piece
 		 */
 		public void queueForDownload(Peer peer) {
-			this.needPiece.add(peer);
+			try {
+				this.needPiece.put(peer);
+			} catch (InterruptedException ie) {
+				//TODO something with this exception
+			}
 		}
 
 		/**
@@ -461,7 +462,7 @@ public class Client extends Thread{
 					if(pieceIndex >= 0) {
 						this.client.getPiece(pieceIndex,current);
 					}
-					System.out.println("GET PIECE INDEX RETURNED " + current + ": " + pieceIndex);
+					System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
 				} catch (InterruptedException ie) {
 					// Whatever
 				}
@@ -713,7 +714,11 @@ public class Client extends Thread{
 		for(int i = 0; i < this.peerList.size(); i++){
 			this.peerList.get(i).shutdownPeer();
 		}
-		this.messagesQueue.add(new MessageTask((Peer)null, Message.KILL_PEER_MESSAGE));
+		try{
+			this.messagesQueue.put(new MessageTask((Peer)null, Message.KILL_PEER_MESSAGE));
+		} catch (InterruptedException ie) {
+			//Don't care, shutting down
+		}
 	}
 
 	/*********************************

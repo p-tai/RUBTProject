@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 public class Piece {
 	//private fields
 	private int pieceNumber;
