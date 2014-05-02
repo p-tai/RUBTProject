@@ -238,7 +238,7 @@ public class Client extends Thread{
 			
 			//This recalcuate the new byte offset
 			offset += getPieceLength(i);
-			System.out.println("index " + i + " is " + bitfield[i]);
+			System.out.println("index " + i + " of size " + getPieceLength(i) + " is " + bitfield[i]);
 		}
 		
 		return bitfield;
@@ -544,6 +544,12 @@ public class Client extends Thread{
 			pieceBuffer.reset();
 			int pieceIndex = pieceBuffer.getInt();
 			peer.updatePeerBitfield(pieceIndex);
+			if(!peer.isInterestedLocal()) {
+				if(this.bitfield[pieceIndex] == false) {
+					peer.enqueueMessage(Message.interested);
+					peer.setLocalInterested(true);
+				}
+			}
 			break;
 		case 5: /* bitfield */
 			byte[] bitfield = message.getPayload();
@@ -591,14 +597,13 @@ public class Client extends Thread{
 					haveMessage.have(pieceNo);
 					//write this message to all peers
 					broadcastMessage(haveMessage);
-					this.pieceRequester.queueForDownload(peer);
 				} else {
 					System.err.println("...........SHA- UNSUCCESSFUL");
 					//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
 					this.downloadsInProgress[pieceNo]=false;
-					this.pieceRequester.queueForDownload(peer);
 					peer.resetPiece();
 				}
+				this.pieceRequester.queueForDownload(peer);
 			}
 			break;
 		case 8: /* cancel */
@@ -775,6 +780,7 @@ public class Client extends Thread{
 
 		if(!remotePeer.amInterested()) {
 			remotePeer.enqueueMessage(Message.interested);
+			remotePeer.setLocalInterested(true);
 		}
 		
 		this.downloadsInProgress[pieceIndex] = true;
@@ -867,7 +873,7 @@ public class Client extends Thread{
 	 */ 
 	int findPieceToDownload(Peer remote) {
 		boolean[] peerBitfield = remote.getBitfields();
-		for(int i = 0; i < peerBitfield.length; i++) {
+		for(int i = 0; i < this.bitfield.length; i++) {
 			if(this.bitfield[i] == false && peerBitfield[i] == true && this.downloadsInProgress[i] == false) {
 				return i;
 			}
@@ -892,18 +898,16 @@ public class Client extends Thread{
 			return false;
 		}
 
-		if(dataOffset > this.torrentInfo.piece_hashes.length) {
+		if(dataOffset >= this.torrentInfo.piece_hashes.length) {
 			//illegal dataOffset value
 			System.err.println("illegal dataOffset");
 			return false;
 		}
 
-		byte[] SHA1 = new byte[20];		
-		this.torrentInfo.piece_hashes[dataOffset].get(SHA1);
-		
-		byte[] checkSHA1 = hasher.digest(dataPiece);
-		
+		byte[] SHA1 = new byte[20];
 		System.out.println("Piece offset = " + dataOffset);// + " SHA " + checkSHA1 + " vs " + SHA1);
+		(this.torrentInfo.piece_hashes[dataOffset]).get(SHA1);
+		byte[] checkSHA1 = hasher.digest(dataPiece);
 		
 		if(SHA1.length != checkSHA1.length) {
 			return false;

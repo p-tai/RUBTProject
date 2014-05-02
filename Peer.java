@@ -11,7 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Peer extends Thread {
 
-	private final static int MAX_CONCURRENT_SENDS = 3;
+	private final static int MAX_CONCURRENT_SENDS = 2;
 	private final Client RUBT;
 	private final byte[] clientID;
 	private final byte[] peerID;
@@ -429,14 +429,16 @@ public class Peer extends Thread {
 								//Whatever
 							}
 						}
+						if(this.remoteChoking) {
+							this.outgoing.write(Message.unchoke.getBTMessage());
+							this.outgoing.flush();
+						}
 					}
 				} else if (Message.responses[payload.getMessageID()].equals("pieces")) {
 					synchronized (this.ULCountLock) {
 						this.concurrentSends-=1;
-						if(this.concurrentSends <= 1) {
-							this.ULCountLock.notifyAll();
-						}
 						this.recentBytesUploaded += payload.getLength();
+						this.ULCountLock.notifyAll();
 					}
 				}
 
@@ -695,9 +697,7 @@ public class Peer extends Thread {
 				if(classID == 7) {
 					synchronized(this.DLCountLock) {
 						this.concurrentRequests-=1;
-						if(this.concurrentRequests <= 1) {
-							(this.DLCountLock).notifyAll();
-						}
+						(this.DLCountLock).notifyAll();
 					}
 				}
 			case 8:
