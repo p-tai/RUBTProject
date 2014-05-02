@@ -81,6 +81,10 @@ public class RUBTClient extends Thread{
 		return;
 	}
 	
+	/**
+	 * @param args
+	 * @throws InterruptedException
+	 */
 	public static void main(String[] args) throws InterruptedException{
 
 		/*

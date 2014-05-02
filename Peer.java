@@ -9,6 +9,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * @author Paul Tai
+ * @author Alex Zhang
+ * @author Anthony Wong
+ */
 public class Peer extends Thread {
 
 	private final static int MAX_CONCURRENT_SENDS = 2;
@@ -59,15 +64,11 @@ public class Peer extends Thread {
 
 	/**
 	 * Peer's Constructor
-	 * 
-	 * @param localID
-	 *            The Client's ID
-	 * @param peerID
-	 *            The Peer's ID
-	 * @param peerIP
-	 *            The Peer's IP
-	 * @param peerPort
-	 *            The Peer's Port
+	 * @param RUBT The Client Object
+	 * @param localID The Client's ID
+	 * @param peerID The Peer's ID
+	 * @param peerIP The Peer's IP
+	 * @param peerPort The Peer's Port
 	 */
 	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort) {
 		this.RUBT = RUBT;
@@ -103,9 +104,8 @@ public class Peer extends Thread {
 
 	/**
 	 * The status of the Peer chocking the Client.
-	 * 
-	 * @param remoteChoking
-	 *            true = The Peer is Chocking the Client. Otherwise, false.
+	 * @param remoteChoking 
+	 * true = The Peer is Chocking the Client. Otherwise, false.
 	 */
 	public void setLocalChoking(boolean localChoking) {
 		this.localChoking = localChoking;

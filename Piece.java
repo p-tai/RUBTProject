@@ -1,3 +1,8 @@
+/**
+ * @author Paul Tai
+ * @author Alex Zhang
+ * @author Anthony Wong
+ */
 public class Piece {
 	//private fields
 	private int pieceNumber;
@@ -8,9 +13,9 @@ public class Piece {
 	
 	/**
 	 * Constructor for the packet class
-	 * @param pieceNumber: Zero-based index of the piece
-	 * @param pieceSize: size of the entire piece
-	 * @param numBlocks: Number of blocks of the piece 
+	 * @param pieceNumber Zero-based index of the piece
+	 * @param pieceSize size of the entire piece
+	 * @param numBlocks Number of blocks of the piece 
 	 * 			(might not be needed, would be for error-checking purposes)
 	 */
 	public Piece(int pieceNumber, int pieceSize, int numBlocks){
@@ -42,29 +47,27 @@ public class Piece {
 	}//writeToBuffer
 	
 	/**
-	 * Checks if the buffer has been filled with valid data
+	 * @return Checks if the buffer has been filled with valid data
 	 */
 	public boolean isFull(){
 		return (this.dataBuffer.length==this.bytesWritten);
 	}
 	
 	/**
-	 * Getter for the piece index
+	 * @return The piece index 
 	 */
 	public int getPieceIndex(){
 		return this.pieceNumber;
 	}
 	
 	/**
-	 * Getter for the data buffer
+	 * @return The Data Buffer
 	 */
 	public byte[] getData() {
 		return this.dataBuffer;
 	}
 	
-	/**
-	 * ToString...debug purposes.
-	 */
+	@Override
 	public String toString(){
 		return "Piece Number: " + this.pieceNumber + " Bytes written: " + this.bytesWritten;
 	}

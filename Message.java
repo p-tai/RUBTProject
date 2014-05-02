@@ -2,9 +2,17 @@ import java.nio.ByteBuffer;
 
 //TODO Add Cancel method and function?
 
+/**
+ * @author Paul Tai
+ * @author Alex Zhang
+ * @author Anthony Wong
+ */
 public class Message {
 
 
+	/**
+	 * TODO
+	 */
 	public static final Message KILL_PEER_MESSAGE = new Message(0,(byte)-1);
 	/**
 	 * The KeepAlive Message

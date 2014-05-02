@@ -6,6 +6,11 @@ import java.util.*;
 import edu.rutgers.cs.cs352.bt.exceptions.*;
 import edu.rutgers.cs.cs352.bt.util.*;
 
+/**
+ * @author Paul Tai
+ * @author Alex Zhang
+ * @author Anthony Wong
+ */
 public class Tracker {
 	
 	
