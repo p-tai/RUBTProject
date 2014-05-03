@@ -4,7 +4,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
-import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -431,8 +430,9 @@ public class Peer extends Thread {
 					this.peerID[i] = response[48 + i];
 				}
 				try {
-					this.peerIDString = new String(peerID, "UTF-8");
+					this.peerIDString = new String(this.peerID, "UTF-8");
 				} catch (UnsupportedEncodingException e) {
+					//UTF-8 is a legal encoding...
 				}
 			}
 
@@ -562,7 +562,6 @@ public class Peer extends Thread {
 	private class PeerWriter extends Thread {
 
 		private LinkedBlockingQueue<Message> messageQueue;
-		private DataOutputStream outgoing;
 		private boolean keepRunning = true;
 		
 		/**
@@ -572,7 +571,6 @@ public class Peer extends Thread {
 		 *            the stream to write out all data to
 		 */
 		public PeerWriter(DataOutputStream outgoing) {
-			this.outgoing = outgoing;
 			this.messageQueue = new LinkedBlockingQueue<Message>();
 		}// peerWriter constructor
 

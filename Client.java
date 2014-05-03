@@ -4,22 +4,15 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.AbstractQueue;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -40,7 +33,6 @@ public class Client extends Thread{
 
 	private byte[] clientID;
 	private TorrentInfo torrentInfo;
-	private URL url;
 	private Tracker tracker;
 	
 	private String saveName;
@@ -53,7 +45,6 @@ public class Client extends Thread{
 	
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
-	private boolean userQuit;
 	private boolean keepReading;
 	private boolean isSeeder;
 
@@ -71,15 +62,13 @@ public class Client extends Thread{
 	 * The number of bytes uploaded to all the peers
 	 */
 	int uploaded;
-	private final static Object ULCountLock = new Object();
+	private final Object ULCountLock = new Object();
 	
 	/**
 	 * The interval of sending the HTTP GET Request to the Tracker
 	 */
 	int interval;
 	
-	private DataOutputStream request;
-	private DataInputStream response;
 	private ServerSocket listenSocket;
 
 	private ArrayList<Peer> peerList;
@@ -98,14 +87,14 @@ public class Client extends Thread{
 		System.out.println("No output file detected. \n Booting");
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
-		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.peerHistory = new ArrayList<Peer>();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
-		this.userQuit = false;
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
+		this.downloaded = 0;
+		this.uploaded = 0;
 		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
 		genClientID();
@@ -120,15 +109,15 @@ public class Client extends Thread{
 	public Client(TorrentInfo torrent, RandomAccessFile file){
 		System.out.println("Previous file detected. \n Booting");
 		this.torrentInfo = torrent;
-		this.url = this.torrentInfo.announce_url;
 		this.dataFile = file;
 		this.bitfield = checkfile(torrent, file);
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
-		this.userQuit = false;
 		this.peerHistory = new ArrayList<Peer>();
 		//ToolKit.print(this.blocks);
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
+		this.downloaded = 0;
+		this.uploaded = 0;
 		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
 		genClientID();
@@ -390,10 +379,8 @@ public class Client extends Thread{
 		this.updateLeft();
 		if(this.tracker != null) {
 			this.tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
-			this.userQuit = true;
 		}
 		//response can be ignored because we're disconnecting anyway
-		System.out.println("Sent STOPPED event to tracker");
 	}
 
 	/**
