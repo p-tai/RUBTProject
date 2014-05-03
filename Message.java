@@ -11,42 +11,43 @@ public class Message {
 
 
 	/**
-	 * TODO
+	 * Static KILL_PEER_MESSAGE that will be inserted to message queues
+	 * when shutdown methods are called, notifying threads to stop reading
 	 */
 	public static final Message KILL_PEER_MESSAGE = new Message(0,(byte)-1);
 	/**
-	 * The KeepAlive Message
+	 * The KeepAlive Message representing a BT Keep-Alive message
 	 */
 	public static final Message keepAlive = new Message(0,(byte)1);
 	
 	/**
-	 * The Choke Message
+	 * The Choke Message representing a BT Choke message
 	 */
 	public static final Message choke = new Message(1,(byte)0); 
 	
 	/**
-	 * The Unchoke Message
+	 * The Unchoke Message representing a BT Unchoke message
 	 */
 	public static final Message unchoke = new Message(1,(byte)1);
 	
 	/**
-	 * The Interested Message
+	 * The Interested Message representing a BT interested message
 	 */
 	public static final Message interested = new Message(1,(byte)2);
 	
 	/**
-	 * The Uninterested Message
+	 * The Uninterested Message representing a BT uninterested message
 	 */
 	public static final Message uninterested = new Message(1,(byte)3);
 	
 	/**
-	 * The List of Responses from the peer.
+	 * The List of possible message BT responses
 	 */
 	public static final String[] responses = {"choke", "unchoke", "interested", 
 											  "uninterested", "have", "bitfield", 
 											  "request", "pieces", "cancel"};
 	
-	
+	//local fields
 	private final int length;
 	private final byte messageID;
 	private byte[] payload;
@@ -63,7 +64,7 @@ public class Message {
 	}
 	
 	/**
-	 * Setting the Message Payload
+	 * Setting the Message Payload (everything after the length and class ID in the BT message)
 	 * @param payload The Message Payload
 	 */
 	public void setPayload(final byte[] payload) {
@@ -71,14 +72,16 @@ public class Message {
 	}
 	
 	/**
-	 * @return The Peer Message Length
+	 * @return The Peer Message Length (based on how BT Messages define length)
 	 */
 	public int getLength() {
 		return this.length;
 	}
 	
 	/**
-	 * @return The Peer Message Payload
+	 * @return The Peer Message Payload 
+	 * (everything after the length and class ID in the BT message)
+	 */
 	 */
 	public byte[] getPayload() {
 		return this.payload;
@@ -88,17 +91,22 @@ public class Message {
 	 * @return The Peer message as a byte array (in the format it would be sent across a network)
 	 */
 	public byte[] getBTMessage(){
+		//Starting minimum length of a BT message
 		int messageLength = 4;
+		//if this is a keepalive, just return the message immediately
 		if (this.length == 0) {
 			ByteBuffer bt = ByteBuffer.allocate(messageLength);
 			bt.putInt(this.length);
 			return bt.array();
-		}else if(this.length == 1){
+		}
+		//if choke/unchoke/interested/uninterested messages, also return immediately
+		else if(this.length == 1){
 			ByteBuffer bt = ByteBuffer.allocate(5);
 			bt.putInt(this.length);
 			bt.put(this.messageID);
 			return bt.array();
 		}
+		//Otherwise, add space for the length and message id and payload.
 		ByteBuffer bt = ByteBuffer.allocate(messageLength+this.length);
 		bt.putInt(this.length);
 		bt.put(this.messageID);
@@ -195,6 +203,7 @@ public class Message {
 	 * @return byte[] containing a handshake message
 	 */
 	public static byte[] handshakeMessage(final byte[] SHA1, final byte[] peerID) {
+		//Set the first bits equal to "BitTorrent protocol" as specified by BT protocol
 		byte[] handshake = new byte[68];
         handshake[0] = 19;
         handshake[1] = 'B';
@@ -216,15 +225,16 @@ public class Message {
         handshake[17] = 'c';
         handshake[18] = 'o';
         handshake[19] = 'l';    
-		
+	
+	//Set the next 8 bytes as '0' byte paddings
         for(int i = 0; i < 8; i++){
         	handshake[19 + i + 1] = 0;
         }
-        //28
+        //Set the next bytes equal to the SHA-1 from the torrent file
         for(int i = 0; i < 20; i++){
         	handshake[28 + i] = SHA1[i];
         }
-        //48
+        //Set the next bytes equal to the local PeerID
         for(int i = 0; i < peerID.length; i++){
         	handshake[48 + i] = peerID[i];
         }
