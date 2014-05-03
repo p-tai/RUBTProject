@@ -546,7 +546,8 @@ public class Peer extends Thread {
 				}				
 				this.writer.clearQueue();
 				this.enqueueMessage(Message.KILL_PEER_MESSAGE);
-				this.RUBT.getPeerHistory().remove(this);
+				this.RUBT.removePeer(this);
+				this.shutdownPeer();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -690,6 +691,9 @@ public class Peer extends Thread {
 				// received a packet).
 				updatePeerTimeoutTimer();
 			}// while
+			System.out.println("Removing " + this + "from Peer History");
+			this.RUBT.removePeer(this);
+			this.shutdownPeer();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
