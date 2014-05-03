@@ -501,9 +501,7 @@ public class Peer extends Thread {
 					// System.out.println("Sending Keep Alive to " +
 					// this.peerIDString);
 				} else {
-					// System.out.println("Sending " +
-					// Message.responses[payload.getMessageID()] +
-					// " message to Peer: " + this);
+
 				}
 
 				// get message payload, write to socket, then update the keep
@@ -528,10 +526,11 @@ public class Peer extends Thread {
 					}
 				} else if (Message.responses[payload.getMessageID()]
 						.equals("pieces")) {
+					System.out.println("Sending " +
+					Message.responses[payload.getMessageID()] +
+					 " message to Peer: " + this);
 					synchronized (this.ULCountLock) {
-						this.concurrentSends -= 1;
 						this.recentBytesUploaded += payload.getLength();
-						this.ULCountLock.notifyAll();
 					}
 				}
 
@@ -774,22 +773,10 @@ public class Peer extends Thread {
 				incomingMessage = Message.uninterested;
 				this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
 				break;
-			case 4:
-			case 5:
-			case 6:
-				if (classID == 6) {
-					synchronized (this.ULCountLock) {
-						this.concurrentSends += 1;
-						while (this.concurrentSends > MAX_CONCURRENT_SENDS) {
-							try {
-								(this.ULCountLock).wait();
-							} catch (InterruptedException ie) {
-								// Whatever
-							}
-						}
-					}
-				}
-			case 7:
+			case 4: //have
+			case 5: //bitfield
+			case 6: //request
+			case 7: //piece
 				if (classID == 7) {
 					synchronized (this.DLCountLock) {
 						this.concurrentRequests -= 1;
@@ -851,7 +838,7 @@ public class Peer extends Thread {
 		if (this.uploadRate < 1000.0) {
 			// if you just started downloading, just set the rate = to the rate
 			// / 2 seconds
-			this.uploadRate = this.recentBytesUploaded;
+			this.uploadRate = this.recentBytesUploaded / 2.0;
 		} else {
 			// Takes a weighted average of the current upload rate and the old
 			// upload rate
@@ -881,7 +868,7 @@ public class Peer extends Thread {
 			this.recentBytesDownloaded = 0;
 		}
 
-		if (this.uploadRate > 1000.0 || this.downloadRate > 1000.0)
+		if (this.uploadRate > 0 || this.downloadRate > 1000.0)
 			System.out.format(
 					"Update rate: %.2f kBps. Download rate: %.2f kBps. %s%n",
 					(this.uploadRate / 1000.0), (this.downloadRate / 1000.0),

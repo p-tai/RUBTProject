@@ -602,7 +602,6 @@ public class Client extends Thread{
 			peer.setPeerBooleanBitField(convert(bitfield));
 			break;
 		case 6: /* request */
-			System.out.println("=====================RECEIVED A REQUEST MESSAGE");
 			if(peer.isChokingLocal() == false) {
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
 				pieceBuffer.mark();
@@ -615,6 +614,7 @@ public class Client extends Thread{
 				pieceRequested = this.readLocalData(pieceIndex,beginIndex,lengthReq);
 				Message pieceMessage = new Message((1+4+4+lengthReq),(byte)7); //Create a message with length 1+2 ints+length,7).
 				pieceMessage.piece(pieceIndex,beginIndex,pieceRequested);
+				peer.enqueueMessage(pieceMessage);
 			}
 			break;
 		case 7: /* piece */
