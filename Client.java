@@ -32,11 +32,6 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
 //DEFINITION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
-/**
- * @author Paul Tai
- * @author Alex Zhang
- * @author Anthony Wong
- */
 public class Client extends Thread{
 
 	private byte[] clientID;
@@ -211,7 +206,7 @@ public class Client extends Thread{
 
 	private boolean[] checkfile(TorrentInfo torrent, RandomAccessFile datafile){
 		//initialize a boolean array with length equal to the number of pieces
-		boolean[] bitfield = new boolean[this.torrentInfo.piece_hashes.length];
+		boolean[] bitfield = new boolean[(this.torrentInfo.piece_hashes).length];
 		
 		int piece_length = this.torrentInfo.piece_length;
 		
@@ -244,13 +239,13 @@ public class Client extends Thread{
 				bitfield[i] = checkData(readbyte,i);
 				
 			} catch(IOException e){
-				//Should not occur because the index will never be negative or out of bounds
+				//Should not occur because the index should never be negative or out of bounds
 				System.err.println("IOEXCEPTION CHECKFILE");
 			}
 			
 			//This recalcuate the new byte offset
 			offset += getPieceLength(i);
-			System.out.println("index " + i + " of size " + getPieceLength(i) + " is " + bitfield[i]);
+			System.out.println("index " + i + " is " + bitfield[i]);
 		}
 		
 		return bitfield;
@@ -559,12 +554,6 @@ public class Client extends Thread{
 			pieceBuffer.reset();
 			int pieceIndex = pieceBuffer.getInt();
 			peer.updatePeerBitfield(pieceIndex);
-			if(!peer.isInterestedLocal()) {
-				if(this.bitfield[pieceIndex] == false) {
-					peer.enqueueMessage(Message.interested);
-					peer.setLocalInterested(true);
-				}
-			}
 			break;
 		case 5: /* bitfield */
 			byte[] bitfield = message.getPayload();
@@ -612,13 +601,14 @@ public class Client extends Thread{
 					haveMessage.have(pieceNo);
 					//write this message to all peers
 					broadcastMessage(haveMessage);
+					this.pieceRequester.queueForDownload(peer);
 				} else {
 					System.err.println("...........SHA- UNSUCCESSFUL");
 					//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
 					this.downloadsInProgress[pieceNo]=false;
+					this.pieceRequester.queueForDownload(peer);
 					peer.resetPiece();
 				}
-				this.pieceRequester.queueForDownload(peer);
 			}
 			break;
 		case 8: /* cancel */
@@ -800,7 +790,6 @@ public class Client extends Thread{
 
 		if(!remotePeer.amInterested()) {
 			remotePeer.enqueueMessage(Message.interested);
-			remotePeer.setLocalInterested(true);
 		}
 		
 		this.downloadsInProgress[pieceIndex] = true;
@@ -893,8 +882,15 @@ public class Client extends Thread{
 	 */ 
 	int findPieceToDownload(Peer remote) {
 		boolean[] peerBitfield = remote.getBitfields();
-		for(int i = 0; i < this.bitfield.length; i++) {
+		
+		for(int i = 0; i < (this.bitfield).length; i++) {
 			if(this.bitfield[i] == false && peerBitfield[i] == true && this.downloadsInProgress[i] == false) {
+				return i;
+			}
+		}
+		
+		for(int i = 0; i < peerBitfield.length; i++) {
+			if(this.bitfield[i]==false && peerBitfield[i] == true) {
 				return i;
 			}
 		}
@@ -907,7 +903,7 @@ public class Client extends Thread{
 	 * @param dataOffset Where the piece is located to the file
 	 * @return true for success, otherwise false
 	 */
-	private boolean checkData(byte[] dataPiece, int dataOffset) {
+	private synchronized boolean checkData(byte[] dataPiece, int dataOffset) {
 
 		MessageDigest hasher = null;
 
@@ -925,9 +921,12 @@ public class Client extends Thread{
 		}
 
 		byte[] SHA1 = new byte[20];
-		System.out.println("Piece offset = " + dataOffset);// + " SHA " + checkSHA1 + " vs " + SHA1);
-		(this.torrentInfo.piece_hashes[dataOffset]).get(SHA1);
+		//Read the piece hash from the torrentInfo file and put it into SHA1
+		SHA1 = ((this.torrentInfo.piece_hashes)[dataOffset]).array();
+		
 		byte[] checkSHA1 = hasher.digest(dataPiece);
+		
+		System.out.println("Piece offset = " + dataOffset);// + " SHA " + checkSHA1 + " vs " + SHA1);
 		
 		if(SHA1.length != checkSHA1.length) {
 			return false;
@@ -939,6 +938,7 @@ public class Client extends Thread{
 				return false;
 			}
 		}
+		
 		return true;
 	}
 }
