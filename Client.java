@@ -92,6 +92,7 @@ public class Client extends Thread{
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
 		this.downloaded = 0;
 		this.uploaded = 0;
+		this.isSeeder = false;
 		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
 		genClientID();
@@ -115,6 +116,7 @@ public class Client extends Thread{
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
 		this.downloaded = 0;
 		this.uploaded = 0;
+		this.isSeeder = false;
 		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
 		genClientID();
@@ -469,16 +471,19 @@ public class Client extends Thread{
 		public void run(){
 			while(this.keepDownloading) {
 				try {
-					Peer current = this.needPiece.take();
-
 					if(this.isAllTrue(this.client.getBitfield())) {
 						this.keepDownloading = false;
+						this.needPiece.clear();
 						continue;
 					}
-
-					int pieceIndex = this.client.findPieceToDownload(current);
-					if(pieceIndex >= 0) {
-						this.client.getPiece(pieceIndex,current);
+					
+					Peer current = this.needPiece.take();
+					
+					if(current.isRunning()) {
+						int pieceIndex = this.client.findPieceToDownload(current);
+						if(pieceIndex >= 0) {
+							this.client.getPiece(pieceIndex,current);
+						}
 					}
 					//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
 				} catch (InterruptedException ie) {
