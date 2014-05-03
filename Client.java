@@ -171,8 +171,18 @@ public class Client extends Thread{
 		return this.peerHistory;
 	}
 	
+	/**
+	 * @return
+	 */
 	public ServerSocket getListenSocket(){
 		return this.listenSocket;
+	}
+	
+	/**
+	 * @return
+	 */
+	public boolean[] getDownloadsInProgess(){
+		return this.downloadsInProgress;
 	}
 	
 	/**
