@@ -161,11 +161,16 @@ public class Client extends Thread{
 		return (1.0 - (double)this.left/(double)this.torrentInfo.file_length);
 	}
 	
-	/**
-	 * @return The Peer History.
-	 */
-	public ArrayList<Peer> getPeerHistory(){
-		return this.peerHistory;
+	public void removePeer(Peer peer){
+		synchronized (this.peerHistory) {
+			this.peerHistory.remove(peer);
+		}
+	}
+	
+	public void addPeer(Peer peer){
+		synchronized (this.peerHistory) {
+			this.peerHistory.add(peer);
+		}
 	}
 	
 	/**
@@ -404,6 +409,7 @@ public class Client extends Thread{
 		}
 		System.out.println("Connecting to Peers");
 		for(Peer peer: this.peerList) {
+			this.peerHistory.add(peer);
 			peer.start();
 		}
 		
@@ -509,8 +515,9 @@ public class Client extends Thread{
 				if(!peerList.isEmpty()){
 					for(Peer peer: peerList) {
 						if(!peerHistory.contains(peer)){
-							//peerHistory.add(peer);
-							//peer.start();
+							System.out.println("New Peer from the Tracker");
+							peerHistory.add(peer);
+							peer.start();
 						}
 					}	
 				}
@@ -547,7 +554,7 @@ public class Client extends Thread{
 					final Socket peerSocket = this.client.getListenSocket().accept();
 					System.out.println("Server Socket Connection");
 					Peer peer = new Peer(this.client, peerSocket);
-					this.client.getPeerHistory().add(peer);
+					this.client.addPeer(peer);
 					peer.start();
 				}catch (IOException e) {
 					System.err.println("ERROR: ServerSocket");
