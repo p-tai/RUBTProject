@@ -25,7 +25,7 @@ public class Peer extends Thread {
 	private final String peerIP;
 	private int peerPort;
 	private boolean keepRunning;
-	
+
 	private int concurrentSends;
 	private int concurrentRequests;
 
@@ -63,11 +63,17 @@ public class Peer extends Thread {
 
 	/**
 	 * Peer's Constructor
-	 * @param RUBT The Client Object
-	 * @param localID The Client's ID
-	 * @param peerID The Peer's ID
-	 * @param peerIP The Peer's IP
-	 * @param peerPort The Peer's Port
+	 * 
+	 * @param RUBT
+	 *            The Client Object
+	 * @param localID
+	 *            The Client's ID
+	 * @param peerID
+	 *            The Peer's ID
+	 * @param peerIP
+	 *            The Peer's IP
+	 * @param peerPort
+	 *            The Peer's Port
 	 */
 	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort) {
 		this.RUBT = RUBT;
@@ -97,13 +103,16 @@ public class Peer extends Thread {
 		this.concurrentRequests = 0;
 		this.keepRunning = true;
 	}
-	
+
 	/**
 	 * Peer's Constructor
-	 * @param RUBT The Client Object.
-	 * @param socket The connection between the Client and Peer.
+	 * 
+	 * @param RUBT
+	 *            The Client Object.
+	 * @param socket
+	 *            The connection between the Client and Peer.
 	 */
-	public Peer(Client RUBT, Socket socket){
+	public Peer(Client RUBT, Socket socket) {
 		this.RUBT = RUBT;
 		this.clientID = RUBT.getClientID();
 		this.peerID = new byte[20];
@@ -131,7 +140,9 @@ public class Peer extends Thread {
 
 	/**
 	 * The status of the Peer chocking the Client.
-	 * @param localChoking true = The Peer is Chocking the Client. Otherwise, false.
+	 * 
+	 * @param localChoking
+	 *            true = The Peer is Chocking the Client. Otherwise, false.
 	 */
 	public void setLocalChoking(boolean localChoking) {
 		this.localChoking = localChoking;
@@ -139,6 +150,7 @@ public class Peer extends Thread {
 
 	/**
 	 * TODO
+	 * 
 	 * @param peerConnection
 	 */
 	public void setPeerConnection(Socket peerConnection) {
@@ -147,6 +159,7 @@ public class Peer extends Thread {
 
 	/**
 	 * TODO
+	 * 
 	 * @param outgoing
 	 */
 	public void setOutgoing(DataOutputStream outgoing) {
@@ -155,6 +168,7 @@ public class Peer extends Thread {
 
 	/**
 	 * TODO
+	 * 
 	 * @param incoming
 	 */
 	public void setIncoming(DataInputStream incoming) {
@@ -212,10 +226,11 @@ public class Peer extends Thread {
 	 *            Offset to write into at the buffer - should come from a peer
 	 *            message.
 	 * @param blockOffset
-	 * 			  TODO
+	 *            TODO
 	 * @return The entire contents of the buffer or null.
 	 */
-	public Piece writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
+	public Piece writeToInternalBuffer(byte[] payload, int pieceOffset,
+			int blockOffset) {
 		if (this.pieceInProgress == null) {
 			this.pieceInProgress = new Piece(pieceOffset,
 					this.RUBT.getPieceLength(pieceOffset),
@@ -329,19 +344,19 @@ public class Peer extends Thread {
 		return this.remoteInterested;
 	}
 
+	@Override
 	public String toString() {
-		return "Peer ID: " + this.peerID + " Peer IP: " + this.peerIP
-				+ " Peer Port: " + this.peerPort;
+		return "(" + this.peerIP + ":" + this.peerPort + ")";
 	}
 
 	/**
-	 * Opens a connection to the peer if it doesn't already exist. 
-	 * (Skips the socket creation if we accepted a connection from our server socket)
-	 * Then sets up the input and output streams of the socket.
+	 * Opens a connection to the peer if it doesn't already exist. (Skips the
+	 * socket creation if we accepted a connection from our server socket) Then
+	 * sets up the input and output streams of the socket.
 	 */
 	public void initializePeerStreams() {
 		System.out.println("Connecting to " + this.peerIDString);
-			
+
 		try {
 			if (this.peerConnection == null) {
 				this.peerConnection = new Socket(this.peerIP, this.peerPort);
@@ -352,7 +367,8 @@ public class Peer extends Thread {
 					this.peerConnection.getOutputStream());
 
 			System.out.println("Opening Input Stream to " + this.peerIDString);
-			this.incoming = new DataInputStream(this.peerConnection.getInputStream());
+			this.incoming = new DataInputStream(
+					this.peerConnection.getInputStream());
 
 			if (this.peerConnection == null || this.outgoing == null
 					|| this.incoming == null) {
@@ -371,19 +387,21 @@ public class Peer extends Thread {
 	 * Send a Handshake Message to the Peer. Will also verify that the returning
 	 * handshake is valid.
 	 * 
-	 * @param infoHash containing the SHA1 of the entire file.
+	 * @param infoHash
+	 *            containing the SHA1 of the entire file.
 	 * @return true for success, otherwise false (i.e. the handshake failed)
 	 */
 	private boolean handshake(byte[] infoHash) {
 		try {
 			// Sends handshake message to the Peer.
-			
-			if(this.peerIDString != null){
-				System.out.println("\nSENDING A HANDSHAKE TO" + this.peerIDString
-						+ "\n");	
+
+			if (this.peerIDString != null) {
+				System.out.println("\nSENDING A HANDSHAKE TO"
+						+ this.peerIDString + "\n");
 			}
-			
-			this.outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
+
+			this.outgoing.write(Message.handshakeMessage(infoHash,
+					this.clientID));
 			this.outgoing.flush();
 
 			// Allocate space for the handshake
@@ -392,44 +410,46 @@ public class Peer extends Thread {
 			this.incoming.readFully(response);
 
 			// Check that the PEER ID given is a VALID PEER ID
-			if(this.peerIDString != null){
-				for(int i = 0; i < 20; i++){
-					if(this.peerID[i] != response[48 + i]){
+			if (this.peerIDString != null) {
+				for (int i = 0; i < 20; i++) {
+					if (this.peerID[i] != response[48 + i]) {
 						System.err.println("Invalid Peer ID. Disconnect!");
 						return false;
 					}
 				}
 			}
-			
-			// Saving the Peer SHA-1 Hash 
+
+			// Saving the Peer SHA-1 Hash
 			for (int i = 0; i < 20; i++) {
 				hash[i] = response[28 + i];
 			}
 
 			// This Peer connect to the Client the Server Socket.
-			if(this.peerIDString == null){
+			if (this.peerIDString == null) {
 				// Saving the Peer ID.
-				for (int i = 0; i < 20; i++){
+				for (int i = 0; i < 20; i++) {
 					this.peerID[i] = response[48 + i];
 				}
 				try {
 					this.peerIDString = new String(peerID, "UTF-8");
-				} catch (UnsupportedEncodingException e) {}	
+				} catch (UnsupportedEncodingException e) {
+				}
 			}
-			
+
 			// Check the peer's SHA-1 hash matches with local SHA-1 hash
 			for (int i = 0; i < 20; i++) {
 				if (this.torrentSHA[i] != hash[i]) {
-					System.err.println("The Peer's SHA-1 does not match with the Client!");
+					System.err
+							.println("The Peer's SHA-1 does not match with the Client!");
 					return false;
 				}
 			}
 			return true;
-		}catch (EOFException e){
+		} catch (EOFException e) {
 			System.err.println("Tracker sending garbage to the server socket");
 			System.out.println();
 			return false;
-		}catch (IOException e) {
+		} catch (IOException e) {
 			System.err.println("HANDSHAKE FAILURE!");
 			return false;
 		}
@@ -454,10 +474,12 @@ public class Peer extends Thread {
 	/**
 	 * enqueueMessage: Method for the client to reach the linkedblockingqueue
 	 * that will hold all messages
-	 * @param message TODO
+	 * 
+	 * @param message
+	 *            TODO
 	 */
 	public void enqueueMessage(Message message) {
-		if(this.writer != null) {
+		if (this.writer != null) {
 			this.writer.enqueue(message);
 		}
 	}
@@ -473,14 +495,17 @@ public class Peer extends Thread {
 		// socket at the same time
 		synchronized (this.outgoing) {
 			try {
-				
-				//Keep Alive
+
+				// Keep Alive
 				if (payload.getLength() == 0) {
-					//System.out.println("Sending Keep Alive to " + this.peerIDString+"\n");
+					// System.out.println("Sending Keep Alive to " +
+					// this.peerIDString);
 				} else {
-					System.out.println("Sending " + Message.responses[payload.getMessageID()] + " message to Peer: " + this.peerPort + "\n");
+					// System.out.println("Sending " +
+					// Message.responses[payload.getMessageID()] +
+					// " message to Peer: " + this);
 				}
-				
+
 				// get message payload, write to socket, then update the keep
 				// alive timer
 
@@ -488,22 +513,23 @@ public class Peer extends Thread {
 				// uploaded bytes counter
 				if (Message.responses[payload.getMessageID()].equals("request")) {
 					synchronized (this.DLCountLock) {
-						this.concurrentRequests+=1;
-						while(this.concurrentRequests > MAX_CONCURRENT_SENDS) {
+						this.concurrentRequests += 1;
+						while (this.concurrentRequests > MAX_CONCURRENT_SENDS) {
 							try {
 								(this.DLCountLock).wait();
 							} catch (InterruptedException ie) {
-								//Whatever
+								// Whatever
 							}
 						}
-						if(this.remoteChoking) {
+						if (this.remoteChoking) {
 							this.outgoing.write(Message.unchoke.getBTMessage());
 							this.outgoing.flush();
 						}
 					}
-				} else if (Message.responses[payload.getMessageID()].equals("pieces")) {
+				} else if (Message.responses[payload.getMessageID()]
+						.equals("pieces")) {
 					synchronized (this.ULCountLock) {
-						this.concurrentSends-=1;
+						this.concurrentSends -= 1;
 						this.recentBytesUploaded += payload.getLength();
 						this.ULCountLock.notifyAll();
 					}
@@ -513,10 +539,13 @@ public class Peer extends Thread {
 				this.outgoing.flush();
 				updateTimer();
 			} catch (SocketException e) {
-				System.err.println(this.peerPort + "'s socket was closed.");
+				System.err.println(this
+						+ "'s socket was closed. (SocketException)");
+				this.writer.clearQueue();
+				this.writer.enqueue(Message.KILL_PEER_MESSAGE);
 				this.RUBT.getPeerHistory().remove(this);
 			} catch (IOException e) {
-				//TODO Auto-generated catch block
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -535,7 +564,8 @@ public class Peer extends Thread {
 		/**
 		 * PeerWriter Constructor
 		 * 
-		 * @param outgoing the stream to write out all data to
+		 * @param outgoing
+		 *            the stream to write out all data to
 		 */
 		public PeerWriter(DataOutputStream outgoing) {
 			this.outgoing = outgoing;
@@ -544,15 +574,25 @@ public class Peer extends Thread {
 
 		/**
 		 * Public method to add a message to the peerWriter's internal queue
-		 * @param message TODO
+		 * 
+		 * @param message that needs to be added to the peerWriter's internal queue
 		 */
 		public void enqueue(Message message) {
-			try {
-				this.messageQueue.put(message);
-			} catch (InterruptedException ie) {
-				//TODO something with this exception
+			if(this.keepRunning = true) {
+				try {
+					this.messageQueue.put(message);
+				} catch (InterruptedException ie) {
+					// TODO something with this exception
+				}
 			}
 		}// enqueue
+		
+		/**
+		 * Public method to empty the peerWriter's internal queue in the event the socket was closed.
+		 */
+		public void clearQueue(){
+			this.messageQueue.clear();
+		}
 
 		private boolean keepRunning = true;
 
@@ -567,7 +607,7 @@ public class Peer extends Thread {
 			while (this.keepRunning) {
 				try {
 					final Message current = this.messageQueue.take();
-					
+
 					if (current == Message.KILL_PEER_MESSAGE) {
 						this.keepRunning = false;
 						continue;
@@ -590,21 +630,17 @@ public class Peer extends Thread {
 
 		// Check if the peer exists. If not, connect. If it does, just keep the
 		// current socket (they handshaked with us)
-		
-		
 		initializePeerStreams();
-		
-		
+
 		if (handshake(this.torrentSHA) == true) {
 			System.out.println("HANDSHAKE RECEIVED");
 			System.out.println("FROM:" + this.peerIDString);
-
 			// Send Bitfield to Peer
 			if (this.RUBT.downloaded != 0) {
 				Message bitfieldMessage = this.RUBT.generateBitfieldMessage();
 				writeToSocket(bitfieldMessage);
 			}
-		}else{
+		} else {
 			// An error was thrown by the handshake method.
 			return;
 		}
@@ -627,16 +663,19 @@ public class Peer extends Thread {
 			}// run
 		}, 10000, 10000); // keepAlive Transmission Timer
 
-		updateTimer();
+		// Initializes the keep-alive timer to the current system time.
+		this.lastMessageTime = System.currentTimeMillis();
 
 		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
 			public void run() {
-				// Let the peer figure out when to send a keepalive
+				// Let the peer instance figure out when to timeout the remote
+				// peer
 				Peer.this.checkPeerTimeout();
 			}// run
 		}, 10000, 10000); // peerTimeout timer
 
-		updatePeerTimeoutTimer();
+		// Initializes the timeout timer to the current system time
+		this.lastPeerTime = System.currentTimeMillis();
 
 		// Checks the upload and download rates every 10 seconds
 		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
@@ -648,7 +687,7 @@ public class Peer extends Thread {
 		try {
 			// while the socket is connected
 			// read from socket (will block if it is empty) and parse message
-			while(this.keepRunning && readSocketInputStream()) {
+			while (this.keepRunning && readSocketInputStream()) {
 				// Update the PEER TIMEOUT timer to a new value (because we
 				// received a packet).
 				updatePeerTimeoutTimer();
@@ -668,7 +707,7 @@ public class Peer extends Thread {
 		this.keepRunning = false;
 		// kill the writer thread with a poison message
 		this.writer.enqueue(Message.KILL_PEER_MESSAGE);
-		
+
 		// close all input/output streams and then close the socket to peer.
 		try {
 			// kill the I/O streams
@@ -688,15 +727,16 @@ public class Peer extends Thread {
 	private boolean readSocketInputStream() throws IOException {
 
 		int length;
-		
+
 		// Check if the connection still exists. If not, return false
 		try {
 			length = this.incoming.readInt();
 		} catch (EOFException e) {
-			System.err.println(this.peerPort + "'s socket was closed.");
+			System.err.println(this + "'s socket was closed. (EOF)");
 			return false;
 		} catch (SocketException e) {
-			System.err.println(this.peerPort + "'s socket was closed.");
+			System.err
+					.println(this + "'s socket was closed. (SocketException)");
 			return false;
 		}
 		// System.out.println("Length = " + length);
@@ -713,9 +753,9 @@ public class Peer extends Thread {
 			classID = this.incoming.readByte();
 			incomingMessage = new Message(length, classID);
 			// Debug statement
-			System.out.println("Received " + Message.responses[classID].toUpperCase() + " Message from " + this.peerPort);
-			
-			
+			// System.out.println("Received " + Message.getMessageID(classID) +
+			// " Message "+this);
+
 			// Length includes the classID. We are using length to determine how
 			// many bytes are left.
 			length--;
@@ -745,23 +785,25 @@ public class Peer extends Thread {
 			case 4:
 			case 5:
 			case 6:
-				if(classID==6) {
-					synchronized(this.ULCountLock) {
-						this.concurrentSends+=1;
-						while(this.concurrentSends > MAX_CONCURRENT_SENDS) {
+				if (classID == 6) {
+					synchronized (this.ULCountLock) {
+						this.concurrentSends += 1;
+						while (this.concurrentSends > MAX_CONCURRENT_SENDS) {
 							try {
 								(this.ULCountLock).wait();
 							} catch (InterruptedException ie) {
-								//Whatever
+								// Whatever
 							}
 						}
 					}
 				}
 			case 7:
-				if(classID == 7) {
-					synchronized(this.DLCountLock) {
-						this.concurrentRequests-=1;
-						(this.DLCountLock).notifyAll();
+				if (classID == 7) {
+					synchronized (this.DLCountLock) {
+						this.concurrentRequests -= 1;
+						if (this.concurrentRequests <= 1) {
+							(this.DLCountLock).notifyAll();
+						}
 					}
 				}
 			case 8:
@@ -812,53 +854,46 @@ public class Peer extends Thread {
 	}// checkAndSendKeepAlive
 
 	void updateRates() {
-		//System.out.println("Updating download/upload rates");
 
+		// If we have been downloading consistently...
+		if (this.uploadRate < 1000.0) {
+			// if you just started downloading, just set the rate = to the rate
+			// / 2 seconds
+			this.uploadRate = this.recentBytesUploaded;
+		} else {
+			// Takes a weighted average of the current upload rate and the old
+			// upload rate
+			this.uploadRate = this.uploadRate * .65
+					+ (this.recentBytesUploaded / 2.0) * .35;
+		}
+
+		// If we have been downloading consistently...
+		if (this.downloadRate < 1000.0) {
+			// if you just started downloading, just set the rate = to the rate
+			// / 2 seconds
+			this.downloadRate = this.recentBytesDownloaded / 2.0;
+		} else {
+			// Takes a weighted average of the current download rate and the old
+			// download rate
+			this.downloadRate = this.downloadRate * .65
+					+ (this.recentBytesDownloaded / 2.0) * .35;
+		}
+
+		// reset the recent counter
 		synchronized (this.ULCountLock) {
-			// If we have been downloading consistently...
-			if (this.uploadRate != 0) {
-				// Takes a weighted average of the current upload rate and the
-				// historical upload rate
-				this.uploadRate = this.uploadRate * .65
-						+ this.recentBytesUploaded / 2.0 * .35;
-				// reset the recent counter
-				this.recentBytesUploaded = 0;
-
-			} else if (this.recentBytesUploaded == 0) {
-				// you aren't uploading any data, reset the upload rate to 0
-				this.uploadRate = 0.0;
-
-			} else {
-				// if you just started downloading, just set the rate = to the
-				// window rate / 2 seconds
-				this.uploadRate = this.recentBytesUploaded / 2.0;
-
-			}
 			this.recentBytesUploaded = 0;
 		}
 
+		// reset the recent counter
 		synchronized (this.DLCountLock) {
-			// If we have been downloading consistently...
-			if (this.downloadRate != 0) {
-				// Takes a weighted average of the current download rate and the
-				// historical download rate
-				this.downloadRate = this.downloadRate * .65
-						+ this.recentBytesDownloaded / 2.0 * .35;
-				// reset the recent counter
-				this.recentBytesDownloaded = 0;
-
-			} else if (this.recentBytesUploaded == 0) {
-				// you aren't downloading any data reset the download rate
-				this.downloadRate = 0.0;
-
-			} else {
-				// if you just started downloading, just set the rate = to the
-				// window rate / 2 seconds
-				this.downloadRate = this.recentBytesDownloaded / 2.0;
-			}
 			this.recentBytesDownloaded = 0;
 		}
 
+		if (this.uploadRate > 1000.0 || this.downloadRate > 1000.0)
+			System.out.format(
+					"Update rate: %.2f kBps. Download rate: %.2f kBps. %s%n",
+					(this.uploadRate / 1000.0), (this.downloadRate / 1000.0),
+					this);
 	}// updateRate
 
 	private void updateTimer() {
@@ -872,10 +907,11 @@ public class Peer extends Thread {
 	}// updatePeerTimeoutTimer
 
 	/**
-	 * Checks to see if the Peer is equal to 
-	 * another Peer based on their peerID.
+	 * Checks to see if the Peer is equal to another Peer based on their peerID.
+	 * 
 	 * @return true when a peerID is equal to this peer. Otherwise false.
 	 */
+	@Override
 	public boolean equals(Object obj) {
 		if (obj == null || !(obj instanceof Peer)) {
 			return false;

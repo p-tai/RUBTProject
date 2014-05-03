@@ -632,16 +632,16 @@ public class Client extends Thread{
 			int pieceNo = pieceBuffer.getInt();
 			int offset = pieceBuffer.getInt();
 			pieceBuffer.get(temp);
-			System.out.println("PIECE NUMBER " + pieceNo + " BLOCK OFFSET " + offset + " LENGTH " + temp.length);
+			//System.out.println("PIECE NUMBER " + pieceNo + " BLOCK OFFSET " + offset + " LENGTH " + temp.length);
 			//Stores this in the peer's internal buffer
 			Piece piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
 			
 			//Check if the piece is finished
 			if(piece.isFull()) {
-				System.out.println("..........FULL PIECE RECEIVED");
+				System.out.println("..........FULL PIECE RECEIVED: " + pieceNo + " " +peer);
 				//Check if the payload was correct according to the SHA
 				if(this.checkData(piece.getData(),piece.getPieceIndex())){
-					System.out.println("...........SHA-SUCCESSFUL");
+					//System.out.println("...........SHA-SUCCESSFUL");
 					//if so, write it to the random access file and reset the state of the piece
 					this.writeData(piece.getData(), piece.getPieceIndex());
 					this.downloadsInProgress[pieceNo]=false;
@@ -654,7 +654,7 @@ public class Client extends Thread{
 					updateDownloaded();
 					this.pieceRequester.queueForDownload(peer);
 				} else {
-					System.err.println("...........SHA- UNSUCCESSFUL");
+					//System.err.println("...........SHA- UNSUCCESSFUL");
 					//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
 					this.downloadsInProgress[pieceNo]=false;
 					this.pieceRequester.queueForDownload(peer);
@@ -983,7 +983,7 @@ public class Client extends Thread{
 		
 		byte[] checkSHA1 = hasher.digest(dataPiece);
 		
-		System.out.println("Piece offset = " + dataOffset);// + " SHA " + checkSHA1 + " vs " + SHA1);
+		//System.out.println("Piece offset = " + dataOffset);// + " SHA " + checkSHA1 + " vs " + SHA1);
 		
 		if(SHA1.length != checkSHA1.length) {
 			return false;
