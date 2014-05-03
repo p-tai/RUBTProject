@@ -166,8 +166,11 @@ public class RUBTClient extends Thread{
 		System.out.println("Handshaking with PEERS");
 		client.connectToPeers();
 		sleep(1000);
-		System.out.println("Beginning Download Thread...");
-		client.startPeerDownloads();
+		if(!client.isSeeder()) {
+			System.out.println("Beginning Download Thread...");
+			client.startPeerDownloads();
+		}
+		
 
 		//Start running the shutdown hook as a seperate thread.
 		(new RUBTClient()).run(client);

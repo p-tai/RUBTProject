@@ -49,6 +49,7 @@ public class Client extends Thread{
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
 	private boolean userQuit;
+	private boolean isSeeder;
 
 	/**
 	 * The number of bytes download from peers.
@@ -140,7 +141,13 @@ public class Client extends Thread{
 		return bitfieldMessage;
 	}
 
-
+	/**
+	 * Getter that returns whether or not the client is seeding (i.e. the client is no longer downloading.
+	 * @return this.isSeeder private variable
+	 */
+	public boolean isSeeder() {
+		return this.isSeeder;
+	}
 	/**
 	 * Updates the downloaded values, left values, and uploaded values.
 	 * Returns the number of bytes that have been successfully downloaded and confirmed to be correct
@@ -164,6 +171,9 @@ public class Client extends Thread{
 
 		this.downloaded = retVal;
 		this.left = this.torrentInfo.file_length - this.downloaded;
+		if(this.left == 0) {
+			this.isSeeder = true;
+		}
 	}
 
 	private byte[] convertBooleanBitfield(boolean[] bitfield) {
@@ -475,6 +485,9 @@ public class Client extends Thread{
 					// Whatever
 				}
 			}
+			//TODO send completed event to tracker
+			client.updateDownloaded();
+			client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "completed");
 			System.out.println("UPDATE: DOWNLOAD COMPLETED");
 			return;
 		}//run
@@ -905,7 +918,7 @@ public class Client extends Thread{
 			return false;
 		}
 
-		byte[] SHA1 = new byte[20];
+		byte[] SHA1;
 		//Read the piece hash from the torrentInfo file and put it into SHA1
 		SHA1 = ((this.torrentInfo.piece_hashes)[dataOffset]).array();
 		
