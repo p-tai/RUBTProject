@@ -108,7 +108,7 @@ public class Peer extends Thread {
 		this.clientID = RUBT.getClientID();
 		this.peerID = new byte[20];
 		this.peerBooleanBitField = new boolean[RUBT.getNumPieces()];
-		this.peerIP = null;
+		this.peerIP = (socket.getInetAddress()).getHostAddress();
 		this.peerPort = socket.getPort();
 		this.localChoking = true;
 		this.localInterested = false;
@@ -335,13 +335,17 @@ public class Peer extends Thread {
 	}
 
 	/**
-	 * Opens a connection to the peer.
+	 * Opens a connection to the peer if it doesn't already exist. 
+	 * (Skips the socket creation if we accepted a connection from our server socket)
+	 * Then sets up the input and output streams of the socket.
 	 */
-	public void connect() {
+	public void initializePeerStreams() {
 		System.out.println("Connecting to " + this.peerIDString);
+			
 		try {
-			// System.out.println(this.peerIP.split(":")[0]);
-			this.peerConnection = new Socket(this.peerIP, this.peerPort);
+			if (this.peerConnection == null) {
+				this.peerConnection = new Socket(this.peerIP, this.peerPort);
+			}
 
 			System.out.println("Opening Output Stream to " + this.peerIDString);
 			this.outgoing = new DataOutputStream(
@@ -361,7 +365,7 @@ public class Peer extends Thread {
 			System.err.println("Input/Output Stream Creation Failed");
 		}
 
-	}// end of connect()
+	}// end of initializePeerStreams()
 
 	/**
 	 * Send a Handshake Message to the Peer. Will also verify that the returning
@@ -585,24 +589,9 @@ public class Peer extends Thread {
 		// Check if the peer exists. If not, connect. If it does, just keep the
 		// current socket (they handshaked with us)
 		
-		if (this.peerConnection == null) {
-			connect();
-		}else{
-			try{
-				// Opening Output/Input Stream
-				this.outgoing = new DataOutputStream(this.peerConnection.getOutputStream());
-				this.incoming = new DataInputStream(this.peerConnection.getInputStream());
-				if(this.peerConnection == null || this.outgoing == null || this.incoming == null){
-					System.err.println("Input/Output Stream Creation Failed ");
-				}
-			}catch (UnknownHostException e){
-				System.err.println("IP address of a host could not be determined.");
-				return;
-			}catch (IOException e){
-				System.err.println("Input/Output Stream Creation Failed");
-				return;
-			}				
-		}
+		
+		initializePeerStreams();
+		
 		
 		if (handshake(this.torrentSHA) == true) {
 			System.out.println("HANDSHAKE RECEIVED");
