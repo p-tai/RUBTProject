@@ -1,25 +1,15 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.AbstractQueue;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,9 +29,8 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
 public class Client extends Thread{
 
 	private byte[] clientID;
-	private TorrentInfo torrentInfo;
-	private URL url;
-	private Tracker tracker;
+	protected TorrentInfo torrentInfo;
+	protected Tracker tracker;
 	
 	private String saveName;
 	private RandomAccessFile dataFile;
@@ -53,7 +42,6 @@ public class Client extends Thread{
 	
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
-	private boolean userQuit;
 	private boolean keepReading;
 	private boolean isSeeder;
 
@@ -71,19 +59,17 @@ public class Client extends Thread{
 	 * The number of bytes uploaded to all the peers
 	 */
 	int uploaded;
-	private final static Object ULCountLock = new Object();
+	private final Object ULCountLock = new Object();
 	
 	/**
 	 * The interval of sending the HTTP GET Request to the Tracker
 	 */
 	int interval;
 	
-	private DataOutputStream request;
-	private DataInputStream response;
 	private ServerSocket listenSocket;
 
 	private ArrayList<Peer> peerList;
-	private ArrayList<Peer> peerHistory;
+	protected ArrayList<Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	private PieceRequester pieceRequester;
 	private Timer requestTracker = new Timer();
@@ -98,15 +84,15 @@ public class Client extends Thread{
 		System.out.println("No output file detected. \n Booting");
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
-		this.url = this.torrentInfo.announce_url;
 		this.createFile();
 		this.peerHistory = new ArrayList<Peer>();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
-		this.userQuit = false;
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
-		updateDownloaded();
+		this.downloaded = 0;
+		this.uploaded = 0;
+		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
 		genClientID();
 	}
@@ -120,16 +106,16 @@ public class Client extends Thread{
 	public Client(TorrentInfo torrent, RandomAccessFile file){
 		System.out.println("Previous file detected. \n Booting");
 		this.torrentInfo = torrent;
-		this.url = this.torrentInfo.announce_url;
 		this.dataFile = file;
 		this.bitfield = checkfile(torrent, file);
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
-		this.userQuit = false;
 		this.peerHistory = new ArrayList<Peer>();
 		//ToolKit.print(this.blocks);
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
-		updateDownloaded();
+		this.downloaded = 0;
+		this.uploaded = 0;
+		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
 		genClientID();
 	}
@@ -166,12 +152,25 @@ public class Client extends Thread{
 	public int getBytesLeft() {
 		return this.left;
 	}
-	
+
 	/**
-	 * @return The Peer History.
+	 * Getter that returns the percentage completion of the file
+	 * @return 1.0-(bytes left/file length)
 	 */
-	public ArrayList<Peer> getPeerHistory(){
-		return this.peerHistory;
+	public double getPercentageCompletion() {
+		return (1.0 - (double)this.left/(double)this.torrentInfo.file_length);
+	}
+	
+	public void removePeer(Peer peer){
+		synchronized (this.peerHistory) {
+			this.peerHistory.remove(peer);
+		}
+	}
+	
+	public void addPeer(Peer peer){
+		synchronized (this.peerHistory) {
+			this.peerHistory.add(peer);
+		}
 	}
 	
 	/**
@@ -210,24 +209,36 @@ public class Client extends Thread{
 	 * Returns the number of bytes that have been successfully downloaded and confirmed to be correct
 	 * Based on pieces that have been downloaded
 	 **/
-	void updateDownloaded() {
-		int retVal = 0;
+	void updateLeft() {
+		//Nothing to do if you're a seeder already
+		if(this.isSeeder == true) {
+			this.left = 0;
+			return;
+		}
+		
+		//Calculate the number of valid pieces
+		int numValid = 0;
 
 		for( boolean bool : this.bitfield ) {
 			if(bool) {
-				retVal++;
+				numValid++;
 			}
 		}
+		
+		//Consider the case of the oddball size of the last piece
 		if(this.bitfield[this.bitfield.length-1]) {
-			retVal -= 1;
-			retVal *= this.torrentInfo.piece_length;
-			retVal += (this.torrentInfo.file_length % this.torrentInfo.piece_length);
+			numValid -= 1;
+			numValid *= this.torrentInfo.piece_length;
+			numValid += (this.torrentInfo.file_length % this.torrentInfo.piece_length);
 		} else {
-			retVal *= this.torrentInfo.piece_length;
+			numValid *= this.torrentInfo.piece_length;
 		}
 
-		this.downloaded = retVal;
-		this.left = this.torrentInfo.file_length - this.downloaded;
+		
+		//calculate the amount of bytes left to download and validate
+		this.left = this.torrentInfo.file_length - numValid;
+		
+		//set ourselves to seeder status if we are out of data to download
 		if(this.left == 0) {
 			this.isSeeder = true;
 		}
@@ -335,7 +346,7 @@ public class Client extends Thread{
 				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)));
 				//Start listing for peer connection by the Server Socket.
 				(new ServerSocketConnection(this)).start();
-				return Integer.valueOf(new String("688" + i));
+				return (Integer.valueOf(new String("688" + i)));
 			} catch (NumberFormatException e) {
 				/* DO NOTHING */
 			} catch (IOException e) {
@@ -364,16 +375,15 @@ public class Client extends Thread{
 	}
 
 	/**
-	 *	Send a "stopped" event to the tracker
+	 *	Send a "stopped" event to the tracker, called when shutting down.
 	 */
 	public void disconnectFromTracker(){
-		this.updateDownloaded();
+		//Make sure our "left" value is correct
+		this.updateLeft();
 		if(this.tracker != null) {
 			this.tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
-			this.userQuit = true;
+			//response can be ignored because we're disconnecting anyway
 		}
-		//response can be ignored because we're disconnecting anyway
-		System.out.println("Sent STOPPED event to tracker");
 	}
 
 	/**
@@ -399,6 +409,7 @@ public class Client extends Thread{
 		}
 		System.out.println("Connecting to Peers");
 		for(Peer peer: this.peerList) {
+			this.peerHistory.add(peer);
 			peer.start();
 		}
 		
@@ -474,7 +485,7 @@ public class Client extends Thread{
 					// Whatever
 				}
 			}
-			this.client.updateDownloaded();
+			this.client.updateLeft();
 			this.client.tracker.sendHTTPGet(this.client.uploaded, this.client.downloaded, this.client.left, "completed");
 			return;
 		}//run
@@ -494,7 +505,7 @@ public class Client extends Thread{
 			 * the tracker interval. It 
 			 */
 			public void run() {
-				Client.this.updateDownloaded();
+				Client.this.updateLeft();
 				ArrayList<Peer> peerList = Client.this.tracker.sendHTTPGet(Client.this.uploaded, Client.this.downloaded, Client.this.left, "");
 				if(peerList == null){
 					return;
@@ -504,6 +515,7 @@ public class Client extends Thread{
 				if(!peerList.isEmpty()){
 					for(Peer peer: peerList) {
 						if(!peerHistory.contains(peer)){
+							System.out.println("New Peer from the Tracker");
 							peerHistory.add(peer);
 							peer.start();
 						}
@@ -539,10 +551,10 @@ public class Client extends Thread{
 		public void run(){
 			while(true){
 				try {
-					final Socket peerSocket = client.getListenSocket().accept();
+					final Socket peerSocket = this.client.getListenSocket().accept();
 					System.out.println("Server Socket Connection");
 					Peer peer = new Peer(this.client, peerSocket);
-					this.client.getPeerHistory().add(peer);
+					this.client.addPeer(peer);
 					peer.start();
 				}catch (IOException e) {
 					System.err.println("ERROR: ServerSocket");
@@ -655,18 +667,26 @@ public class Client extends Thread{
 					//System.out.println("...........SHA-SUCCESSFUL");
 					//if so, write it to the random access file and reset the state of the piece
 					this.writeData(piece.getData(), piece.getPieceIndex());
+					
+					//Update the downloaded bytes count
+					if(this.bitfield[pieceNo]==false) {
+						this.downloaded+=piece.getData().length;
+					}
+					
+					//update the internal bitfields
 					this.downloadsInProgress[pieceNo]=false;
 					(this.bitfield)[pieceNo]=true;
+					
 					peer.resetPiece(); //reset piece for the next piece
+					
 					Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
-					haveMessage.have(pieceNo);
-					//write this message to all peers
-					broadcastMessage(haveMessage);
-					updateDownloaded();
+					haveMessage.have(pieceNo); 
+					broadcastMessage(haveMessage); //write this message to all peers
+
+					//requeue the peer in the pieceRequestor queue.
 					this.pieceRequester.queueForDownload(peer);
 				} else {
-					//System.err.println("...........SHA- UNSUCCESSFUL");
-					//failed sha-1, increment badPeer by 1, check if >3, if so, kill the peer
+					//System.err.println("...........SHA- UNSUCCESSFUL")
 					this.downloadsInProgress[pieceNo]=false;
 					this.pieceRequester.queueForDownload(peer);
 					peer.resetPiece();
@@ -940,7 +960,7 @@ public class Client extends Thread{
 			}
 		}
 		
-		for(int i = 0; i < peerBitfield.length; i++) {
+		for(int i = 0; i < (this.bitfield).length; i++) {
 			if(this.bitfield[i]==false && peerBitfield[i] == true) {
 				return i;
 			}
