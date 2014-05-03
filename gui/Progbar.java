@@ -20,11 +20,18 @@ public class Progbar extends JPanel{
 		pbar.setMaximum(MY_MAX);
 		pbar.setStringPainted(true);
 		add(pbar);
+
+
 	}//end of progbar
 
 	public void updateBar(int newValue){
 		pbar.setValue(newValue);
 	}//end of updatebar
+
+	// gets the minimum % completed on the pbar
+	public int getMin(){
+		return MY_MIN;
+	}//end of get min
 
 /*	
 	public static void main(String args[]) {
