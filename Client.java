@@ -404,6 +404,7 @@ public class Client extends Thread{
 		}
 		System.out.println("Connecting to Peers");
 		for(Peer peer: this.peerList) {
+			this.peerHistory.add(peer);
 			peer.start();
 		}
 		
@@ -509,8 +510,9 @@ public class Client extends Thread{
 				if(!peerList.isEmpty()){
 					for(Peer peer: peerList) {
 						if(!peerHistory.contains(peer)){
-							//peerHistory.add(peer);
-							//peer.start();
+							System.out.println("New Peer from the Tracker");
+							peerHistory.add(peer);
+							peer.start();
 						}
 					}	
 				}
