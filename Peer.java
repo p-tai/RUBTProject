@@ -396,8 +396,8 @@ public class Peer extends Thread {
 			// Sends handshake message to the Peer.
 
 			if (this.peerIDString != null) {
-				System.out.println("\nSENDING A HANDSHAKE TO"
-						+ this + "\n");
+				System.out.println("\nSENDING HANDSHAKE:"
+						+ this);
 			}
 
 			this.outgoing.write(Message.handshakeMessage(infoHash,
@@ -501,7 +501,10 @@ public class Peer extends Thread {
 					// System.out.println("Sending Keep Alive to " +
 					// this.peerIDString);
 				} else {
-
+					/*
+					if( Message.responses[payload.getMessageID()].equals("have")) { 
+						System.out.println("Sending " + Message.responses[payload.getMessageID()].toUpperCase() + " message to Peer: " + this);
+					}*/
 				}
 
 				// get message payload, write to socket, then update the keep
@@ -526,9 +529,7 @@ public class Peer extends Thread {
 					}
 				} else if (Message.responses[payload.getMessageID()]
 						.equals("pieces")) {
-					System.out.println("Sending " +
-					Message.responses[payload.getMessageID()] +
-					 " message to Peer: " + this);
+					
 					synchronized (this.ULCountLock) {
 						this.recentBytesUploaded += payload.getLength();
 					}
@@ -629,8 +630,7 @@ public class Peer extends Thread {
 		initializePeerStreams();
 
 		if (handshake(this.torrentSHA) == true) {
-			System.out.println("HANDSHAKE RECEIVED");
-			System.out.println("FROM:" + this);
+			System.out.println("Handshake received:" +this);
 			// Send Bitfield to Peer
 			if (this.RUBT.downloaded != 0) {
 				Message bitfieldMessage = this.RUBT.generateBitfieldMessage();
@@ -716,7 +716,7 @@ public class Peer extends Thread {
 			this.peerTimer.cancel();
 
 		} catch (Exception e) {
-			System.out.println("exxxxxxception");
+			System.out.println("exception");
 			// Doesn't matter because the peer is closing anyway
 		}
 	}
@@ -747,8 +747,7 @@ public class Peer extends Thread {
 			// Read the next byte (this should be the classID of the message)
 			classID = this.incoming.readByte();
 			// Debug statement
-			System.out.println("Received " + Message.getMessageID(classID).toUpperCase() +
-					" message "+this);
+			//System.out.println("Received " + Message.getMessageID(classID).toUpperCase() + " message "+this);
 			incomingMessage = new Message(length, classID);
 
 			// Length includes the classID. We are using length to determine how
@@ -842,8 +841,8 @@ public class Peer extends Thread {
 		} else {
 			// Takes a weighted average of the current upload rate and the old
 			// upload rate
-			this.uploadRate = this.uploadRate * .65
-					+ (this.recentBytesUploaded / 2.0) * .35;
+			this.uploadRate = this.uploadRate * .6667
+					+ (this.recentBytesUploaded / 2.0) * .3334;
 		}
 
 		// If we have been downloading consistently...
@@ -854,8 +853,8 @@ public class Peer extends Thread {
 		} else {
 			// Takes a weighted average of the current download rate and the old
 			// download rate
-			this.downloadRate = this.downloadRate * .65
-					+ (this.recentBytesDownloaded / 2.0) * .35;
+			this.downloadRate = this.downloadRate * .6667
+					+ (this.recentBytesDownloaded / 2.0) * .3334;
 		}
 
 		// reset the recent counter

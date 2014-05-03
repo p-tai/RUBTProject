@@ -60,22 +60,23 @@ public class Client extends Thread{
 	/**
 	 * The number of bytes download from peers.
 	 */
-	public int downloaded;
+	int downloaded;
 
 	/**
 	 * The number of bytes of what left to download
 	 */
-	public int left;
+	int left;
 
 	/**
 	 * The number of bytes uploaded to all the peers
 	 */
-	public int uploaded;
-
+	int uploaded;
+	private final static Object ULCountLock = new Object();
+	
 	/**
 	 * The interval of sending the HTTP GET Request to the Tracker
 	 */
-	public int interval;
+	int interval;
 	
 	private DataOutputStream request;
 	private DataInputStream response;
@@ -153,7 +154,9 @@ public class Client extends Thread{
 	 * @return this.uploaded
 	 */
 	public int getBytesUploaded() {
-		return this.uploaded;
+		synchronized (this.ULCountLock) {
+			return this.uploaded;
+		}
 	}
 	
 	/**
@@ -468,12 +471,10 @@ public class Client extends Thread{
 	}//PieceRequester
 
 	/**
-	 * Start the thread that reads the messages
-	 * from the peer
+	 * Start the thread that reads the messages from the peer
 	 */
 	public void run(){
 		this.keepReading = true;
-		
 		this.lastRequestSent = System.currentTimeMillis();
 		
 		//Start the request tracker which will run every interval (as defined by the tracker) to update the peerlist and dl/ul/left stats
@@ -615,6 +616,11 @@ public class Client extends Thread{
 				Message pieceMessage = new Message((1+4+4+lengthReq),(byte)7); //Create a message with length 1+2 ints+length,7).
 				pieceMessage.piece(pieceIndex,beginIndex,pieceRequested);
 				peer.enqueueMessage(pieceMessage);
+				
+				//Increment the amount of bytes uploaded by our client
+				synchronized (this.ULCountLock) {
+					this.uploaded+=lengthReq;
+				}
 			}
 			break;
 		case 7: /* piece */
@@ -805,7 +811,8 @@ public class Client extends Thread{
 	 * This function will broadcast a message to all peers
 	 */
 	private void broadcastMessage(Message message) {
-		for(Peer peer: this.peerHistory) {
+		ArrayList<Peer> temp = this.peerHistory;
+		for(Peer peer: temp) {
 			//Iterate through all the values in the list and send the message
 			peer.enqueueMessage(message);
 		}
