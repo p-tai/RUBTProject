@@ -1,12 +1,9 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.ByteBuffer;
@@ -344,7 +341,7 @@ public class Client extends Thread{
 				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)));
 				//Start listing for peer connection by the Server Socket.
 				(new ServerSocketConnection(this)).start();
-				return Integer.valueOf(new String("688" + i));
+				return (Integer.valueOf(new String("688" + i)));
 			} catch (NumberFormatException e) {
 				/* DO NOTHING */
 			} catch (IOException e) {
@@ -547,7 +544,7 @@ public class Client extends Thread{
 		public void run(){
 			while(true){
 				try {
-					final Socket peerSocket = client.getListenSocket().accept();
+					final Socket peerSocket = this.client.getListenSocket().accept();
 					System.out.println("Server Socket Connection");
 					Peer peer = new Peer(this.client, peerSocket);
 					this.client.getPeerHistory().add(peer);
