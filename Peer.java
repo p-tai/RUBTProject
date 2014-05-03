@@ -111,14 +111,26 @@ public class Peer extends Thread {
 		this.localChoking = localChoking;
 	}
 
+	/**
+	 * TODO
+	 * @param peerConnection
+	 */
 	public void setPeerConnection(Socket peerConnection) {
 		this.peerConnection = peerConnection;
 	}
 
+	/**
+	 * TODO
+	 * @param outgoing
+	 */
 	public void setOutgoing(DataOutputStream outgoing) {
 		this.outgoing = outgoing;
 	}
 
+	/**
+	 * TODO
+	 * @param incoming
+	 */
 	public void setIncoming(DataInputStream incoming) {
 		this.incoming = incoming;
 	}
