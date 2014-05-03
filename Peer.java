@@ -51,9 +51,7 @@ public class Peer extends Thread {
 	 * @author Rob Moore
 	 */
 	private static final long KEEP_ALIVE_TIMEOUT = 120000;
-	private Timer keepAliveTimer = new Timer();
-	private Timer peerTimeoutTimer = new Timer();
-	private Timer rateChecker = new Timer();
+	private Timer peerTimer = new Timer();
 	private long lastMessageTime = System.currentTimeMillis();
 	private long lastPeerTime = System.currentTimeMillis();
 	private double downloadRate;
@@ -575,7 +573,7 @@ public class Peer extends Thread {
 		 * 
 		 * @author Rob Moore
 		 */
-		this.keepAliveTimer.scheduleAtFixedRate(new TimerTask() {
+		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
 			public void run() {
 				// Let the peer figure out when to send a keepalive
 				Peer.this.checkAndSendKeepAlive();
@@ -584,7 +582,7 @@ public class Peer extends Thread {
 
 		updateTimer();
 
-		this.peerTimeoutTimer.scheduleAtFixedRate(new TimerTask() {
+		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
 			public void run() {
 				// Let the peer figure out when to send a keepalive
 				Peer.this.checkPeerTimeout();
@@ -594,7 +592,7 @@ public class Peer extends Thread {
 		updatePeerTimeoutTimer();
 
 		// Checks the upload and download rates every 10 seconds
-		this.rateChecker.scheduleAtFixedRate(new TimerTask() {
+		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
 			public void run() {
 				Peer.this.updateRates();
 			}// run
@@ -626,20 +624,16 @@ public class Peer extends Thread {
 		
 		// close all input/output streams and then close the socket to peer.
 		try {
-
 			// kill the I/O streams
 			this.incoming.close();
 			this.outgoing.close();
-
 			// kill the socket
 			this.peerConnection.close();
-
 			// cancel all the timers
-			this.keepAliveTimer.cancel();
-			this.peerTimeoutTimer.cancel();
-			this.rateChecker.cancel();
+			this.peerTimer.cancel();
 
 		} catch (Exception e) {
+			System.out.println("exxxxxxception");
 			// Doesn't matter because the peer is closing anyway
 		}
 	}

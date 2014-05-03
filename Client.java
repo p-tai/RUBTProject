@@ -735,12 +735,16 @@ public class Client extends Thread{
 	public void shutdown() {
 		this.keepReading = false;
 		//iter all peers, shut down
-		Iterator<Peer> iter = this.peerHistory.iterator();
-		for(int i = 0; i < this.peerList.size(); i++){
-			this.peerList.get(i).shutdownPeer();
+		for(Peer peer: this.peerHistory) {
+			if(peer != null) {
+				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
+				peer.shutdownPeer();
+			}
 		}
 		try{
+			System.out.println("Request");		
 			this.requestTracker.cancel();
+			System.out.println("Kill reader");
 			this.messagesQueue.put(new MessageTask((Peer)null, Message.KILL_PEER_MESSAGE));
 		} catch (InterruptedException ie) {
 			//Don't care, shutting down
