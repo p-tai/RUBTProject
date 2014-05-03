@@ -40,12 +40,10 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
 public class Client extends Thread{
 
 	private byte[] clientID;
-
-	Tracker tracker;
-
 	private TorrentInfo torrentInfo;
 	private URL url;
-
+	Tracker tracker;
+	
 	private String saveName;
 	private RandomAccessFile dataFile;
 
@@ -143,6 +141,30 @@ public class Client extends Thread{
 		return this.clientID;
 	}
 
+	/**
+	 * Getter that returns the total number of VALIDATED bytes (in other words bytes of pieces that pass SHA-1 verification)
+	 * @return this.downloaded
+	 */
+	public int getBytesDownloaded() {
+		return this.downloaded;
+	}
+	
+	/**
+	 * Getter that returns the total number of uploaded bytes (in other words bytes of pieces that pass SHA-1 verification)
+	 * @return this.uploaded
+	 */
+	public int getBytesUploaded() {
+		return this.uploaded;
+	}
+	
+	/**
+	 * Getter that returns the total number of bytes left
+	 * @return this.left
+	 */
+	public int getBytesLeft() {
+		return this.left;
+	}
+	
 	/**
 	 * TODO
 	 * @return TODO
@@ -434,7 +456,8 @@ public class Client extends Thread{
 		}
 
 		/**
-		 * queueForDownload
+		 * queueForDownload - Adds the given peer to the PieceRequester's 
+		 * 		LinkedBlockingQueue that holds all the peers that need to search a piece to download
 		 * @param peer - the peer that needs to get a piece
 		 */
 		public void queueForDownload(Peer peer) {
@@ -444,17 +467,7 @@ public class Client extends Thread{
 				//TODO something with this exception
 			}
 		}
-
-		/**
-		 * Checks to see if the bitField is all false
-		 * @param bitField The bitfield
-		 * @return true if it is all false, otherwise false
-		 */
-		private boolean isAllFalse(boolean[] bitField){
-			for(boolean b: bitField) if(b) return false;
-			return true;
-		}
-
+		
 		/**
 		 * Checks to see if the bitField is all true
 		 * @param bitField The bitfield
@@ -463,19 +476,6 @@ public class Client extends Thread{
 		private boolean isAllTrue(boolean[] bitField){
 			for(boolean b: bitField) if(!b) return false;
 			return true;
-		}
-
-		/**
-		 * Sends a Interested Message to the Peer
-		 * @param peer The Peer Object
-		 */
-		private void sendInterestedMessage(Peer peer){
-			peer.enqueueMessage(Message.interested);
-			while(!peer.amChoked()){
-				System.out.println("Client unchoke");
-				return;
-			}
-			return;
 		}
 
 		/**
@@ -500,10 +500,8 @@ public class Client extends Thread{
 					// Whatever
 				}
 			}
-			//TODO send completed event to tracker
-			client.updateDownloaded();
-			client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "completed");
-			System.out.println("UPDATE: DOWNLOAD COMPLETED");
+			this.client.updateDownloaded();
+			this.client.tracker.sendHTTPGet(this.client.uploaded, this.client.downloaded, this.client.left, "completed");
 			return;
 		}//run
 	}//PieceRequester
@@ -578,6 +576,7 @@ public class Client extends Thread{
 			peer.setPeerBooleanBitField(convert(bitfield));
 			break;
 		case 6: /* request */
+			System.out.println("=====================RECEIVED A REQUEST MESSAGE");
 			if(peer.isChokingLocal() == false) {
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
 				pieceBuffer.put(message.getPayload());
@@ -619,6 +618,7 @@ public class Client extends Thread{
 					haveMessage.have(pieceNo);
 					//write this message to all peers
 					broadcastMessage(haveMessage);
+					updateDownloaded();
 					this.pieceRequester.queueForDownload(peer);
 				} else {
 					System.err.println("...........SHA- UNSUCCESSFUL");
@@ -883,7 +883,7 @@ public class Client extends Thread{
 	private byte[] readLocalData(int pieceOffset, int blockOffset, int length) {
 		byte[] retVal = new byte[length];
 		try {
-			this.dataFile.seek(pieceOffset*this.getPieceLength(pieceOffset)+blockOffset);
+			this.dataFile.seek(pieceOffset*this.getPieceLength(0)+blockOffset);
 			this.dataFile.read(retVal);
 			return retVal;
 		} catch (IOException e) {
