@@ -82,7 +82,7 @@ public class Client extends Thread{
 	private DataOutputStream request;
 	private DataInputStream response;
 
-	private static ServerSocket listenSocket;
+	private ServerSocket listenSocket;
 
 	private ArrayList<Peer> peerList;
 	private ArrayList<Peer> peerHistory;
@@ -170,8 +170,15 @@ public class Client extends Thread{
 		return this.left;
 	}
 	
+	/**
+	 * @return The Peer History.
+	 */
 	public ArrayList<Peer> getPeerHistory(){
 		return this.peerHistory;
+	}
+	
+	public ServerSocket getListenSocket(){
+		return this.listenSocket;
 	}
 	
 	/**
@@ -528,7 +535,7 @@ public class Client extends Thread{
 		public void run(){
 			while(true){
 				try {
-					final Socket peerSocket = listenSocket.accept();
+					final Socket peerSocket = client.getListenSocket().accept();
 					System.out.println("Server Socket Connection");
 					Peer peer = new Peer(this.client, peerSocket);
 					this.client.getPeerHistory().add(peer);

@@ -423,6 +423,7 @@ public class Peer extends Thread {
 			return true;
 		}catch (EOFException e){
 			System.err.println("Tracker sending garbage to the server socket");
+			System.out.println();
 			return false;
 		}catch (IOException e) {
 			System.err.println("HANDSHAKE FAILURE!");
@@ -509,6 +510,7 @@ public class Peer extends Thread {
 				updateTimer();
 			} catch (SocketException e) {
 				System.err.println(this.peerPort + "'s socket was closed.");
+				this.RUBT.getPeerHistory().remove(this);
 			} catch (IOException e) {
 				//TODO Auto-generated catch block
 				e.printStackTrace();
