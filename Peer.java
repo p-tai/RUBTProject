@@ -579,12 +579,10 @@ public class Peer extends Thread {
 		 * @param message that needs to be added to the peerWriter's internal queue
 		 */
 		protected void enqueue(Message message) {
-			if(this.keepRunning == true) {
-				try {
-					this.messageQueue.put(message);
-				} catch (InterruptedException ie) {
-					// TODO something with this exception
-				}
+			try {
+				this.messageQueue.put(message);
+			} catch (InterruptedException ie) {
+				// TODO something with this exception
 			}
 		}// enqueue
 		

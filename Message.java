@@ -178,7 +178,7 @@ public class Message {
 	 * @param block The Data itself.
 	 */
 	public void piece(final int index, final int begin, final byte[] block){
-		ByteBuffer responseBuff = ByteBuffer.allocate(12);
+		ByteBuffer responseBuff = ByteBuffer.allocate(4+4+block.length);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);
 		responseBuff.put(block);

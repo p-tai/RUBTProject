@@ -605,7 +605,9 @@ public class Client extends Thread{
 			System.out.println("=====================RECEIVED A REQUEST MESSAGE");
 			if(peer.isChokingLocal() == false) {
 				pieceBuffer = ByteBuffer.allocate(message.getPayload().length);
+				pieceBuffer.mark();
 				pieceBuffer.put(message.getPayload());
+				pieceBuffer.reset();
 				pieceIndex = pieceBuffer.getInt();
 				int beginIndex = pieceBuffer.getInt();
 				int lengthReq = pieceBuffer.getInt();
