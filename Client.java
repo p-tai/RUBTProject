@@ -888,7 +888,7 @@ public class Client extends Thread{
 	 * @param dataOffset Where the piece is located to the file
 	 * @return true for success, otherwise false
 	 */
-	private boolean checkData(byte[] dataPiece, int dataOffset) {
+	private synchronized boolean checkData(byte[] dataPiece, int dataOffset) {
 
 		MessageDigest hasher = null;
 
@@ -905,8 +905,9 @@ public class Client extends Thread{
 			return false;
 		}
 
-		byte[] SHA1 = new byte[20];		
-		(this.torrentInfo.piece_hashes[dataOffset]).get(SHA1);
+		byte[] SHA1 = new byte[20];
+		//Read the piece hash from the torrentInfo file and put it into SHA1
+		SHA1 = ((this.torrentInfo.piece_hashes)[dataOffset]).array();
 		
 		byte[] checkSHA1 = hasher.digest(dataPiece);
 		
@@ -922,6 +923,7 @@ public class Client extends Thread{
 				return false;
 			}
 		}
+		
 		return true;
 	}
 }
