@@ -44,9 +44,11 @@ public class Client extends Thread{
 	private URL url;
 	Tracker tracker;
 	
+	
 	private String saveName;
 	private RandomAccessFile dataFile;
 
+	
 	/**
 	 * The Maximum Limit of download 
 	 */
@@ -88,7 +90,9 @@ public class Client extends Thread{
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	// just use removeFirst() to dequeue and addLast() to enqueue
 	private PieceRequester pieceRequester;
-
+	private Timer requestTracker = new Timer();
+	long lastRequestSent;
+	
 	private boolean keepReading;
 
 	/**
@@ -364,54 +368,6 @@ public class Client extends Thread{
 		this.pieceRequester.start();
 	}
 
-	private static class requestTracker extends Thread{
-		private Timer requestTracker = new Timer();
-		long lastRequestSent = System.currentTimeMillis();
-
-		/**
-		 * RequestTracker Object
-		 */
-		public requestTracker(){
-			/* DO NOTHING */
-		}
-
-		/**
-		 * Sending the HTTP GET Request to the Tracker
-		 * @param client The Client Object
-		 */
-		public void run(final Client client){
-
-			this.requestTracker.scheduleAtFixedRate(new TimerTask() {
-
-				/**
-				 * Sends the HTTP GET Request to the tracker based on
-				 * the tracker interval. It 
-				 */
-				public void run() {
-					if(System.currentTimeMillis() - lastRequestSent > client.tracker.getInterval()){
-						client.updateDownloaded();
-						ArrayList<Peer> peerList = client.tracker.sendHTTPGet(client.uploaded, client.downloaded, client.left, "");
-						if(peerList == null){
-							return;
-						}
-
-						ArrayList<Peer> peerHistory = client.peerHistory;
-						if(!peerList.isEmpty()){
-							for(Peer peer: peerList) {
-								if(!peerHistory.contains(peer)){
-									peerHistory.add(peer);
-									peer.start();
-								}
-							}	
-						}
-
-					}//end of if 
-				}//end of void run()
-
-			}, new Date(), client.interval);
-		}// end of run
-	}//end of requestTracker method
-
 	/**
 	 * ConnectToPeers will go through the current list of peers and connect to them
 	 */
@@ -425,9 +381,7 @@ public class Client extends Thread{
 		for(Peer peer: this.peerList) {
 			peer.start();
 		}
-
-		//Start the Request the peers list from the tracker
-		(new requestTracker()).run(this);
+		
 		//create and start running the piece requester
 		this.start();
 	}
@@ -512,6 +466,34 @@ public class Client extends Thread{
 	 */
 	public void run(){
 		this.keepReading = true;
+		
+		this.lastRequestSent = System.currentTimeMillis();
+		
+		//Start the request tracker which will run every interval (as defined by the tracker) to update the peerlist and dl/ul/left stats
+		this.requestTracker.scheduleAtFixedRate(new TimerTask() {
+			/**
+			 * Sends the HTTP GET Request to the tracker based on
+			 * the tracker interval. It 
+			 */
+			public void run() {
+				Client.this.updateDownloaded();
+				ArrayList<Peer> peerList = Client.this.tracker.sendHTTPGet(Client.this.uploaded, Client.this.downloaded, Client.this.left, "");
+				if(peerList == null){
+					return;
+				}
+
+				ArrayList<Peer> peerHistory = Client.this.peerHistory;
+				if(!peerList.isEmpty()){
+					for(Peer peer: peerList) {
+						if(!peerHistory.contains(peer)){
+							peerHistory.add(peer);
+							peer.start();
+						}
+					}	
+				}
+			}//end of void run()
+		}, new Date(), Client.this.interval);
+
 		while(this.keepReading) {
 			readQueue();
 		}
@@ -751,12 +733,14 @@ public class Client extends Thread{
 	 * TODO
 	 */
 	public void shutdown() {
+		this.keepReading = false;
 		//iter all peers, shut down
 		Iterator<Peer> iter = this.peerHistory.iterator();
 		for(int i = 0; i < this.peerList.size(); i++){
 			this.peerList.get(i).shutdownPeer();
 		}
 		try{
+			this.requestTracker.cancel();
 			this.messagesQueue.put(new MessageTask((Peer)null, Message.KILL_PEER_MESSAGE));
 		} catch (InterruptedException ie) {
 			//Don't care, shutting down

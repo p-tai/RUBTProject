@@ -24,6 +24,7 @@ public class Peer extends Thread {
 	private final byte[] torrentSHA;
 	private final String peerIP;
 	private int peerPort;
+	private boolean keepRunning;
 	
 	private int concurrentSends;
 	private int concurrentRequests;
@@ -96,6 +97,7 @@ public class Peer extends Thread {
 		this.recentBytesUploaded = 0;
 		this.concurrentSends = 0;
 		this.concurrentRequests = 0;
+		this.keepRunning = true;
 	}
 
 	/*********************************
@@ -537,7 +539,7 @@ public class Peer extends Thread {
 
 	/**
 	 * Main runnable thread process for the peer class. Will connect and
-	 * handshake continously try to read from the incoming socket.
+	 * handshake continuously try to read from the incoming socket.
 	 */
 	public void run() {
 
@@ -601,7 +603,7 @@ public class Peer extends Thread {
 		try {
 			// while the socket is connected
 			// read from socket (will block if it is empty) and parse message
-			while (readSocketInputStream()) {
+			while(this.keepRunning && readSocketInputStream()) {
 				// Update the PEER TIMEOUT timer to a new value (because we
 				// received a packet).
 				updatePeerTimeoutTimer();
@@ -618,16 +620,16 @@ public class Peer extends Thread {
 	 * sockets.
 	 */
 	public void shutdownPeer() {
-		// to be implemented
+		this.keepRunning = false;
+		// kill the writer thread with a poison message
+		this.writer.enqueue(Message.KILL_PEER_MESSAGE);
+		
 		// close all input/output streams and then close the socket to peer.
 		try {
 
 			// kill the I/O streams
 			this.incoming.close();
 			this.outgoing.close();
-
-			// kill the writer thread with a poison message
-			this.writer.enqueue(Message.KILL_PEER_MESSAGE);
 
 			// kill the socket
 			this.peerConnection.close();
