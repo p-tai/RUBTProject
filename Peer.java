@@ -355,18 +355,18 @@ public class Peer extends Thread {
 	 * sets up the input and output streams of the socket.
 	 */
 	public void initializePeerStreams() {
-		System.out.println("Connecting to " + this.peerIDString);
+		System.out.println("Connecting to " + this);
 
 		try {
 			if (this.peerConnection == null) {
 				this.peerConnection = new Socket(this.peerIP, this.peerPort);
 			}
 
-			System.out.println("Opening Output Stream to " + this.peerIDString);
+			System.out.println("Opening Output Stream to " + this);
 			this.outgoing = new DataOutputStream(
 					this.peerConnection.getOutputStream());
 
-			System.out.println("Opening Input Stream to " + this.peerIDString);
+			System.out.println("Opening Input Stream to " + this);
 			this.incoming = new DataInputStream(
 					this.peerConnection.getInputStream());
 
@@ -397,7 +397,7 @@ public class Peer extends Thread {
 
 			if (this.peerIDString != null) {
 				System.out.println("\nSENDING A HANDSHAKE TO"
-						+ this.peerIDString + "\n");
+						+ this + "\n");
 			}
 
 			this.outgoing.write(Message.handshakeMessage(infoHash,
@@ -631,7 +631,7 @@ public class Peer extends Thread {
 
 		if (handshake(this.torrentSHA) == true) {
 			System.out.println("HANDSHAKE RECEIVED");
-			System.out.println("FROM:" + this.peerIDString);
+			System.out.println("FROM:" + this);
 			// Send Bitfield to Peer
 			if (this.RUBT.downloaded != 0) {
 				Message bitfieldMessage = this.RUBT.generateBitfieldMessage();
