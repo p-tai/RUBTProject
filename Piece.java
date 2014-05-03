@@ -7,7 +7,7 @@ public class Piece {
 	//private fields
 	private int pieceNumber;
 	private int bytesWritten;
-	//Used a byte[] instead of a bytebuffer
+	//Used a byte[] instead of a bytebuffer, will contain all the pieces
 	private byte[] dataBuffer;
 	
 	
@@ -47,14 +47,14 @@ public class Piece {
 	}//writeToBuffer
 	
 	/**
-	 * @return Checks if the buffer has been filled with valid data
+	 * @return Checks if the number of bytes written is equal to the length of the piece
 	 */
 	public boolean isFull(){
 		return (this.dataBuffer.length==this.bytesWritten);
 	}
 	
 	/**
-	 * @return The piece index 
+	 * @return The zero-based piece index of the current piece
 	 */
 	public int getPieceIndex(){
 		return this.pieceNumber;
