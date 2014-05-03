@@ -82,7 +82,6 @@ public class Message {
 	 * @return The Peer Message Payload 
 	 * (everything after the length and class ID in the BT message)
 	 */
-	 */
 	public byte[] getPayload() {
 		return this.payload;
 	}

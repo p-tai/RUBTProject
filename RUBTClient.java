@@ -162,7 +162,6 @@ public class RUBTClient extends Thread{
 			return;
 		}
 		
-		//Connect the tracker
 		System.out.println("Handshaking with PEERS");
 		client.connectToPeers();
 		sleep(1000);

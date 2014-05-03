@@ -19,7 +19,7 @@ public class Peer extends Thread {
 	private final static int MAX_CONCURRENT_SENDS = 2;
 	private final Client RUBT;
 	private final byte[] clientID;
-	private final byte[] peerID;
+	private byte[] peerID;
 	private String peerIDString;
 	private final byte[] torrentSHA;
 	private final String peerIP;
@@ -89,6 +89,33 @@ public class Peer extends Thread {
 		this.remoteInterested = false;
 		this.torrentSHA = this.RUBT.getHash();
 		this.peerConnection = null;
+		this.uploadRate = 0.0;
+		this.downloadRate = 0.0;
+		this.recentBytesDownloaded = 0;
+		this.recentBytesUploaded = 0;
+		this.concurrentSends = 0;
+		this.concurrentRequests = 0;
+		this.keepRunning = true;
+	}
+	
+	/**
+	 * Peer's Constructor
+	 * @param RUBT The Client Object.
+	 * @param socket The connection between the Client and Peer.
+	 */
+	public Peer(Client RUBT, Socket socket){
+		this.RUBT = RUBT;
+		this.clientID = RUBT.getClientID();
+		this.peerID = new byte[20];
+		this.peerBooleanBitField = new boolean[RUBT.getNumPieces()];
+		this.peerIP = null;
+		this.peerPort = socket.getPort();
+		this.localChoking = true;
+		this.localInterested = false;
+		this.remoteChoking = true;
+		this.remoteInterested = false;
+		this.torrentSHA = this.RUBT.getHash();
+		this.peerConnection = socket;
 		this.uploadRate = 0.0;
 		this.downloadRate = 0.0;
 		this.recentBytesDownloaded = 0;
@@ -210,13 +237,6 @@ public class Peer extends Thread {
 		if (this.pieceInProgress.isFull()) {
 			this.pieceInProgress = null;
 		}
-	}
-
-	private boolean isAllTrue(boolean[] blocks) {
-		for (boolean b : blocks)
-			if (!b)
-				return false;
-		return true;
 	}
 
 	/*********************************
@@ -352,39 +372,60 @@ public class Peer extends Thread {
 	 */
 	private boolean handshake(byte[] infoHash) {
 		try {
-			// Sends an outgoing message to the connected Peer.
-			System.out.println("\nSENDING A HANDSHAKE TO" + this.peerIDString
-					+ "\n");
+			// Sends handshake message to the Peer.
+			
+			if(this.peerIDString != null){
+				System.out.println("\nSENDING A HANDSHAKE TO" + this.peerIDString
+						+ "\n");	
+			}
+			
 			this.outgoing.write(Message.handshakeMessage(infoHash, this.clientID));
 			this.outgoing.flush();
 
-			// Allocate space for the response and read it
+			// Allocate space for the handshake
 			byte[] response = new byte[68];
 			byte[] hash = new byte[20];
 			this.incoming.readFully(response);
 
-			// TO DO: Check that the PEER_ID given is a VALID PEER ID
+			// Check that the PEER ID given is a VALID PEER ID
+			if(this.peerIDString != null){
+				for(int i = 0; i < 20; i++){
+					if(this.peerID[i] != response[48 + i]){
+						System.err.println("Invalid Peer ID. Disconnect!");
+						return false;
+					}
+				}
+			}
+			
+			// Saving the Peer SHA-1 Hash 
 			for (int i = 0; i < 20; i++) {
 				hash[i] = response[28 + i];
 			}
 
-			// System.out.println("Verify the SHA-1 HASH");
-
-			// Check the peer's SHA-1 hash matches local SHA-1 hash
+			// This Peer connect to the Client the Server Socket.
+			if(this.peerIDString == null){
+				// Saving the Peer ID.
+				for (int i = 0; i < 20; i++){
+					this.peerID[i] = response[48 + i];
+				}
+				try {
+					this.peerIDString = new String(peerID, "UTF-8");
+				} catch (UnsupportedEncodingException e) {}	
+			}
+			
+			// Check the peer's SHA-1 hash matches with local SHA-1 hash
 			for (int i = 0; i < 20; i++) {
 				if (this.torrentSHA[i] != hash[i]) {
-					// System.err.println("THE SHA-1 HASH IS INCORRECT!");
+					System.err.println("The Peer's SHA-1 does not match with the Client!");
 					return false;
 				}
 			}
-
-			// System.out.println("THE SHA-1 HASH IS CORRECT!");
 			return true;
-
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.out.println("HANDSHAKE FAILURE!");
+		}catch (EOFException e){
+			System.err.println("Tracker sending garbage to the server socket");
+			return false;
+		}catch (IOException e) {
+			System.err.println("HANDSHAKE FAILURE!");
 			return false;
 		}
 	}
@@ -397,8 +438,8 @@ public class Peer extends Thread {
 	 */
 	public void updatePeerBitfield(int pieceIndex) {
 		if (pieceIndex >= this.peerBooleanBitField.length) {
-			System.out.println("ERROR: UPDATING PEER BIT FIELD");
-			System.out.println("INVALID PIECE INDEX");
+			System.err.println("ERROR: UPDATING PEER BIT FIELD");
+			System.err.println("INVALID PIECE INDEX");
 			return;
 		}
 
@@ -543,23 +584,38 @@ public class Peer extends Thread {
 
 		// Check if the peer exists. If not, connect. If it does, just keep the
 		// current socket (they handshaked with us)
+		
 		if (this.peerConnection == null) {
 			connect();
-
-			if (handshake(this.torrentSHA) == true) {
-				// System.out.println("Connected to PeerID: " +
-				// Arrays.toString(this.peerID));
-				System.out.println("HANDSHAKE RECEIVED");
-				System.out.println("FROM:" + this.peerIDString);
-
-				// Send Bitfield to Peer
-				if (this.RUBT.downloaded != 0) {
-					Message bitfieldMessage = this.RUBT.generateBitfieldMessage();
-					writeToSocket(bitfieldMessage);
+		}else{
+			try{
+				// Opening Output/Input Stream
+				this.outgoing = new DataOutputStream(this.peerConnection.getOutputStream());
+				this.incoming = new DataInputStream(this.peerConnection.getInputStream());
+				if(this.peerConnection == null || this.outgoing == null || this.incoming == null){
+					System.err.println("Input/Output Stream Creation Failed ");
 				}
-			} else {
-				System.out.println("CONNECTION FAILURE");
+			}catch (UnknownHostException e){
+				System.err.println("IP address of a host could not be determined.");
+				return;
+			}catch (IOException e){
+				System.err.println("Input/Output Stream Creation Failed");
+				return;
+			}				
+		}
+		
+		if (handshake(this.torrentSHA) == true) {
+			System.out.println("HANDSHAKE RECEIVED");
+			System.out.println("FROM:" + this.peerIDString);
+
+			// Send Bitfield to Peer
+			if (this.RUBT.downloaded != 0) {
+				Message bitfieldMessage = this.RUBT.generateBitfieldMessage();
+				writeToSocket(bitfieldMessage);
 			}
+		}else{
+			// An error was thrown by the handshake method.
+			return;
 		}
 
 		// Intialize the socket writer

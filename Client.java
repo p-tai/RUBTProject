@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
@@ -18,10 +19,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-
 import java.util.Map;
 import java.util.Random;
-
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,7 +41,7 @@ public class Client extends Thread{
 	private byte[] clientID;
 	private TorrentInfo torrentInfo;
 	private URL url;
-	Tracker tracker;
+	private Tracker tracker;
 	
 	
 	private String saveName;
@@ -83,10 +82,10 @@ public class Client extends Thread{
 	private DataOutputStream request;
 	private DataInputStream response;
 
-	private ServerSocket listenSocket;
+	private static ServerSocket listenSocket;
 
 	private ArrayList<Peer> peerList;
-	ArrayList<Peer> peerHistory;
+	private ArrayList<Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	// just use removeFirst() to dequeue and addLast() to enqueue
 	private PieceRequester pieceRequester;
@@ -106,6 +105,7 @@ public class Client extends Thread{
 		this.torrentInfo = torrent;
 		this.url = this.torrentInfo.announce_url;
 		this.createFile();
+		this.peerHistory = new ArrayList<Peer>();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
@@ -131,6 +131,7 @@ public class Client extends Thread{
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		this.userQuit = false;
+		this.peerHistory = new ArrayList<Peer>();
 		//ToolKit.print(this.blocks);
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
 		updateDownloaded();
@@ -167,6 +168,10 @@ public class Client extends Thread{
 	 */
 	public int getBytesLeft() {
 		return this.left;
+	}
+	
+	public ArrayList<Peer> getPeerHistory(){
+		return this.peerHistory;
 	}
 	
 	/**
@@ -315,6 +320,8 @@ public class Client extends Thread{
 			try {
 				this.listenSocket = new ServerSocket(Integer.valueOf(new String("688" + i)));
 				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)));
+				//Start listing for peer connection by the Server Socket.
+				(new ServerSocketConnection(this)).start();
 				return Integer.valueOf(new String("688" + i));
 			} catch (NumberFormatException e) {
 				/* DO NOTHING */
@@ -498,6 +505,43 @@ public class Client extends Thread{
 			readQueue();
 		}
 	}
+	
+	private static class ServerSocketConnection extends Thread{
+		
+		/**
+		 * The Client Object.
+		 */
+		private Client client;
+		
+		/**
+		 * ServerSocketConnection Object.
+		 * @param client The Client Object.
+		 */
+		public ServerSocketConnection(Client client){
+			this.client = client;
+		}
+		
+		/**
+		 * Checking to see if any peer is connection to the client
+		 * by the server socket.
+		 */
+		public void run(){
+			while(true){
+				try {
+					final Socket peerSocket = listenSocket.accept();
+					System.out.println("Server Socket Connection");
+					Peer peer = new Peer(this.client, peerSocket);
+					this.client.getPeerHistory().add(peer);
+					peer.start();
+				}catch (IOException e) {
+					System.err.println("ERROR: ServerSocket");
+				}
+				
+			}
+		}
+	}
+	
+	
 
 	private void readQueue(){
 		MessageTask messageFromPeer;
