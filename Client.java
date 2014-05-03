@@ -69,7 +69,7 @@ public class Client extends Thread{
 	private ServerSocket listenSocket;
 
 	private ArrayList<Peer> peerList;
-	private ArrayList<Peer> peerHistory;
+	protected ArrayList<Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	private PieceRequester pieceRequester;
 	private Timer requestTracker = new Timer();

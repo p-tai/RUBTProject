@@ -23,7 +23,7 @@ public class Peer extends Thread {
 	private final byte[] torrentSHA;
 	private final String peerIP;
 	private int peerPort;
-	private boolean keepRunning;
+	boolean keepRunning;
 
 	private int concurrentSends;
 	private int concurrentRequests;
@@ -563,6 +563,7 @@ public class Peer extends Thread {
 
 		private LinkedBlockingQueue<Message> messageQueue;
 		private boolean keepRunning = true;
+		private Peer peer;
 		
 		/**
 		 * PeerWriter Constructor
@@ -570,7 +571,8 @@ public class Peer extends Thread {
 		 * @param outgoing
 		 *            the stream to write out all data to
 		 */
-		public PeerWriter(DataOutputStream outgoing) {
+		public PeerWriter(Peer self) {
+			this.peer = self;
 			this.messageQueue = new LinkedBlockingQueue<Message>();
 		}// peerWriter constructor
 
@@ -602,19 +604,15 @@ public class Peer extends Thread {
 
 			// if the queue contains a poison, exit the thread, otherwise just
 			// keep going
-			while (this.keepRunning) {
+			while (this.peer.keepRunning) {
 				try {
 					final Message current = this.messageQueue.take();
-
-					if (current == Message.KILL_PEER_MESSAGE) {
-						this.keepRunning = false;
-						continue;
-					}
 					Peer.this.writeToSocket(current);
 				} catch (InterruptedException ie) {
 					// Whatever
 				}
 			}
+			System.out.println(this + "Main Writer thread");
 
 		}// run
 
@@ -643,7 +641,7 @@ public class Peer extends Thread {
 		}
 
 		// Intialize the socket writer
-		this.writer = new PeerWriter(this.outgoing);
+		this.writer = new PeerWriter(this);
 		this.writer.start();
 
 		/**
@@ -685,16 +683,19 @@ public class Peer extends Thread {
 		try {
 			// while the socket is connected
 			// read from socket (will block if it is empty) and parse message
-			while (this.keepRunning && readSocketInputStream()) {
+			while (this.keepRunning) {
 				// Update the PEER TIMEOUT timer to a new value (because we
 				// received a packet).
-				updatePeerTimeoutTimer();
+				if(readSocketInputStream()) {
+					updatePeerTimeoutTimer();
+				}
 			}// while
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}// try
-
+		System.out.println(this + "Main reader thread");
+		
 	}// run
 
 	/**
@@ -702,10 +703,10 @@ public class Peer extends Thread {
 	 * sockets.
 	 */
 	public void shutdownPeer() {
+		System.out.println(this + "At the shutdown method.");
 		this.keepRunning = false;
-		// kill the writer thread with a poison message
-		this.writer.enqueue(Message.KILL_PEER_MESSAGE);
-
+		// cancel all the timers
+		this.peerTimer.cancel();
 		// close all input/output streams and then close the socket to peer.
 		try {
 			// kill the I/O streams
@@ -713,9 +714,6 @@ public class Peer extends Thread {
 			this.outgoing.close();
 			// kill the socket
 			this.peerConnection.close();
-			// cancel all the timers
-			this.peerTimer.cancel();
-
 		} catch (Exception e) {
 			System.out.println("exception");
 			// Doesn't matter because the peer is closing anyway
