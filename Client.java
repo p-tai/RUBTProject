@@ -32,6 +32,11 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
 //DEFINITION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
+/**
+ * @author Paul Tai
+ * @author Alex Zhang
+ * @author Anthony Wong
+ */
 public class Client extends Thread{
 
 	private byte[] clientID;
