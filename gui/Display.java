@@ -33,13 +33,21 @@ public class Display extends JFrame{// implements ActionListener{
 			{new Integer(9), new Integer(10), new Integer(80), new Integer(70), new Integer(20)}
 		}; //end of data
 
-		String[] columns = {"IP", "Port", "Download Rate", "Upload Rate", "Percentage Complete"};
+		String[] columns = {"IP", "Port", "Download Rate", "Upload Rate", "Percentage"};
 
 		quitmebutt = new JButton("QUIT ME");
+		quitmebutt.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+
+				//shutdown hook
+
+			}//end of actionPerformed
+		});//end of quitmebutt listener
 		add(quitmebutt);
 		
 
-		table = new JTable(pt_data, columns);	
+		MyTableModel model = new MyTableModel(pt_data, columns);
+		table = new JTable(model);	
 		add(new JScrollPane(table));
 		
 		/*
