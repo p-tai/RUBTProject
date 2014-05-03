@@ -473,7 +473,7 @@ public class Peer extends Thread {
 
 	/**
 	 * enqueueMessage: Method for the client to reach the linkedblockingqueue
-	 * that will hold all messages
+	 * that will hold all outbound messages
 	 * 
 	 * @param message
 	 *            TODO
@@ -542,7 +542,7 @@ public class Peer extends Thread {
 				System.err.println(this
 						+ "'s socket was closed. (SocketException)");
 				this.writer.clearQueue();
-				this.writer.enqueue(Message.KILL_PEER_MESSAGE);
+				this.enqueueMessage(Message.KILL_PEER_MESSAGE);
 				this.RUBT.getPeerHistory().remove(this);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -560,7 +560,8 @@ public class Peer extends Thread {
 
 		private LinkedBlockingQueue<Message> messageQueue;
 		private DataOutputStream outgoing;
-
+		private boolean keepRunning = true;
+		
 		/**
 		 * PeerWriter Constructor
 		 * 
@@ -570,15 +571,15 @@ public class Peer extends Thread {
 		public PeerWriter(DataOutputStream outgoing) {
 			this.outgoing = outgoing;
 			this.messageQueue = new LinkedBlockingQueue<Message>();
-		}// peerWriter constuctor
+		}// peerWriter constructor
 
 		/**
 		 * Public method to add a message to the peerWriter's internal queue
 		 * 
 		 * @param message that needs to be added to the peerWriter's internal queue
 		 */
-		public void enqueue(Message message) {
-			if(this.keepRunning = true) {
+		protected void enqueue(Message message) {
+			if(this.keepRunning == true) {
 				try {
 					this.messageQueue.put(message);
 				} catch (InterruptedException ie) {
@@ -593,8 +594,6 @@ public class Peer extends Thread {
 		public void clearQueue(){
 			this.messageQueue.clear();
 		}
-
-		private boolean keepRunning = true;
 
 		/**
 		 * Main runnable thread for the peerWriter private class
@@ -684,6 +683,7 @@ public class Peer extends Thread {
 			}// run
 		}, 2000, 2000); // peerTimeout timer
 
+		//Main part of the thread, will repeatedly read from the input stream of the socket
 		try {
 			// while the socket is connected
 			// read from socket (will block if it is empty) and parse message
@@ -728,33 +728,31 @@ public class Peer extends Thread {
 
 		int length;
 
-		// Check if the connection still exists. If not, return false
+		//Check if the connection still exists. If not, return false
 		try {
 			length = this.incoming.readInt();
 		} catch (EOFException e) {
-			System.err.println(this + "'s socket was closed. (EOF)");
+			System.err.println(this + " socket closed. (EOF)");
 			return false;
 		} catch (SocketException e) {
-			System.err
-					.println(this + "'s socket was closed. (SocketException)");
+			System.err.println(this + " socket closed. (SocketException)");
 			return false;
 		}
-		// System.out.println("Length = " + length);
+		
 		byte classID;
 		Message incomingMessage = null;
 
 		if (length == 0) {
-			// keep alive is the only packet you can receive with length zero
+			//keep alive is the only packet you can receive with length zero
 			incomingMessage = Message.keepAlive;
 			this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
 		} else if (length > 0) {
-
 			// Read the next byte (this should be the classID of the message)
 			classID = this.incoming.readByte();
-			incomingMessage = new Message(length, classID);
 			// Debug statement
-			// System.out.println("Received " + Message.getMessageID(classID) +
-			// " Message "+this);
+			System.out.println("Received " + Message.getMessageID(classID).toUpperCase() +
+					" message "+this);
+			incomingMessage = new Message(length, classID);
 
 			// Length includes the classID. We are using length to determine how
 			// many bytes are left.
@@ -766,22 +764,18 @@ public class Peer extends Thread {
 				incomingMessage = Message.choke;
 				this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
 				break;
-
 			case 1: // unchoke message
 				incomingMessage = Message.unchoke;
 				this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
 				break;
-
 			case 2: // interested message
 				incomingMessage = Message.interested;
 				this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
 				break;
-
 			case 3: // not interested message
 				incomingMessage = Message.uninterested;
 				this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
 				break;
-
 			case 4:
 			case 5:
 			case 6:
@@ -814,14 +808,14 @@ public class Peer extends Thread {
 				incomingMessage.setPayload(temp);
 				this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
 				break;
-			/*
-			 * case 8: //Cancel message int reIndex = this.incoming.readInt();
-			 * int reOffset = this.incoming.readInt(); int reLength =
-			 * this.incoming.readInt();
-			 * 
-			 * incomingMessage.cancel(reIndex,reOffset,reLength);
-			 * this.RUBT.queueMessage(incomingTask); break;
-			 */
+				/*
+				 * case 8: //Cancel message int reIndex = this.incoming.readInt();
+				 * int reOffset = this.incoming.readInt(); int reLength =
+				 * this.incoming.readInt();
+				 * 
+				 * incomingMessage.cancel(reIndex,reOffset,reLength);
+				 * this.RUBT.queueMessage(incomingTask); break;
+				 */
 			default:
 				System.err.println("Unknown class ID");
 			}// switch

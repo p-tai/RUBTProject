@@ -43,10 +43,8 @@ public class Client extends Thread{
 	private URL url;
 	private Tracker tracker;
 	
-	
 	private String saveName;
 	private RandomAccessFile dataFile;
-
 	
 	/**
 	 * The Maximum Limit of download 
@@ -56,6 +54,7 @@ public class Client extends Thread{
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
 	private boolean userQuit;
+	private boolean keepReading;
 	private boolean isSeeder;
 
 	/**
@@ -77,22 +76,17 @@ public class Client extends Thread{
 	 * The interval of sending the HTTP GET Request to the Tracker
 	 */
 	public int interval;
-
-
+	
 	private DataOutputStream request;
 	private DataInputStream response;
-
 	private ServerSocket listenSocket;
 
 	private ArrayList<Peer> peerList;
 	private ArrayList<Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
-	// just use removeFirst() to dequeue and addLast() to enqueue
 	private PieceRequester pieceRequester;
 	private Timer requestTracker = new Timer();
 	long lastRequestSent;
-	
-	private boolean keepReading;
 
 	/**
 	 * Client Constructor. Default constructor when the target output file does NOT exist.
@@ -186,7 +180,7 @@ public class Client extends Thread{
 	 * @return TODO
 	 */
 	public Message generateBitfieldMessage() {
-		Message bitfieldMessage = new Message(((int)Math.ceil(this.bitfield.length / 8.0))+1,(byte)6);
+		Message bitfieldMessage = new Message(((int)Math.ceil(this.bitfield.length / 8.0))+1,(byte)5);
 		bitfieldMessage.bitfield(convertBooleanBitfield(this.bitfield));
 		return bitfieldMessage;
 	}
@@ -275,22 +269,21 @@ public class Client extends Thread{
 				//If the datafile is not long enough, it cannot contain the correct data
 				if(offset > datafile.length()) {
 					bitfield[i] = false;
-					continue;
+				} else {
+					//Otherwise, seek to the offset and then check the data
+					datafile.seek(offset);
+
+					//In the event you are on the final piece
+					if(i == bitfield.length-1) {
+						readbyte = new byte[getPieceLength(i)];
+					}
+
+					//Read the data into the readbyte byte[]
+					datafile.read(readbyte);
+
+					//Check the data using checkData, requires the byte[] and the piece offset (which is i)
+					bitfield[i] = checkData(readbyte,i);
 				}
-				//Otherwise, seek to the offset and then check the data
-				datafile.seek(offset);
-				
-				//In the event you are on the final piece
-				if(i == bitfield.length-1) {
-					readbyte = new byte[getPieceLength(i)];
-				}
-				
-				//Read the data into the readbyte byte[]
-				datafile.read(readbyte);
-				
-				//Check the data using checkData, requires the byte[] and the piece offset (which is i)
-				bitfield[i] = checkData(readbyte,i);
-				
 			} catch(IOException e){
 				//Should not occur because the index should never be negative or out of bounds
 				System.err.println("IOEXCEPTION CHECKFILE");
@@ -806,30 +799,12 @@ public class Client extends Thread{
 	 * Client->Tracker Private Functions
 	 ********************************/
 
-	private static String URLify(String url, String queryID, String query) {
-		String base;
-		if(url==null) {
-			base = "";
-		} else{
-			base = url;
-		}
-
-		try{
-			return (base+queryID+"="+URLEncoder.encode(query, "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
-			System.out.println("URL formation error:" + e.getMessage());
-		}
-
-		return null;
-	}
-
 	/**
 	 * This function will broadcast a message to all peers
 	 */
 	private void broadcastMessage(Message message) {
 		for(Peer peer: this.peerHistory) {
 			//Iterate through all the values in the list and send the message
-			//Should check to see if the peer has not been killed because of bad messages.
 			peer.enqueueMessage(message);
 		}
 	}
