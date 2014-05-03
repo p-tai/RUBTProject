@@ -51,6 +51,7 @@ public class Message {
 	private final int length;
 	private final byte messageID;
 	private byte[] payload;
+	private int requestIndex;
 
 	/**
 	 * Constructor for Message class.
@@ -119,6 +120,13 @@ public class Message {
 	public byte getMessageID() {
 		return this.messageID;
 	}
+	
+	/**
+	 * @return
+	 */
+	public int getRequestIndex(){
+		return this.requestIndex;
+	}
 
 	/**
 	 * Get a Message String based on the Message ID
@@ -149,6 +157,7 @@ public class Message {
 	 * @param length The size of the data in integer format
 	 */
 	public void request(final int index, final int begin, final int length){
+		this.requestIndex = index;
 		ByteBuffer responseBuff = ByteBuffer.allocate(12);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);

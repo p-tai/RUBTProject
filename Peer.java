@@ -4,7 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
-
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -541,6 +541,9 @@ public class Peer extends Thread {
 			} catch (SocketException e) {
 				System.err.println(this
 						+ "'s socket was closed. (SocketException)");
+				if(payload.getMessageID() == 6){
+					this.RUBT.getDownloadsInProgess()[payload.getRequestIndex()] = false;
+				}				
 				this.writer.clearQueue();
 				this.enqueueMessage(Message.KILL_PEER_MESSAGE);
 				this.RUBT.getPeerHistory().remove(this);
