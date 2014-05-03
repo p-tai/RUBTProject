@@ -245,7 +245,7 @@ public class Peer extends Thread {
 	}
 
 	/**
-	 * TODO
+	 * Resets the internal piece buffer to null
 	 */
 	public void resetPiece() {
 		if (this.pieceInProgress.isFull()) {
@@ -330,6 +330,13 @@ public class Peer extends Thread {
 	}
 
 	/**
+	 * @return Whether or not the peer is still running
+	 */
+	public boolean isRunning() {
+		return this.keepRunning;
+	}
+	
+	/**
 	 * @return This peer's bitfield as a boolean array
 	 */
 	public boolean[] getBitfields() {
@@ -343,6 +350,14 @@ public class Peer extends Thread {
 		return this.remoteInterested;
 	}
 
+	/**
+	 * Getter for the piece in progress.
+	 * @return this.pieceInProgress 
+	 */
+	public Piece getPiece() {
+		return this.pieceInProgress;
+	}
+	
 	@Override
 	public String toString() {
 		return "(" + this.peerIP + ":" + this.peerPort + ")";
@@ -601,19 +616,20 @@ public class Peer extends Thread {
 		 * Main runnable thread for the peerWriter private class
 		 */
 		public void run() {
-			// Message current;
-
-			// if the queue contains a poison, exit the thread, otherwise just
-			// keep going
+			Message current;
+			// if the queue contains a poison, exit the thread, otherwise keep going
 			while (this.peer.keepRunning) {
 				try {
-					final Message current = this.messageQueue.take();
+					current = this.messageQueue.take();
+					if(current == Message.KILL_PEER_MESSAGE) {
+						break;
+					}
 					Peer.this.writeToSocket(current);
 				} catch (InterruptedException ie) {
 					// Whatever
 				}
 			}
-			System.out.println(this + "Main Writer thread");
+			System.out.println(this.peer + " Main Writer thread");
 
 		}// run
 
@@ -689,6 +705,8 @@ public class Peer extends Thread {
 				// received a packet).
 				if(readSocketInputStream()) {
 					updatePeerTimeoutTimer();
+				} else {
+					break;
 				}
 			}// while
 			System.out.println("Removing " + this + "from Peer History");
@@ -707,10 +725,15 @@ public class Peer extends Thread {
 	 * sockets.
 	 */
 	public void shutdownPeer() {
-		System.out.println(this + "At the shutdown method.");
+		System.out.println(this + " at the shutdown method.");
 		this.keepRunning = false;
-		// cancel all the timers
+		// cancel all the timertasks
 		this.peerTimer.cancel();
+
+		//kill off the writer
+		this.writer.clearQueue();
+		this.enqueueMessage(Message.KILL_PEER_MESSAGE);
+		
 		// close all input/output streams and then close the socket to peer.
 		try {
 			// kill the I/O streams
