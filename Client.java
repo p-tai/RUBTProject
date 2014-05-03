@@ -32,8 +32,8 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
 public class Client extends Thread{
 
 	private byte[] clientID;
-	private TorrentInfo torrentInfo;
-	private Tracker tracker;
+	protected TorrentInfo torrentInfo;
+	protected Tracker tracker;
 	
 	private String saveName;
 	private RandomAccessFile dataFile;
@@ -373,14 +373,15 @@ public class Client extends Thread{
 	}
 
 	/**
-	 *	Send a "stopped" event to the tracker
+	 *	Send a "stopped" event to the tracker, called when shutting down.
 	 */
 	public void disconnectFromTracker(){
+		//Make sure our "left" value is correct
 		this.updateLeft();
 		if(this.tracker != null) {
 			this.tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "stopped");
+			//response can be ignored because we're disconnecting anyway
 		}
-		//response can be ignored because we're disconnecting anyway
 	}
 
 	/**
@@ -511,8 +512,8 @@ public class Client extends Thread{
 				if(!peerList.isEmpty()){
 					for(Peer peer: peerList) {
 						if(!peerHistory.contains(peer)){
-							peerHistory.add(peer);
-							peer.start();
+							//peerHistory.add(peer);
+							//peer.start();
 						}
 					}	
 				}
