@@ -32,6 +32,11 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
 //DEFINITION: THERE ARE N-BLOCKS THAT MAKE THE FILES
 //THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
+/**
+ * @author Paul Tai
+ * @author Alex Zhang
+ * @author Anthony Wong
+ */
 public class Client extends Thread{
 
 	private byte[] clientID;
@@ -44,6 +49,9 @@ public class Client extends Thread{
 	private String saveName;
 	private RandomAccessFile dataFile;
 
+	/**
+	 * The Maximum Limit of download 
+	 */
 	public final static int MAXIMUMLIMT = 16384;
 	
 	private boolean[] bitfield;
@@ -87,7 +95,7 @@ public class Client extends Thread{
 
 	/**
 	 * Client Constructor. Default constructor when the target output file does NOT exist.
-	 * @param filePath Source of the torrent file
+	 * @param torrent Source of the torrent file
 	 * @param saveName The file you want to save in.
 	 */
 	public Client(TorrentInfo torrent, String saveName){
@@ -135,6 +143,10 @@ public class Client extends Thread{
 		return this.clientID;
 	}
 
+	/**
+	 * TODO
+	 * @return TODO
+	 */
 	public Message generateBitfieldMessage() {
 		Message bitfieldMessage = new Message(((int)Math.ceil(this.bitfield.length / 8.0))+1,(byte)6);
 		bitfieldMessage.bitfield(convertBooleanBitfield(this.bitfield));
@@ -318,6 +330,9 @@ public class Client extends Thread{
 		System.out.println("Sent STOPPED event to tracker");
 	}
 
+	/**
+	 * 
+	 */
 	public void startPeerDownloads() {
 		this.pieceRequester = new PieceRequester(this);
 		Iterator<Peer> iter = this.peerHistory.iterator();
@@ -685,14 +700,15 @@ public class Client extends Thread{
 	}
 
 	/**
-	 * @returns the local bitfield
+	 * @return the local bitfield
 	 */
 	public boolean[] getBitfield(){
 		return this.bitfield;
 	}
 
 	/**
-	 * @param the zero-based piece index
+	 * TODO
+	 * @param pieceIndex the zero-based piece index
 	 * @return The Torrent Piece Length.
 	 */
 	public int getPieceLength(int pieceIndex){
@@ -709,7 +725,8 @@ public class Client extends Thread{
 	}
 
 	/**
-	 * @param the zero-based piece index
+	 * TODO
+	 * @param pieceIndex the zero-based piece index
 	 * @return The number of blocks for that one piece.
 	 */
 	public int getNumBlocks(int pieceIndex) {
@@ -730,6 +747,9 @@ public class Client extends Thread{
 		return this.torrentInfo.piece_hashes.length;
 	}
 
+	/**
+	 * TODO
+	 */
 	public void shutdown() {
 		//iter all peers, shut down
 		Iterator<Peer> iter = this.peerHistory.iterator();

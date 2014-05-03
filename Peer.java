@@ -104,21 +104,32 @@ public class Peer extends Thread {
 
 	/**
 	 * The status of the Peer chocking the Client.
-	 * @param remoteChoking 
-	 * true = The Peer is Chocking the Client. Otherwise, false.
+	 * @param localChoking true = The Peer is Chocking the Client. Otherwise, false.
 	 */
 	public void setLocalChoking(boolean localChoking) {
 		this.localChoking = localChoking;
 	}
 
+	/**
+	 * TODO
+	 * @param peerConnection
+	 */
 	public void setPeerConnection(Socket peerConnection) {
 		this.peerConnection = peerConnection;
 	}
 
+	/**
+	 * TODO
+	 * @param outgoing
+	 */
 	public void setOutgoing(DataOutputStream outgoing) {
 		this.outgoing = outgoing;
 	}
 
+	/**
+	 * TODO
+	 * @param incoming
+	 */
 	public void setIncoming(DataInputStream incoming) {
 		this.incoming = incoming;
 	}
@@ -170,9 +181,11 @@ public class Peer extends Thread {
 	 * @param payload
 	 *            The payload that will be written to buffer. Should come from a
 	 *            peer message.
-	 * @param blockOffset
+	 * @param pieceOffset
 	 *            Offset to write into at the buffer - should come from a peer
 	 *            message.
+	 * @param blockOffset
+	 * 			  TODO
 	 * @return The entire contents of the buffer or null.
 	 */
 	public Piece writeToInternalBuffer(byte[] payload, int pieceOffset, int blockOffset) {
@@ -190,6 +203,9 @@ public class Peer extends Thread {
 		return this.pieceInProgress;
 	}
 
+	/**
+	 * TODO
+	 */
 	public void resetPiece() {
 		if (this.pieceInProgress.isFull()) {
 			this.pieceInProgress = null;
@@ -214,6 +230,9 @@ public class Peer extends Thread {
 		return this.peerIP;
 	}
 
+	/**
+	 * @return The Current Download Rate
+	 */
 	public double getDownloadRate() {
 		double retVal;
 		synchronized (this.DLCountLock) {
@@ -222,6 +241,9 @@ public class Peer extends Thread {
 		return retVal;
 	}
 
+	/**
+	 * @return The Current Upload Rate
+	 */
 	public double getUploadRate() {
 		double retVal;
 		synchronized (this.ULCountLock) {
@@ -294,8 +316,6 @@ public class Peer extends Thread {
 
 	/**
 	 * Opens a connection to the peer.
-	 * 
-	 * @return true for success, otherwise false
 	 */
 	public void connect() {
 		System.out.println("Connecting to " + this.peerIDString);
@@ -327,7 +347,7 @@ public class Peer extends Thread {
 	 * Send a Handshake Message to the Peer. Will also verify that the returning
 	 * handshake is valid.
 	 * 
-	 * @param byte[] containing the SHA1 of the entire file.
+	 * @param infoHash containing the SHA1 of the entire file.
 	 * @return true for success, otherwise false (i.e. the handshake failed)
 	 */
 	private boolean handshake(byte[] infoHash) {
@@ -388,6 +408,7 @@ public class Peer extends Thread {
 	/**
 	 * enqueueMessage: Method for the client to reach the linkedblockingqueue
 	 * that will hold all messages
+	 * @param message TODO
 	 */
 	public void enqueueMessage(Message message) {
 		if(this.writer != null) {
@@ -467,8 +488,7 @@ public class Peer extends Thread {
 		/**
 		 * PeerWriter Constructor
 		 * 
-		 * @param dataoutputstream
-		 *            = the stream to write out all data to
+		 * @param outgoing the stream to write out all data to
 		 */
 		public PeerWriter(DataOutputStream outgoing) {
 			this.outgoing = outgoing;
@@ -477,6 +497,7 @@ public class Peer extends Thread {
 
 		/**
 		 * Public method to add a message to the peerWriter's internal queue
+		 * @param message TODO
 		 */
 		public void enqueue(Message message) {
 			try {
