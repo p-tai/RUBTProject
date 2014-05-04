@@ -48,6 +48,9 @@ public class RUBTClient extends Thread{
 		}   
 	}
 	
+	/*
+	 * Alternative to System.exit(0); for quitting
+	 */
 	private static void shutdown(){
 		client.disconnectFromTracker();
 		client.shutdown();
