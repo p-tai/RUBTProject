@@ -27,7 +27,11 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
  * @author Anthony Wong
  */
 public class Client extends Thread{
-
+	
+	private final static int MAX_SIMUL_UPLOADS = 3;
+	private final static int MAX_NUM_UNCHOKED = 6;
+	private int currentUploads;
+	private int currentUnchoked;
 	private byte[] clientID;
 	protected TorrentInfo torrentInfo;
 	protected Tracker tracker;
@@ -93,6 +97,8 @@ public class Client extends Thread{
 		this.downloaded = 0;
 		this.uploaded = 0;
 		this.isSeeder = false;
+		this.currentUploads = 0;
+		this.currentUnchoked = 0;
 		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
 		genClientID();
@@ -116,6 +122,8 @@ public class Client extends Thread{
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
 		this.downloaded = 0;
 		this.uploaded = 0;
+		this.currentUploads = 0;
+		this.currentUnchoked = 0;
 		this.isSeeder = false;
 		updateLeft();
 		//generate a random Client ID, begins with the letters AAA
@@ -466,28 +474,40 @@ public class Client extends Thread{
 		}
 
 		/**
-		 * Request Pieces to the peers
+		 * Main thread of the PieceRequestor
+		 * Responsible for reading the current idle peers and requesting pieces
 		 */
 		public void run(){
+			//Continue until either the user quits or the program finishes downloading
 			while(this.keepDownloading) {
 				try {
+					//If we have nothing left to download, exit the loop and clear the queue
 					if(this.isAllTrue(this.client.getBitfield())) {
 						this.keepDownloading = false;
 						this.needPiece.clear();
 						continue;
 					}
 					
+					//get the next idle peer
 					Peer current = this.needPiece.take();
 					
+					//If the peer hasn't been shutdown, search for a piece
 					if(current.isRunning()) {
+						//Find the piece to download
 						int pieceIndex = this.client.findPieceToDownload(current);
 						if(pieceIndex >= 0) {
+							//Tell the client to queue all the piece messages to the given peer's Writer class
 							this.client.getPiece(pieceIndex,current);
+						} 
+						//In the event there is no piece we want to download, send uninterested if needed
+						else if (current.amInterested()){
+							//an uninterested message
+							current.enqueueMessage(Message.uninterested);
 						}
 					}
 					//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
 				} catch (InterruptedException ie) {
-					// Whatever
+					//TODO handle exception
 				}
 			}
 			this.client.updateLeft();
