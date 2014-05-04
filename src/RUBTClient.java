@@ -148,7 +148,7 @@ public class RUBTClient extends Thread{
 				}//end of else odd
 
 				System.out.println();
-				//RUBTClient.this.shutdown();
+				RUBTClient.shutdown();
 				
 			}//end of run
 		});//end of new thread runtime thingie :3

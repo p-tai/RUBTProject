@@ -5,5 +5,5 @@ RUN:
 	java -cp . src.RUBTClient project3.torrent test.avi
 
 clean:
-	rm ./src/*.class
+	rm -f ./src/*.class
 	rm -f a.img test.avi test.mp3

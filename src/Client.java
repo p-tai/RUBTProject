@@ -9,6 +9,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Random;
@@ -31,6 +32,7 @@ public class Client extends Thread{
 	
 	private final static int MAX_SIMUL_UPLOADS = 3;
 	private final static int MAX_NUM_UNCHOKED = 6;
+	private final Object counterLock = new Object();
 	private int currentUploads;
 	private int currentUnchoked;
 	private byte[] clientID;
@@ -490,18 +492,21 @@ public class Client extends Thread{
 					//get the next idle peer
 					Peer current = this.needPiece.take();
 					
-					//If the peer hasn't been shutdown, search for a piece
-					if(current.isRunning()) {
-						//Find the piece to download
-						int pieceIndex = this.client.findPieceToDownload(current);
-						if(pieceIndex >= 0) {
-							//Tell the client to queue all the piece messages to the given peer's Writer class
-							this.client.getPiece(pieceIndex,current);
-						} 
-						//In the event there is no piece we want to download, send uninterested if needed
-						else if (current.amInterested()){
-							//an uninterested message
-							current.enqueueMessage(Message.uninterested);
+					// Confirm we didn't already start downloading a piece for this peer 
+					if(current.getPiece() == null) {
+						//If the peer hasn't been shutdown, search for a piece
+						if(current.isRunning()) {
+							//Find the piece to download
+							int pieceIndex = this.client.findPieceToDownload(current);
+							if(pieceIndex >= 0) {
+								//Tell the client to queue all the piece messages to the given peer's Writer class
+								this.client.getPiece(pieceIndex,current);
+							} 
+							//In the event there is no piece we want to download, send uninterested if needed
+							else if (current.amInterested()){
+								//an uninterested message
+								current.enqueueMessage(Message.uninterested);
+							}
 						}
 					}
 					//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
@@ -546,8 +551,72 @@ public class Client extends Thread{
 					}	
 				}
 			}//end of void run()
-		}, new Date(), Client.this.interval);
+		}, Client.this.interval, Client.this.interval);
 
+		//Start the download/upload peer ranker that will decide who gets a TCP connection
+		this.requestTracker.scheduleAtFixedRate(new TimerTask() {
+			/**
+			 * Will sort the Peers based on their upload speed (to us) if we are downloading
+			 * 
+			 */
+			@Override
+			public void run() {
+				//Initialize a list to store interested peers that are not downloading
+				ArrayList<Peer> interested = new ArrayList<Peer>(Client.this.peerHistory.size());
+				Peer slowest = null;
+				synchronized(Client.this.peerHistory) {
+					//Sort the arrays by download/upload rate (depending on whether we are seeder or not)
+					Collections.sort(Client.this.peerHistory);
+					int maxIndex = Client.this.peerHistory.size()-1;
+					int count=0;
+					int index = 0;
+					
+					while(index<maxIndex) {
+						Peer current = Client.this.peerHistory.get(index); 
+						if(current.isInterestedLocal() && !current.isChokingLocal()) {
+							count++;
+							//hang onto the slowest peer...
+							if (count >= MAX_SIMUL_UPLOADS) {
+								slowest = current;
+							}
+						} else if (current.isInterestedLocal()) {
+							interested.add(current);
+						}
+						index++;
+					}
+				}
+				//If there's no one else interested, there's no reason to choke/unchoke
+				if(interested.size() < 1) {
+					synchronized (Client.this.counterLock) {
+						//choke the worst peer, if it exists
+						if(slowest != null) {
+							slowest.enqueueMessage(Message.choke);
+							slowest.setLocalChoking(true);
+							count--;
+							//If they were interested and unchoked, 
+							if(slowest.isInterestedLocal()) {
+								Client.this.currentUploads--;
+							}
+							Client.this.currentUnchoked--;
+						}
+
+						//pick random peers from the interested peers
+						Collections.shuffle(interested);
+						int index = 0;
+						while(Client.this.currentUploads < MAX_SIMUL_UPLOADS && index < interested.size()) {
+							//unchoke a random peer
+							interested.get(index).enqueueMessage(Message.unchoke);
+							interested.get(index).setLocalChoking(false);
+							Client.this.currentUnchoked++;
+							Client.this.currentUploads++;
+							index++;
+						}
+					}
+				}
+			}
+		}, 30000, 30000);
+		
+		
 		while(this.keepReading) {
 			readQueue();
 		}
@@ -616,11 +685,12 @@ public class Client extends Thread{
 		ByteBuffer pieceBuffer;
 
 		switch(message.getMessageID()){
-		case -1: /* Unofficial quit */
+		case -1: /* Unofficial quit (poison)*/
 			this.keepReading = false;
 			break;
 		case 0: /* choke */
 			peer.setRemoteChoking(true);
+			//If we were choked in the middle of downloading a piece...
 			if(peer.getPiece() != null ) {
 				//stop current download
 				this.downloadsInProgress[peer.getPiece().getPieceIndex()] = false;
@@ -637,17 +707,38 @@ public class Client extends Thread{
 			break;
 		case 2: /* interested */
 			//check the current number of choked peers and consider unchoking the peer.
-			//might want to write a method for this.
 			peer.setRemoteInterested(true);
-			//TODO: Check if you want to do this...
-			//synchronized(this.)
-			peer.setLocalChoking(false);
-			peer.enqueueMessage(Message.unchoke);
+			//If our client is choking them, consider unchoking them
+			if(peer.isChokingLocal()) {
+				synchronized(this.counterLock) {
+					//If client can support more clients, do so
+					if(this.currentUploads < MAX_SIMUL_UPLOADS && this.currentUnchoked < MAX_NUM_UNCHOKED) {
+						peer.setLocalChoking(false);
+						this.currentUploads++;
+						this.currentUnchoked++;
+						peer.enqueueMessage(Message.unchoke);
+					}
+				}
+			}
 			break;
 		case 3: /* not interested */
-			if(peer.isChokingLocal() == false) {
+			//Set remote interested to false
+			//If they are unchoked, choke them and set their choked status true
+			if((peer.isInterestedLocal()==true) && (peer.isChokingLocal() == false)) {
 				peer.setLocalChoking(true);
 				peer.enqueueMessage(Message.choke);
+				synchronized(this.counterLock) {
+					this.currentUploads--;
+					this.currentUnchoked--;
+				}
+			}
+			//If they are unchoked but not interested and send a not interested. Shouldn't occur but just in case.
+			else if(peer.isChokingLocal() == false) {
+				peer.setLocalChoking(true);
+				peer.enqueueMessage(Message.choke);
+				synchronized(this.counterLock) {
+					this.currentUnchoked--;
+				}
 			}
 			peer.setRemoteInterested(false);
 			break;
@@ -865,7 +956,7 @@ public class Client extends Thread{
 		//iter all peers, shut down
 		for(Peer peer: this.peerHistory) {
 			if(peer != null) {
-				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
+				System.out.println("Goodbye " + peer);
 				peer.shutdownPeer();
 				peer.interrupt();
 			}
