@@ -92,7 +92,7 @@ public class RUBTClient extends Thread{
 				if (line.equals(QUIT)) {    
 					RUBTClient.shutdown();
 					return;
-<<<<<<< HEAD
+					
 				}    //end of if
 			}  //end of while
 
@@ -148,7 +148,7 @@ public class RUBTClient extends Thread{
 				}//end of else odd
 
 				System.out.println();
-				RUBTClient.this.shutdown();
+				//RUBTClient.this.shutdown();
 				
 			}//end of run
 		});//end of new thread runtime thingie :3
