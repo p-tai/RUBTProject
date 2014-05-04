@@ -715,7 +715,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 			this.shutdownPeer();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}// try
 		System.out.println(this + "Main reader thread");
 		

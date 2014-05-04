@@ -505,6 +505,7 @@ public class Client extends Thread{
 						if(pieceIndex >= 0) {
 							//Tell the client to queue all the piece messages to the given peer's Writer class
 							this.client.getPiece(pieceIndex,current);
+							this.client.bitfield[pieceIndex] = true;
 						} 
 						//In the event there is no piece we want to download, send uninterested if needed
 						else if (current.amInterested()){
@@ -1046,6 +1047,7 @@ public class Client extends Thread{
 		}
 	}
 
+	
 
 	/**
 	 * @return true for success, otherwise false.
@@ -1113,31 +1115,57 @@ public class Client extends Thread{
 	 */ 
 	private int findPieceToDownload(Peer remote) {
 		synchronized (this.rarePieces) {
+			boolean[] peerBitfield = remote.getBitfields();
+						
 			int rareIndex = this.torrentInfo.piece_hashes.length;
-			//Holding indexes of the rarePiece indexes
+			//Holding indexes of the rarePiece indexes.
 			ArrayList<Integer> indexes = new ArrayList<Integer>();
 			for(int i = 0; i < this.rarePieces.length; i++){
-				if(this.rarePieces[i] >= 1 && this.rarePieces[i] < rareIndex){
+				if(peerBitfield[i] == true && 
+						this.bitfield[i] == false &&
+						this.downloadsInProgress[i] == false && 
+						this.rarePieces[i] >= 1 && this.rarePieces[i] < rareIndex){
+					
 					rareIndex = this.rarePieces[i];
 					indexes.clear();
 					indexes.add(new Integer(i));
-				}else if(this.rarePieces[i] == this.rarePieces[rareIndex]){
+					
+				}else if(peerBitfield[i] == true && 
+						this.bitfield[i] == false &&
+						this.downloadsInProgress[i] == false && 
+						this.rarePieces[i] == this.rarePieces[rareIndex]){
+					
 					indexes.add(new Integer(i));
 				}
 			}
 			
-			if(indexes.size() == 1){
-				
+			if(indexes.isEmpty()){
+				/* Pick a piece */
+				for(int i = 0; i < this.rarePieces.length; i++){
+					if(this.bitfield[i] == false && peerBitfield[i] == true){
+						return i;
+					}
+				}
+				//The peer does not have any piece.
+				return -1;
 			}
 			
-			if(this.bitfield[rareIndex] == false && 
-					remote.getBitfields()[rareIndex] == true &&
-					this.downloadsInProgress[rareIndex] == false){
-				return rareIndex;
-			}
-			
-			return -1;
+			int index = indexes.get(randomWithRange(0, indexes.size()-1));
+			this.downloadsInProgress[index] = true;
+			return index;
 		}
+	}
+	
+	/**
+	 * Picks a random number.
+	 * Cited: http://stackoverflow.com/questions/7961788/math-random-explained
+	 * @param min The lowest boundary.
+	 * @param max The highest boundary.
+	 * @return A integer between the minimum and maximum. Including the minimum and maximum.
+	 */
+	private static int randomWithRange(int min, int max){
+		int range = (max - min) + 1;
+		return (int)(Math.random() * range) + min;
 	}
 
 	/**
