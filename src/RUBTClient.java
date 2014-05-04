@@ -13,7 +13,7 @@ import javax.swing.JOptionPane;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.exceptions.BencodingException;
-import gui.Display;
+import gui.*;
 
 
 /**

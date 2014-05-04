@@ -1,6 +1,8 @@
 package gui;
 import javax.swing.*;
 import javax.swing.event.*;
+import gui.*;
+import src.*;
 
 /*
  * Taken from "endian"

@@ -9,6 +9,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 import src.*;
+//import gui.Progbar;
 
 public class Display extends JFrame{// implements ActionListener{
 	private JTextArea test;
@@ -71,7 +72,7 @@ public class Display extends JFrame{// implements ActionListener{
 					timer.stop();//yes
 					//startButton.setEnabled(true);
 					//setCursor(null); //turn off the wait cursor
-					//progressBar.setValue(pb.getMin()); // reset
+					pb.updateBar(pb.getMin()); // reset
 				}//end of if done
 			}//end of actionperformed
 		}); // end of timer maker 
