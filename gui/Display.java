@@ -14,14 +14,17 @@ public class Display extends JFrame{// implements ActionListener{
 	private Progbar pb;
 	private Timer timer;
 	private static final int ONE_SECOND = 1000;
+	private Client cli;
 
 	private JButton quitmebutt;
 	private JTable table;
 
-	public Display(){
-
+	public Display(Client clie){
 		super("RU BEAR T");
+		this.cli = clie;
+
 		setLayout(new FlowLayout());
+
 
 		pb = new Progbar();
 		pb.updateBar(50);
@@ -56,13 +59,13 @@ public class Display extends JFrame{// implements ActionListener{
 		 * bits and parts
 		 * may 3 14
 		 */
-		/*
 		//Create a timer.
+		
 		timer = new Timer(ONE_SECOND, new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
 				pb.updateBar(3);// call the getDownloaded thing here :3 
 				 
-				if (download isDone()) { // if finshed
+				if (cli.isSeeder()) { // if finshed
 					Toolkit.getDefaultToolkit().beep();//idk
 					timer.stop();//yes
 					//startButton.setEnabled(true);
@@ -71,7 +74,7 @@ public class Display extends JFrame{// implements ActionListener{
 				}//end of if done
 			}//end of actionperformed
 		}); // end of timer maker 
-		*/
+		
 		
 	}//end of display
 

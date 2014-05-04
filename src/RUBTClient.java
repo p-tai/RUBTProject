@@ -64,15 +64,16 @@ public class RUBTClient extends Thread{
 	 * Creation of the GUI, basically just starting it. 
 	 *
 	 */
-	private static void createGUI(){
+	private static void createGUI(Client cli){
 		System.out.println("START GUI\n\n\n\n\n\n\n");
 		// for now: copy all code from gui/Client.java
-		Display dis = new Display();
+		Display dis;
+		dis = new Display(cli);
 		dis.setSize(500,500);
 		dis.setResizable(false);
 		dis.setVisible(true);
 		dis.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	}
+	}//end of creategui
 	
 	/**
 	 * Cited: http://stackoverflow.com/questions/12234526/java-writing-unittest-for-exiting-a-program-when-user-type-quit-in-the-console
@@ -191,7 +192,7 @@ public class RUBTClient extends Thread{
 		
 
 		//Start running the shutdown hook as a seperate thread.
-		createGUI();
+		createGUI(client);
 		(new RUBTClient()).run(client);
 		return;
 
