@@ -8,6 +8,8 @@ package src;
  */
 
 import java.io.*;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.exceptions.BencodingException;
@@ -59,11 +61,16 @@ public class RUBTClient extends Thread{
 	}
 	
 	/**
-	 * 
+	 * Creation of the GUI, basically just starting it. 
+	 *
 	 */
 	private void createGUI(){
-		Display d = new Display();
-		
+		// for now: copy all code from gui/Client.java
+		Display dis = new Display();
+		dis.setSize(500,500);
+		dis.setResizable(false);
+		dis.setVisible(true);
+		dis.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 	
 	/**
@@ -190,3 +197,4 @@ public class RUBTClient extends Thread{
 	}//end of public static void main
 
 }//end of class
+
