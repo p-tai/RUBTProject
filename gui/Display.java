@@ -1,5 +1,6 @@
 package gui;
 import java.io.*;
+
 //import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -7,7 +8,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-import src.RUBTClient;
+import src.*;
 
 public class Display extends JFrame{// implements ActionListener{
 	private JTextArea test;
@@ -19,9 +20,9 @@ public class Display extends JFrame{// implements ActionListener{
 	private JButton quitmebutt;
 	private JTable table;
 
-	public Display(Client clie){
+	public Display(Client cli2){
 		super("RU BEAR T");
-		this.cli = clie;
+		this.cli = cli2;
 
 		setLayout(new FlowLayout());
 
@@ -70,7 +71,7 @@ public class Display extends JFrame{// implements ActionListener{
 					timer.stop();//yes
 					//startButton.setEnabled(true);
 					//setCursor(null); //turn off the wait cursor
-					progressBar.setValue(pb.getMin()); // reset
+					//progressBar.setValue(pb.getMin()); // reset
 				}//end of if done
 			}//end of actionperformed
 		}); // end of timer maker 
