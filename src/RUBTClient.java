@@ -1,23 +1,20 @@
 package src;
-/*
- * RUBTClient.java
- * Group 05:
- * Paul Tai
- * Anthony Wong
- * Alex Zhangoose
- */
 
 import java.io.*;
+
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.exceptions.BencodingException;
 import gui.*;
 
-
 /**
- * For le error checking 
+ * RUBTClient.java
+ * Group 05:
+ * @author Paul Tai
+ * @author Anthony Wong
+ * @author Alex Zhangoose
+ *
  */
 public class RUBTClient extends Thread{
 
@@ -103,10 +100,10 @@ public class RUBTClient extends Thread{
 	}
 	
 	/**
+	 * 
 	 * @param args
-	 * @throws InterruptedException
 	 */
-	public static void main(String[] args) throws InterruptedException{
+	public static void main(String[] args){
 
 		/*
 		 * "how to gracefully handle sigkill" aka armadillo
@@ -190,7 +187,11 @@ public class RUBTClient extends Thread{
 		client.start();
 		
 		//Wait for a second to make sure we finish off any handshakes
-		sleep(1000);
+		try {
+			sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+		}
 		
 		//If we are seeding, we don't need to do piece requests.
 		if(!client.isSeeder()) {

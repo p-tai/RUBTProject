@@ -1,6 +1,5 @@
 package src;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.ServerSocket;
@@ -11,17 +10,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
-
-
-//DEFINITION: THERE ARE N-BLOCKS THAT MAKE THE FILES
-//THERE ARE N-PACKETS THAT MAKE EACH BLOCKS
 
 /**
  * @author Paul Tai
@@ -180,12 +174,20 @@ public class Client extends Thread{
 		return (1.0 - (double)this.left/(double)this.torrentInfo.file_length);
 	}
 	
+	/**
+	 * Removing the peer from the peer history.
+	 * @param peer The Peer Object.
+	 */
 	public void removePeer(Peer peer){
 		synchronized (this.peerHistory) {
 			this.peerHistory.remove(peer);
 		}
 	}
 	
+	/**
+	 * Adding a peer to the peer history.
+	 * @param peer The Peer Object.
+	 */
 	public void addPeer(Peer peer){
 		synchronized (this.peerHistory) {
 			this.peerHistory.add(peer);
@@ -193,22 +195,22 @@ public class Client extends Thread{
 	}
 	
 	/**
-	 * @return
+	 * @return The ServerSocket.
 	 */
 	public ServerSocket getListenSocket(){
 		return this.listenSocket;
 	}
 	
 	/**
-	 * @return
+	 * @return The current download pieces from peers.
 	 */
 	public boolean[] getDownloadsInProgess(){
 		return this.downloadsInProgress;
 	}
 	
 	/**
-	 * TODO
-	 * @return TODO
+	 * Makes a bitfield message.
+	 * @return The bitfield message.
 	 */
 	public Message generateBitfieldMessage() {
 		Message bitfieldMessage = new Message(((int)Math.ceil(this.bitfield.length / 8.0))+1,(byte)5);
@@ -410,7 +412,6 @@ public class Client extends Thread{
 	 */
 	public void startPeerDownloads() {
 		this.pieceRequester = new PieceRequester(this);
-		Iterator<Peer> iter = this.peerHistory.iterator();
 		for(int i = 0; i < this.peerList.size(); i++){
 			this.pieceRequester.queueForDownload(this.peerList.get(i));
 		}
@@ -963,7 +964,7 @@ public class Client extends Thread{
 	}
 
 	/**
-	 * TODO
+	 * Join all the threads
 	 */
 	public void shutdown() {
 		this.keepReading = false;
@@ -1057,14 +1058,8 @@ public class Client extends Thread{
 			this.dataFile = new RandomAccessFile(this.saveName,"rw");
 			return true;
 		} catch( FileNotFoundException e) {
-			try { //If the file does not exist, create it and call createFile again
-				FileWriter fileStream = new FileWriter(this.saveName);
-				createFile();
-				return true;
-			} catch (IOException IOe) {
-				System.err.println("Error: " + IOe.getMessage());
-				return false;
-			}
+			createFile();
+			return true;
 
 		}
 	}

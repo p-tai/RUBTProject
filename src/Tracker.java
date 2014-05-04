@@ -195,7 +195,6 @@ public class Tracker {
 	 * @return The List of Peers
 	 */
 	private ArrayList<Peer> getPeerList(){/* This is based on the create() */
-		URLConnection connnection = null;
 		InputStream getStream = null;
 		HttpURLConnection httpConnection = null;
 		DataInputStream dataStream = null;

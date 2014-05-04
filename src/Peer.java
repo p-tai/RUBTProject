@@ -356,6 +356,9 @@ public class Peer extends Thread implements Comparable<Peer> {
 		return this.pieceInProgress;
 	}
 	
+	/**
+	 * "(" + this.peerIP + ":" + this.peerPort + ")"
+	 */
 	@Override
 	public String toString() {
 		return "(" + this.peerIP + ":" + this.peerPort + ")";
@@ -581,7 +584,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		/**
 		 * PeerWriter Constructor
 		 * 
-		 * @param outgoing
+		 * @param self
 		 *            the stream to write out all data to
 		 */
 		public PeerWriter(Peer self) {
@@ -927,6 +930,9 @@ public class Peer extends Thread implements Comparable<Peer> {
 		return true;
 	}
 
+	/**
+	 * Comparing the two peer based on download and upload rate.
+	 */
 	@Override
 	public int compareTo(Peer peer) {
 		if(!this.RUBT.isSeeder()) { 

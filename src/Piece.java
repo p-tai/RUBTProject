@@ -1,4 +1,5 @@
 package src;
+
 /**
  * @author Paul Tai
  * @author Alex Zhang
@@ -68,6 +69,9 @@ public class Piece {
 		return this.dataBuffer;
 	}
 	
+	/**
+	 * "Piece Number: " + this.pieceNumber + " Bytes written: " + this.bytesWritten.
+	 */
 	@Override
 	public String toString(){
 		return "Piece Number: " + this.pieceNumber + " Bytes written: " + this.bytesWritten;

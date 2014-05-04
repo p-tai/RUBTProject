@@ -1,8 +1,6 @@
 package src;
 import java.nio.ByteBuffer;
 
-//TODO Add Cancel method and function?
-
 /**
  * @author Paul Tai
  * @author Alex Zhang
@@ -123,7 +121,7 @@ public class Message {
 	}
 	
 	/**
-	 * @return
+	 * @return The index that was requested.
 	 */
 	public int getRequestIndex(){
 		return this.requestIndex;
