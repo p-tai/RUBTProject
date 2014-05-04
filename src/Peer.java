@@ -5,6 +5,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -51,7 +52,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @author Rob Moore
 	 */
 	private static final long KEEP_ALIVE_TIMEOUT = 120000;
-	private Timer peerTimer = new Timer();
+	private Timer peerTimer = new Timer(true);
 	private long lastMessageTime = System.currentTimeMillis();
 	private long lastPeerTime = System.currentTimeMillis();
 	private double downloadRate;
@@ -607,6 +608,13 @@ public class Peer extends Thread implements Comparable<Peer> {
 		}// enqueue
 		
 		/**
+		 * Public method to stop this thread from being stuck in a blocking operation
+		 */
+		public void cancel() {
+			interrupt();
+		}
+		
+		/**
 		 * Public method to empty the peerWriter's internal queue in the event the socket was closed.
 		 */
 		public void clearQueue(){
@@ -619,16 +627,16 @@ public class Peer extends Thread implements Comparable<Peer> {
 		public void run() {
 			Message current;
 			// if the queue contains a poison, exit the thread, otherwise keep going
-			while (this.peer.keepRunning) {
-				try {
+			try {
+				while (this.peer.keepRunning) {
 					current = this.messageQueue.take();
 					if(current == Message.KILL_PEER_MESSAGE) {
 						break;
 					}
 					Peer.this.writeToSocket(current);
-				} catch (InterruptedException ie) {
-					// Whatever
 				}
+			} catch (InterruptedException ie) {
+				Thread.currentThread().interrupt();
 			}
 			System.out.println(this.peer + " Main Writer thread");
 
@@ -643,13 +651,17 @@ public class Peer extends Thread implements Comparable<Peer> {
 	public void run() {
 
 		// Check if the peer exists. If not, connect. If it does, just keep the
+		if(this.keepRunning == false) {
+			return;
+		}
+		
 		// current socket (they handshaked with us)
 		initializePeerStreams();
 
 		if (handshake(this.torrentSHA) == true) {
 			System.out.println("Handshake received:" +this);
-			// Send Bitfield to Peer
-			if (this.RUBT.downloaded != 0) {
+			//If we have anything validated, we need to send a bitfield message
+			if (this.RUBT.left != this.RUBT.getFileLength()) {
 				Message bitfieldMessage = this.RUBT.generateBitfieldMessage();
 				writeToSocket(bitfieldMessage);
 			}
@@ -728,20 +740,25 @@ public class Peer extends Thread implements Comparable<Peer> {
 	public void shutdownPeer() {
 		System.out.println(this + " at the shutdown method.");
 		this.keepRunning = false;
+		
+		//kill off the writer
+		if(this.writer != null) {
+			this.writer.clearQueue();
+			this.enqueueMessage(Message.KILL_PEER_MESSAGE);
+			this.writer.cancel();
+		}
+		
 		// cancel all the timertasks
 		this.peerTimer.cancel();
 
-		//kill off the writer
-		this.writer.clearQueue();
-		this.enqueueMessage(Message.KILL_PEER_MESSAGE);
 		
 		// close all input/output streams and then close the socket to peer.
 		try {
-			// kill the I/O streams
-			this.incoming.close();
-			this.outgoing.close();
+			
 			// kill the socket
-			this.peerConnection.close();
+			if(this.peerConnection!= null) {
+				this.peerConnection.close();
+			}
 		} catch (Exception e) {
 			System.out.println("exception");
 			// Doesn't matter because the peer is closing anyway
@@ -756,13 +773,16 @@ public class Peer extends Thread implements Comparable<Peer> {
 		try {
 			length = this.incoming.readInt();
 		} catch (EOFException e) {
-			System.err.println(this + " socket closed. (EOF)");
+			if(this.keepRunning == true) {
+				System.out.println(this + " socket closed. (EOF)");
+			}
 			return false;
 		} catch (SocketException e) {
-			System.err.println(this + " socket closed. (SocketException)");
+			if(this.keepRunning == true) {
+				System.out.println(this + " socket closed. (SocketException)");
+			}
 			return false;
 		}
-		
 		byte classID;
 		Message incomingMessage = null;
 
@@ -774,7 +794,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 			// Read the next byte (this should be the classID of the message)
 			classID = this.incoming.readByte();
 			// Debug statement
-			//System.out.println("Received " + Message.getMessageID(classID).toUpperCase() + " message "+this);
+			// System.out.println("Received " + Message.getMessageID(classID).toUpperCase() + " message "+this);
 			incomingMessage = new Message(length, classID);
 
 			// Length includes the classID. We are using length to determine how
@@ -783,6 +803,8 @@ public class Peer extends Thread implements Comparable<Peer> {
 
 			// Handle the message based on the classID
 			switch (classID) {
+			case -1: //kill message
+				return false;
 			case 0: // choke message
 				incomingMessage = Message.choke;
 				this.RUBT.queueMessage(new MessageTask(this, incomingMessage));
@@ -862,26 +884,22 @@ public class Peer extends Thread implements Comparable<Peer> {
 
 		// If we have been downloading consistently...
 		if (this.uploadRate < 1000.0) {
-			// if you just started downloading, just set the rate = to the rate
-			// / 2 seconds
-			this.uploadRate = this.recentBytesUploaded / 2.0;
+			// if you just started downloading, just set the rate = to the rate/2s
+			this.uploadRate = this.recentBytesUploaded/2.0;
 		} else {
-			// Takes a weighted average of the current upload rate and the old
-			// upload rate
-			this.uploadRate = this.uploadRate * .6667
-					+ (this.recentBytesUploaded / 2.0) * .3334;
+			// Takes a weighted average of the current UL rate and the old UL rate
+			this.uploadRate = this.uploadRate*.6667
+					+ (this.recentBytesUploaded/2.0)*.3334;
 		}
 
 		// If we have been downloading consistently...
 		if (this.downloadRate < 1000.0) {
-			// if you just started downloading, just set the rate = to the rate
-			// / 2 seconds
+			// if you just started downloading, just set the rate = to the rate/2s
 			this.downloadRate = this.recentBytesDownloaded / 2.0;
 		} else {
-			// Takes a weighted average of the current download rate and the old
-			// download rate
-			this.downloadRate = this.downloadRate * .6667
-					+ (this.recentBytesDownloaded / 2.0) * .3334;
+			// Takes a weighted average of the current dl rate and the old dl rate
+			this.downloadRate = this.downloadRate*.6667
+					+ (this.recentBytesDownloaded/2.0)*.3334;
 		}
 
 		// reset the recent counter
@@ -894,10 +912,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 			this.recentBytesDownloaded = 0;
 		}
 
-		if (this.uploadRate > 0 || this.downloadRate > 1000.0)
+		if (this.uploadRate > 1000 || this.downloadRate > 1000.0)
 			System.out.format(
 					"Update rate: %.2f kBps. Download rate: %.2f kBps. %s%n",
-					(this.uploadRate / 1000.0), (this.downloadRate / 1000.0),
+					(new Double(this.uploadRate / 1000.0)), (new Double(this.downloadRate / 1000.0)),
 					this);
 	}// updateRate
 

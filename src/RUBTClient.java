@@ -142,7 +142,7 @@ public class RUBTClient extends Thread{
 				}//end of else odd
 
 				System.out.println();
-				//RUBTClient.this.shutdown();
+				RUBTClient.this.shutdown();
 				
 			}//end of run
 		});//end of new thread runtime thingie :3
@@ -179,14 +179,22 @@ public class RUBTClient extends Thread{
 		
 		System.out.println("Handshaking with PEERS");
 		client.connectToPeers();
+		
+		//start running the socket reader thread in client (main thread)
+		client.start();
+		
+		//Wait for a second to make sure we finish off any handshakes
 		sleep(1000);
+		
+		//If we are seeding, we don't need to do piece requests.
 		if(!client.isSeeder()) {
 			System.out.println("Beginning Download Thread...");
+			//Start the piece request thread.
 			client.startPeerDownloads();
 		}
 		
 
-		//Start running the shutdown hook as a seperate thread.
+		//Start running the shutdown hook as a separate thread.
 		(new RUBTClient()).run(client);
 		return;
 

@@ -77,7 +77,7 @@ public class Client extends Thread{
 	protected ArrayList<Peer> peerHistory;
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	private PieceRequester pieceRequester;
-	private Timer requestTracker = new Timer();
+	private Timer requestTracker = new Timer(true);
 	long lastRequestSent;
 
 	/**
@@ -353,11 +353,11 @@ public class Client extends Thread{
 		System.out.println("OPENING THE SOCKET: ");
 		for(int i = 1; i < 10; i++){
 			try {
-				this.listenSocket = new ServerSocket(Integer.valueOf(new String("688" + i)));
+				this.listenSocket = new ServerSocket(Integer.parseInt(new String("688" + i)));
 				System.out.println("PORT: " + Integer.valueOf(new String("688" + i)));
 				//Start listing for peer connection by the Server Socket.
 				(new ServerSocketConnection(this)).start();
-				return (Integer.valueOf(new String("688" + i)));
+				return (Integer.parseInt(new String("688" + i)));
 			} catch (NumberFormatException e) {
 				/* DO NOTHING */
 			} catch (IOException e) {
@@ -424,8 +424,6 @@ public class Client extends Thread{
 			peer.start();
 		}
 		
-		//create and start running the piece requester
-		this.start();
 	}
 
 	private static class PieceRequester extends Thread{
@@ -575,7 +573,7 @@ public class Client extends Thread{
 		 * by the server socket.
 		 */
 		public void run(){
-			while(true){
+			while(this.client.keepReading){
 				try {
 					final Socket peerSocket = this.client.getListenSocket().accept();
 					System.out.println("Server Socket Connection");
@@ -600,6 +598,12 @@ public class Client extends Thread{
 			//TODO some stack trace...
 			return;
 		}
+		
+		//If the poison message, stop the thread
+		if(messageFromPeer.getMessage() == Message.KILL_PEER_MESSAGE) {
+			return;
+		}
+		
 		Peer peer = messageFromPeer.getPeer();
 		Message message = messageFromPeer.getMessage();
 		//System.out.println("Reading the peer messages");
@@ -617,17 +621,26 @@ public class Client extends Thread{
 			break;
 		case 0: /* choke */
 			peer.setRemoteChoking(true);
-			//stop current download
-			//set respective flag to 0.
+			if(peer.getPiece() != null ) {
+				//stop current download
+				this.downloadsInProgress[peer.getPiece().getPieceIndex()] = false;
+				peer.resetPiece();
+				this.pieceRequester.queueForDownload(peer);
+			}
 			break;
 		case 1: /* unchoke */
-			peer.setRemoteChoking(false); 
+			peer.setRemoteChoking(false);
+			//If we were unchoked add it to the pieceRequestor queue
+			if(peer.getPiece() == null) {
+				this.pieceRequester.queueForDownload(peer);
+			}
 			break;
 		case 2: /* interested */
 			//check the current number of choked peers and consider unchoking the peer.
 			//might want to write a method for this.
 			peer.setRemoteInterested(true);
 			//TODO: Check if you want to do this...
+			//synchronized(this.)
 			peer.setLocalChoking(false);
 			peer.enqueueMessage(Message.unchoke);
 			break;
@@ -842,21 +855,30 @@ public class Client extends Thread{
 	 */
 	public void shutdown() {
 		this.keepReading = false;
-		//iter all peers, shut down
-		for(Peer peer: this.peerHistory) {
-			if(peer != null) {
-				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
-				peer.shutdownPeer();
-			}
-		}
+		this.requestTracker.cancel();
 		try{
-			System.out.println("Request");		
-			this.requestTracker.cancel();
 			System.out.println("Kill reader");
 			this.messagesQueue.put(new MessageTask((Peer)null, Message.KILL_PEER_MESSAGE));
 		} catch (InterruptedException ie) {
 			//Don't care, shutting down
 		}
+		//iter all peers, shut down
+		for(Peer peer: this.peerHistory) {
+			if(peer != null) {
+				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
+				peer.shutdownPeer();
+				peer.interrupt();
+			}
+		}
+		
+		for(Peer peer: this.peerList) {
+			if(peer != null) {
+				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
+				peer.shutdownPeer();
+				peer.interrupt();
+			}
+		}
+		
 	}
 
 	/*********************************
