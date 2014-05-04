@@ -5,7 +5,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
-import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -27,7 +26,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 	private int peerPort;
 	boolean keepRunning;
 
-	private int concurrentSends;
 	private int concurrentRequests;
 
 	private boolean[] peerBooleanBitField;
@@ -100,7 +98,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 		this.downloadRate = 0.0;
 		this.recentBytesDownloaded = 0;
 		this.recentBytesUploaded = 0;
-		this.concurrentSends = 0;
 		this.concurrentRequests = 0;
 		this.keepRunning = true;
 	}
@@ -130,7 +127,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 		this.downloadRate = 0.0;
 		this.recentBytesDownloaded = 0;
 		this.recentBytesUploaded = 0;
-		this.concurrentSends = 0;
 		this.concurrentRequests = 0;
 		this.keepRunning = true;
 	}
@@ -580,7 +576,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 	private class PeerWriter extends Thread {
 
 		private LinkedBlockingQueue<Message> messageQueue;
-		private boolean keepRunning = true;
 		private Peer peer;
 		
 		/**

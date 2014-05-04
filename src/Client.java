@@ -33,8 +33,8 @@ public class Client extends Thread{
 	private final static int MAX_SIMUL_UPLOADS = 3;
 	private final static int MAX_NUM_UNCHOKED = 6;
 	protected final Object counterLock = new Object();
-	private int currentUploads;
-	private int currentUnchoked;
+	int currentUploads;
+	int currentUnchoked;
 	private byte[] clientID;
 	private int[] rarePieces;
 	protected TorrentInfo torrentInfo;
@@ -50,7 +50,7 @@ public class Client extends Thread{
 	
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
-	private boolean keepReading;
+	boolean keepReading;
 	private boolean isSeeder;
 
 	/**

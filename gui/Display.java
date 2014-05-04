@@ -28,12 +28,12 @@ public class Display extends JFrame{// implements ActionListener{
 		setLayout(new FlowLayout());
 
 
-		pb = new Progbar();
-		pb.updateBar(50);
-		this.setContentPane(pb);
-		test = new JTextArea("Hi... testing");
-		test.setEditable(false); // i think i'm cheating here oh well
-		add(test);
+		this.pb = new Progbar();
+		this.pb.updateBar(50);
+		this.setContentPane(this.pb);
+		this.test = new JTextArea("Hi... testing");
+		this.test.setEditable(false); // i think i'm cheating here oh well
+		add(this.test);
 
 		Object[][] pt_data = {
 			{new Integer(1), new Integer(2), new Integer(50), new Integer(30), new Integer(70)},
@@ -42,19 +42,19 @@ public class Display extends JFrame{// implements ActionListener{
 
 		String[] columns = {"IP", "Port", "Download Rate", "Upload Rate", "Percentage"};
 
-		quitmebutt = new JButton("QUIT ME");
-		quitmebutt.addActionListener(new ActionListener(){
+		this.quitmebutt = new JButton("QUIT ME");
+		this.quitmebutt.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				RUBTClient.shutdown();
 				//shutdown hook
 
 			}//end of actionPerformed
 		});//end of quitmebutt listener
-		add(quitmebutt);
+		add(this.quitmebutt);
 		
 		MyTableModel model = new MyTableModel(pt_data, columns);
-		table = new JTable(model);	
-		add(new JScrollPane(table));
+		this.table = new JTable(model);	
+		add(new JScrollPane(this.table));
 		
 		/*
 		 * used http://www.math.uni-hamburg.de/doc/java/tutorial/uiswing/components/example-1dot4/ProgressBarDemo.java
@@ -63,16 +63,16 @@ public class Display extends JFrame{// implements ActionListener{
 		 */
 		//Create a timer.
 		
-		timer = new Timer(ONE_SECOND, new ActionListener() {
+		this.timer = new Timer(ONE_SECOND, new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
-				pb.updateBar(3);// call the getDownloaded thing here :3 
+				Display.this.pb.updateBar(3);// call the getDownloaded thing here :3 
 				 
-				if (cli.isSeeder()) { // if finshed
+				if (Display.this.cli.isSeeder()) { // if finshed
 					Toolkit.getDefaultToolkit().beep();//idk
-					timer.stop();//yes
+					Display.this.timer.stop();//yes
 					//startButton.setEnabled(true);
 					//setCursor(null); //turn off the wait cursor
-					pb.updateBar(pb.getMin()); // reset
+					Display.this.pb.updateBar(Display.this.pb.getMin()); // reset
 				}//end of if done
 			}//end of actionperformed
 		}); // end of timer maker 

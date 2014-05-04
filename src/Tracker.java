@@ -244,7 +244,7 @@ public class Tracker {
 		//Typecast the response of the HTTP get request
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)response.get(this.PEERS);
 		//Parse out the interval
-		this.interval = (Integer)response.get(this.INTERVALS);
+		this.interval = ((Integer)response.get(this.INTERVALS)).intValue();
 		
 		//Loop through all the peers and then parse them into the proper objects
 		for(int i = 0; i < peers.size(); i++){
@@ -254,7 +254,7 @@ public class Tracker {
 			//Filter out the desired class-related clients only
 			if(peerIPAddress.contains("128.6.171.130") || peerIPAddress.contains("128.6.171.131")){
 				//More parsing of data into the proper types
-				int port = Integer.valueOf((Integer)(peerList.get(this.PORT)));
+				int port = ((Integer)(peerList.get(this.PORT))).intValue();
 				//Create a new peer using the parsed information and then add it to the peerList
 				Peer peer = new Peer(this.client, peerID, peerIPAddress, port);
 				peerArrayList.add(peer);
