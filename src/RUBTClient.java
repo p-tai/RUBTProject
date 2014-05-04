@@ -51,7 +51,7 @@ public class RUBTClient extends Thread{
 			return null;
 		}   
 	}
-	
+
 	/**
 	 * Alternative to System.exit(0); for quitting
 	 */
