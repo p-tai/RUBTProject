@@ -608,13 +608,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 		}// enqueue
 		
 		/**
-		 * Public method to stop this thread from being stuck in a blocking operation
-		 */
-		public void cancel() {
-			interrupt();
-		}
-		
-		/**
 		 * Public method to empty the peerWriter's internal queue in the event the socket was closed.
 		 */
 		public void clearQueue(){
@@ -745,7 +738,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		if(this.writer != null) {
 			this.writer.clearQueue();
 			this.enqueueMessage(Message.KILL_PEER_MESSAGE);
-			this.writer.cancel();
+			this.writer.interrupt();
 		}
 		
 		// cancel all the timertasks
@@ -754,27 +747,23 @@ public class Peer extends Thread implements Comparable<Peer> {
 		
 		// close all input/output streams and then close the socket to peer.
 		try {
-			if(this.incoming != null) {
-				this.incoming.close();
-			}
 			
-			if(this.outgoing != null) {
-				this.incoming.close();
-			}
-			
+			// kill the socket
 			if(this.peerConnection!= null) {
 				this.peerConnection.close();
 			}
-		} catch (IOException e) {
-			//doesn't matter, closing
+		} catch (Exception e) {
+			System.out.println("exception");
+			// Doesn't matter because the peer is closing anyway
 		}
-		
 	}
 
 	private boolean readSocketInputStream() throws IOException, EOFException, SocketException {
 
-		int length = this.incoming.readInt();
-		
+		int length;
+
+		//Check if the connection still exists. If not, return false
+		length = this.incoming.readInt();
 		byte classID;
 		Message incomingMessage = null;
 

@@ -9,8 +9,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Timer;
@@ -32,10 +32,11 @@ public class Client extends Thread{
 	
 	private final static int MAX_SIMUL_UPLOADS = 3;
 	private final static int MAX_NUM_UNCHOKED = 6;
-	private final Object counterLock = new Object();
+	protected final Object counterLock = new Object();
 	private int currentUploads;
 	private int currentUnchoked;
 	private byte[] clientID;
+	private int[] rarePieces;
 	protected TorrentInfo torrentInfo;
 	protected Tracker tracker;
 	
@@ -82,6 +83,7 @@ public class Client extends Thread{
 	private Timer requestTracker = new Timer(true);
 	long lastRequestSent;
 
+
 	/**
 	 * Client Constructor. Default constructor when the target output file does NOT exist.
 	 * @param torrent Source of the torrent file
@@ -95,6 +97,8 @@ public class Client extends Thread{
 		this.peerHistory = new ArrayList<Peer>();
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.bitfield = new boolean[this.torrentInfo.piece_hashes.length];
+		this.rarePieces = new int[this.torrentInfo.piece_hashes.length];
+		Arrays.fill(rarePieces, 0);
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
 		this.downloaded = 0;
@@ -120,6 +124,8 @@ public class Client extends Thread{
 		this.bitfield = checkfile(torrent, file);
 		this.messagesQueue = new LinkedBlockingQueue<MessageTask>();
 		this.downloadsInProgress = new boolean[this.torrentInfo.piece_hashes.length];
+		this.rarePieces = new int[this.torrentInfo.piece_hashes.length];
+		Arrays.fill(rarePieces, 0);
 		this.peerHistory = new ArrayList<Peer>();
 		//ToolKit.print(this.blocks);
 		//Updates the downloaded, left, and uploaded fields that will be sent to the tracker
@@ -479,41 +485,38 @@ public class Client extends Thread{
 		 * Responsible for reading the current idle peers and requesting pieces
 		 */
 		public void run(){
-			try {
-				//Continue until either the user quits or the program finishes downloading
-				while(this.keepDownloading) {
+			//Continue until either the user quits or the program finishes downloading
+				try {
+					while(this.keepDownloading) {
 					//If we have nothing left to download, exit the loop and clear the queue
 					if(this.isAllTrue(this.client.getBitfield())) {
 						this.keepDownloading = false;
 						this.needPiece.clear();
 						continue;
 					}
-
+					
 					//get the next idle peer
 					Peer current = this.needPiece.take();
-
-					// Confirm we didn't already start downloading a piece for this peer 
-					if(current.getPiece() == null) {
-						//If the peer hasn't been shutdown, search for a piece
-						if(current.isRunning()) {
-							//Find the piece to download
-							int pieceIndex = this.client.findPieceToDownload(current);
-							if(pieceIndex >= 0) {
-								//Tell the client to queue all the piece messages to the given peer's Writer class
-								this.client.getPiece(pieceIndex,current);
-							} 
-							//In the event there is no piece we want to download, send uninterested if needed
-							else if (current.amInterested()){
-								//an uninterested message
-								current.enqueueMessage(Message.uninterested);
-							}
+					
+					//If the peer hasn't been shutdown, search for a piece
+					if(current.isRunning()) {
+						//Find the piece to download
+						int pieceIndex = this.client.findPieceToDownload(current);
+						if(pieceIndex >= 0) {
+							//Tell the client to queue all the piece messages to the given peer's Writer class
+							this.client.getPiece(pieceIndex,current);
+						} 
+						//In the event there is no piece we want to download, send uninterested if needed
+						else if (current.amInterested()){
+							//an uninterested message
+							current.enqueueMessage(Message.uninterested);
 						}
 					}
 					//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
+					}
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
 				}
-			} catch (InterruptedException ie) {
-				//TODO handle exception
-			}
 			this.client.updateLeft();
 			this.client.tracker.sendHTTPGet(this.client.uploaded, this.client.downloaded, this.client.left, "completed");
 			return;
@@ -552,6 +555,7 @@ public class Client extends Thread{
 				}
 			}//end of void run()
 		}, Client.this.interval, Client.this.interval);
+
 
 		//Start the download/upload peer ranker that will decide who gets a TCP connection
 		this.requestTracker.scheduleAtFixedRate(new TimerTask() {
@@ -621,7 +625,6 @@ public class Client extends Thread{
 			}
 		}, 30000, 30000);
 		
-		
 		while(this.keepReading) {
 			readQueue();
 		}
@@ -675,6 +678,7 @@ public class Client extends Thread{
 		
 		//If the poison message, stop the thread
 		if(messageFromPeer.getMessage() == Message.KILL_PEER_MESSAGE) {
+			this.keepReading = false;
 			return;
 		}
 		
@@ -690,12 +694,8 @@ public class Client extends Thread{
 		ByteBuffer pieceBuffer;
 
 		switch(message.getMessageID()){
-		case -1: /* Unofficial quit (poison)*/
-			this.keepReading = false;
-			break;
 		case 0: /* choke */
 			peer.setRemoteChoking(true);
-			//If we were choked in the middle of downloading a piece...
 			if(peer.getPiece() != null ) {
 				//stop current download
 				this.downloadsInProgress[peer.getPiece().getPieceIndex()] = false;
@@ -758,6 +758,7 @@ public class Client extends Thread{
 		case 5: /* bitfield */
 			byte[] bitfield = message.getPayload();
 			peer.setPeerBooleanBitField(convert(bitfield));
+			updateRarePieces(peer.getBitfields());
 			break;
 		case 6: /* request */
 			if(peer.isChokingLocal() == false) {
@@ -855,8 +856,7 @@ public class Client extends Thread{
 					return retVal;
 				}
 
-				retVal[boolIndex++] = (bits[byteIndex] >> bitIndex & 0x01) == 1 ? true
-						: false;
+				retVal[boolIndex++] = (bits[byteIndex] >> bitIndex & 0x01) == 1 ? true: false;
 			}
 		}
 		return retVal;
@@ -922,6 +922,21 @@ public class Client extends Thread{
 			return this.torrentInfo.piece_length;
 		}
 	}
+	
+	/**
+	 * Update the rarePieces array. 
+	 * Increment the rarePiece array when the peer have the piece.
+	 * @param bitfield Peer bitfields
+	 */
+	private void updateRarePieces(boolean[] bitfield){
+		synchronized (this.rarePieces) {
+			for(int i = 0; i < this.rarePieces.length; i++){
+				if(bitfield[i] == true){
+					this.rarePieces[i] += 1;
+				}
+			}	
+		}
+	}
 
 	/**
 	 * TODO
@@ -959,9 +974,10 @@ public class Client extends Thread{
 			//Don't care, shutting down
 		}
 		//iter all peers, shut down
+		this.pieceRequester.interrupt();
 		for(Peer peer: this.peerHistory) {
 			if(peer != null) {
-				System.out.println("Goodbye " + peer);
+				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
 				peer.shutdownPeer();
 				peer.interrupt();
 			}
@@ -1095,21 +1111,33 @@ public class Client extends Thread{
 	 * Checks the current bitfield and the remote bitfield for a piece to download
 	 * @return the zero based index of the piece to download, or -1 if no piece to download
 	 */ 
-	int findPieceToDownload(Peer remote) {
-		boolean[] peerBitfield = remote.getBitfields();
-		
-		for(int i = 0; i < (this.bitfield).length; i++) {
-			if(this.bitfield[i] == false && peerBitfield[i] == true && this.downloadsInProgress[i] == false) {
-				return i;
+	private int findPieceToDownload(Peer remote) {
+		synchronized (this.rarePieces) {
+			int rareIndex = this.torrentInfo.piece_hashes.length;
+			//Holding indexes of the rarePiece indexes
+			ArrayList<Integer> indexes = new ArrayList<Integer>();
+			for(int i = 0; i < this.rarePieces.length; i++){
+				if(this.rarePieces[i] >= 1 && this.rarePieces[i] < rareIndex){
+					rareIndex = this.rarePieces[i];
+					indexes.clear();
+					indexes.add(new Integer(i));
+				}else if(this.rarePieces[i] == this.rarePieces[rareIndex]){
+					indexes.add(new Integer(i));
+				}
 			}
-		}
-		
-		for(int i = 0; i < (this.bitfield).length; i++) {
-			if(this.bitfield[i]==false && peerBitfield[i] == true) {
-				return i;
+			
+			if(indexes.size() == 1){
+				
 			}
+			
+			if(this.bitfield[rareIndex] == false && 
+					remote.getBitfields()[rareIndex] == true &&
+					this.downloadsInProgress[rareIndex] == false){
+				return rareIndex;
+			}
+			
+			return -1;
 		}
-		return -1;
 	}
 
 	/**
