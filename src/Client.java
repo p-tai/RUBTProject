@@ -479,19 +479,19 @@ public class Client extends Thread{
 		 * Responsible for reading the current idle peers and requesting pieces
 		 */
 		public void run(){
-			//Continue until either the user quits or the program finishes downloading
-			while(this.keepDownloading) {
-				try {
+			try {
+				//Continue until either the user quits or the program finishes downloading
+				while(this.keepDownloading) {
 					//If we have nothing left to download, exit the loop and clear the queue
 					if(this.isAllTrue(this.client.getBitfield())) {
 						this.keepDownloading = false;
 						this.needPiece.clear();
 						continue;
 					}
-					
+
 					//get the next idle peer
 					Peer current = this.needPiece.take();
-					
+
 					// Confirm we didn't already start downloading a piece for this peer 
 					if(current.getPiece() == null) {
 						//If the peer hasn't been shutdown, search for a piece
@@ -510,9 +510,9 @@ public class Client extends Thread{
 						}
 					}
 					//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
-				} catch (InterruptedException ie) {
-					//TODO handle exception
 				}
+			} catch (InterruptedException ie) {
+				//TODO handle exception
 			}
 			this.client.updateLeft();
 			this.client.tracker.sendHTTPGet(this.client.uploaded, this.client.downloaded, this.client.left, "completed");
@@ -571,8 +571,8 @@ public class Client extends Thread{
 					int count=0;
 					int index = 0;
 					while(index<maxIndex) {
-						System.out.println("Currently reconsidering peers");
-						Peer current = Client.this.peerHistory.get(index); 
+						Peer current = Client.this.peerHistory.get(index);
+						System.out.println("Currently reconsidering peers " + current);
 						if(current.isInterestedLocal() && !current.isChokingLocal()) {
 							count++;
 							//hang onto the slowest peer...

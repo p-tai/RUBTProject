@@ -725,7 +725,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 			System.out.println("Removing " + this + "from Peer History");
 			this.RUBT.removePeer(this);
 			this.shutdownPeer();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}// try
@@ -754,35 +754,27 @@ public class Peer extends Thread implements Comparable<Peer> {
 		
 		// close all input/output streams and then close the socket to peer.
 		try {
+			if(this.incoming != null) {
+				this.incoming.close();
+			}
 			
-			// kill the socket
+			if(this.outgoing != null) {
+				this.incoming.close();
+			}
+			
 			if(this.peerConnection!= null) {
 				this.peerConnection.close();
 			}
-		} catch (Exception e) {
-			System.out.println("exception");
-			// Doesn't matter because the peer is closing anyway
+		} catch (IOException e) {
+			//doesn't matter, closing
 		}
+		
 	}
 
-	private boolean readSocketInputStream() throws IOException {
+	private boolean readSocketInputStream() throws IOException, EOFException, SocketException {
 
-		int length;
-
-		//Check if the connection still exists. If not, return false
-		try {
-			length = this.incoming.readInt();
-		} catch (EOFException e) {
-			if(this.keepRunning == true) {
-				System.out.println(this + " socket closed. (EOF)");
-			}
-			return false;
-		} catch (SocketException e) {
-			if(this.keepRunning == true) {
-				System.out.println(this + " socket closed. (SocketException)");
-			}
-			return false;
-		}
+		int length = this.incoming.readInt();
+		
 		byte classID;
 		Message incomingMessage = null;
 
