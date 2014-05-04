@@ -1,4 +1,4 @@
-//package gui;
+package gui;
 import java.io.*;
 //import java.util.*;
 import java.awt.*;
@@ -6,6 +6,8 @@ import java.awt.event.*;
 
 import javax.swing.*;
 import javax.swing.event.*;
+
+import src.RUBTClient;
 
 public class Display extends JFrame{// implements ActionListener{
 	private JTextArea test;
@@ -38,7 +40,7 @@ public class Display extends JFrame{// implements ActionListener{
 		quitmebutt = new JButton("QUIT ME");
 		quitmebutt.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-
+				RUBTClient.shutdown();
 				//shutdown hook
 
 			}//end of actionPerformed

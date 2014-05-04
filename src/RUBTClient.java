@@ -11,6 +11,7 @@ import java.io.*;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.exceptions.BencodingException;
+import gui.Display;
 
 
 /**
@@ -53,12 +54,20 @@ public class RUBTClient extends Thread{
 		}   
 	}
 	
-	/*
+	/**
 	 * Alternative to System.exit(0); for quitting
 	 */
-	private static void shutdown(){
+	public static void shutdown(){
 		client.disconnectFromTracker();
 		client.shutdown();
+	}
+	
+	/**
+	 * 
+	 */
+	private void createGUI(){
+		Display d = new Display();
+		
 	}
 	
 	/**
