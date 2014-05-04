@@ -1,5 +1,6 @@
 package gui;
 import java.io.*;
+
 //import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -7,21 +8,25 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-import src.RUBTClient;
+import src.*;
+//import gui.Progbar;
 
 public class Display extends JFrame{// implements ActionListener{
 	private JTextArea test;
 	private Progbar pb;
 	private Timer timer;
 	private static final int ONE_SECOND = 1000;
+	private Client cli;
 
 	private JButton quitmebutt;
 	private JTable table;
 
-	public Display(){
-
+	public Display(Client cli2){
 		super("RU BEAR T");
+		this.cli = cli2;
+
 		setLayout(new FlowLayout());
+
 
 		pb = new Progbar();
 		pb.updateBar(50);
@@ -56,22 +61,22 @@ public class Display extends JFrame{// implements ActionListener{
 		 * bits and parts
 		 * may 3 14
 		 */
-		/*
 		//Create a timer.
+		
 		timer = new Timer(ONE_SECOND, new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
 				pb.updateBar(3);// call the getDownloaded thing here :3 
 				 
-				if (download isDone()) { // if finshed
+				if (cli.isSeeder()) { // if finshed
 					Toolkit.getDefaultToolkit().beep();//idk
 					timer.stop();//yes
 					//startButton.setEnabled(true);
 					//setCursor(null); //turn off the wait cursor
-					progressBar.setValue(pb.getMin()); // reset
+					pb.updateBar(pb.getMin()); // reset
 				}//end of if done
 			}//end of actionperformed
 		}); // end of timer maker 
-		*/
+		
 		
 	}//end of display
 

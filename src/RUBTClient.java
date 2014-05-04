@@ -8,17 +8,15 @@ package src;
  */
 
 import java.io.*;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 import edu.rutgers.cs.cs352.bt.TorrentInfo;
 import edu.rutgers.cs.cs352.bt.exceptions.BencodingException;
-import gui.Display;
+import gui.*;
 
 
 /**
- * RUBTClient
- * @author Paul Tai
- * @author Alex Zhang
- * @author Anthony Wong
  * For le error checking 
  */
 public class RUBTClient extends Thread{
@@ -53,7 +51,7 @@ public class RUBTClient extends Thread{
 			return null;
 		}   
 	}
-	
+
 	/**
 	 * Alternative to System.exit(0); for quitting
 	 */
@@ -63,12 +61,19 @@ public class RUBTClient extends Thread{
 	}
 	
 	/**
-	 * 
+	 * Creation of the GUI, basically just starting it. 
+	 *
 	 */
-	private void createGUI(){
-		Display d = new Display();
-		
-	}
+	private static void createGUI(Client cli){
+		System.out.println("START GUI\n\n\n\n\n\n\n");
+		// for now: copy all code from gui/Client.java
+		Display dis;
+		dis = new Display(cli);
+		dis.setSize(500,500);
+		dis.setResizable(false);
+		dis.setVisible(true);
+		dis.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}//end of creategui
 	
 	/**
 	 * Cited: http://stackoverflow.com/questions/12234526/java-writing-unittest-for-exiting-a-program-when-user-type-quit-in-the-console
@@ -87,6 +92,7 @@ public class RUBTClient extends Thread{
 				if (line.equals(QUIT)) {    
 					RUBTClient.shutdown();
 					return;
+<<<<<<< HEAD
 				}    //end of if
 			}  //end of while
 
@@ -192,8 +198,8 @@ public class RUBTClient extends Thread{
 			//Start the piece request thread.
 			client.startPeerDownloads();
 		}
-		
 
+		createGUI(client);
 		//Start running the shutdown hook as a separate thread.
 		(new RUBTClient()).run(client);
 		return;
