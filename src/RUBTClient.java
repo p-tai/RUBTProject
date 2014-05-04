@@ -64,7 +64,8 @@ public class RUBTClient extends Thread{
 	 * Creation of the GUI, basically just starting it. 
 	 *
 	 */
-	private void createGUI(){
+	private static void createGUI(){
+		System.out.println("START GUI\n\n\n\n\n\n\n");
 		// for now: copy all code from gui/Client.java
 		Display dis = new Display();
 		dis.setSize(500,500);
@@ -190,6 +191,7 @@ public class RUBTClient extends Thread{
 		
 
 		//Start running the shutdown hook as a seperate thread.
+		createGUI();
 		(new RUBTClient()).run(client);
 		return;
 
