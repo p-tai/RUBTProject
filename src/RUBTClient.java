@@ -14,6 +14,10 @@ import edu.rutgers.cs.cs352.bt.exceptions.BencodingException;
 
 
 /**
+ * RUBTClient
+ * @author Paul Tai
+ * @author Alex Zhang
+ * @author Anthony Wong
  * For le error checking 
  */
 public class RUBTClient extends Thread{
