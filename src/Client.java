@@ -570,14 +570,16 @@ public class Client extends Thread{
 					int maxIndex = Client.this.peerHistory.size()-1;
 					int count=0;
 					int index = 0;
-					
 					while(index<maxIndex) {
+						System.out.println("Currently reconsidering peers");
 						Peer current = Client.this.peerHistory.get(index); 
 						if(current.isInterestedLocal() && !current.isChokingLocal()) {
 							count++;
 							//hang onto the slowest peer...
 							if (count >= MAX_SIMUL_UPLOADS) {
 								slowest = current;
+							} else {
+								System.out.println("Kept " + current.getDownloadRate() + current);
 							}
 						} else if (current.isInterestedLocal()) {
 							interested.add(current);
@@ -590,9 +592,9 @@ public class Client extends Thread{
 					synchronized (Client.this.counterLock) {
 						//choke the worst peer, if it exists
 						if(slowest != null) {
+							System.out.println("Removed " + slowest.getDownloadRate() + slowest);
 							slowest.enqueueMessage(Message.choke);
 							slowest.setLocalChoking(true);
-							count--;
 							//If they were interested and unchoked, 
 							if(slowest.isInterestedLocal()) {
 								Client.this.currentUploads--;
@@ -603,10 +605,13 @@ public class Client extends Thread{
 						//pick random peers from the interested peers
 						Collections.shuffle(interested);
 						int index = 0;
+						Peer random;
 						while(Client.this.currentUploads < MAX_SIMUL_UPLOADS && index < interested.size()) {
+							random = interested.get(index); 
+							System.out.println("Added " + random.getDownloadRate() + random);
 							//unchoke a random peer
-							interested.get(index).enqueueMessage(Message.unchoke);
-							interested.get(index).setLocalChoking(false);
+							random.enqueueMessage(Message.unchoke);
+							random.setLocalChoking(false);
 							Client.this.currentUnchoked++;
 							Client.this.currentUploads++;
 							index++;
