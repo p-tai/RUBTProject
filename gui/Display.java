@@ -1,4 +1,4 @@
-package gui;
+//package gui;
 import java.io.*;
 //import java.util.*;
 import java.awt.*;
@@ -10,7 +10,6 @@ import javax.swing.event.*;
 public class Display extends JFrame{// implements ActionListener{
 	private JTextArea test;
 	private Progbar pb;
-	private PeerTable pt; // these names are awesome
 	private Timer timer;
 	private static final int ONE_SECOND = 1000;
 
@@ -46,7 +45,6 @@ public class Display extends JFrame{// implements ActionListener{
 		});//end of quitmebutt listener
 		add(quitmebutt);
 		
-
 		MyTableModel model = new MyTableModel(pt_data, columns);
 		table = new JTable(model);	
 		add(new JScrollPane(table));
