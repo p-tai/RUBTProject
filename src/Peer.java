@@ -81,10 +81,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		try {
 			// FOR DEBUG PURPOSES ONLY (to make peer id human readable)
 			this.peerIDString = new String(peerID, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} catch (UnsupportedEncodingException e) {}
 		this.peerBooleanBitField = new boolean[RUBT.getNumPieces()];
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
@@ -143,33 +140,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 */
 	protected void setLocalChoking(boolean localChoking) {
 		this.localChoking = localChoking;
-	}
-
-	/**
-	 * TODO
-	 * 
-	 * @param peerConnection
-	 */
-	protected void setPeerConnection(Socket peerConnection) {
-		this.peerConnection = peerConnection;
-	}
-
-	/**
-	 * TODO
-	 * 
-	 * @param outgoing
-	 */
-	protected void setOutgoing(DataOutputStream outgoing) {
-		this.outgoing = outgoing;
-	}
-
-	/**
-	 * TODO
-	 * 
-	 * @param incoming
-	 */
-	protected void setIncoming(DataInputStream incoming) {
-		this.incoming = incoming;
 	}
 
 	/**
@@ -491,8 +461,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * enqueueMessage: Method for the client to reach the linkedblockingqueue
 	 * that will hold all outbound messages
 	 * 
-	 * @param message
-	 *            TODO
+	 * @param message A message to send to the peer.
 	 */
 	protected void enqueueMessage(Message message) {
 		if (this.writer != null) {
@@ -567,8 +536,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 				this.RUBT.removePeer(this);
 				this.shutdownPeer();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				//Shutting Down
 			}
 		}
 	}
@@ -603,7 +571,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 			try {
 				this.messageQueue.put(message);
 			} catch (InterruptedException ie) {
-				// TODO something with this exception
+				//Shutting Down
 			}
 		}// enqueue
 		
@@ -722,8 +690,12 @@ public class Peer extends Thread implements Comparable<Peer> {
 				System.err.println(this
 						+ "'s socket closed. Shutting down this peer.");
 			}
-			//Otherwise, you're shutting down anyway, so ignore exception
-		}// try		
+			// IOException: The peer disconnect the client. 
+			// EOFException: The Tracker is sending garbage to the client. 
+			// SocketException: The peer disconnect the client. 
+		}// try
+		System.out.println(this + "Main reader thread");
+		
 	}// run
 
 	/**
