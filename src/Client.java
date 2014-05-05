@@ -500,34 +500,34 @@ public class Client extends Thread{
 			//Continue until either the user quits or the program finishes downloading
 				try {
 					while(this.keepDownloading) {
-					//If we have nothing left to download, exit the loop and clear the queue
-					if(this.isAllTrue(this.client.getBitfield())) {
-						this.keepDownloading = false;
-						this.needPiece.clear();
-						continue;
-					}
-					
-					//get the next idle peer
-					Peer current = this.needPiece.take();
-					
-					// Confirm we didn't already start downloading a piece for this peer 
- -					if(current.getPiece() == null) {
-						//If the peer hasn't been shutdown, search for a piece
-						if(current.isRunning()) {
-							//Find the piece to download
-							int pieceIndex = this.client.findPieceToDownload(current);
-							if(pieceIndex >= 0) {
-								//Tell the client to queue all the piece messages to the given peer's Writer class
-								this.client.getPiece(pieceIndex,current);
-								this.client.bitfield[pieceIndex] = true;
-							} 
-							//In the event there is no piece we want to download, send uninterested if needed
-							else if (current.amInterested()){
-								//an uninterested message
-								current.enqueueMessage(Message.uninterested);
-							}
+						//If we have nothing left to download, exit the loop and clear the queue
+						if(this.isAllTrue(this.client.getBitfield())) {
+							this.keepDownloading = false;
+							this.needPiece.clear();
+							continue;
 						}
-						//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
+					
+						//get the next idle peer
+						Peer current = this.needPiece.take();
+					
+						// Confirm we didn't already start downloading a piece for this peer 
+						if(current.getPiece() == null) {
+						//If the peer hasn't been shutdown, search for a piece
+							if(current.isRunning()) {
+								//Find the piece to download
+								int pieceIndex = this.client.findPieceToDownload(current);
+								if(pieceIndex >= 0) {
+									//Tell the client to queue all the piece messages to the given peer's Writer class
+									this.client.getPiece(pieceIndex,current);
+									this.client.bitfield[pieceIndex] = true;
+								} 
+								//In the event there is no piece we want to download, send uninterested if needed
+								else if (current.amInterested()){
+									//an uninterested message
+									current.enqueueMessage(Message.uninterested);
+								}
+							}
+							//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
 						}
 					}
 				} catch (InterruptedException ie) {
