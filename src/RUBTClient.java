@@ -77,7 +77,7 @@ public class RUBTClient extends Thread{
 	 * User: David Wallace
 	 * Time: 4, 05, 2014
 	 */
-	public void run(Client client){
+	public void run(){
 		String line = "";
 		String QUIT = "quit";
 
@@ -202,7 +202,7 @@ public class RUBTClient extends Thread{
 
 		createGUI(client);
 		//Start running the shutdown hook as a separate thread.
-		//(new RUBTClient()).run(client);
+		(new RUBTClient()).run();
 		return;
 
 

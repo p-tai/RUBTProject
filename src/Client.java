@@ -684,7 +684,7 @@ public class Client extends Thread{
 		try{ 
 			messageFromPeer = this.messagesQueue.take();
 		} catch(InterruptedException ie) {
-			//TODO some stack trace...
+			//Shutdown Call
 			return;
 		}
 		
@@ -699,7 +699,6 @@ public class Client extends Thread{
 		//System.out.println("Reading the peer messages");
 		if(message.getLength() == 0){
 			/* Keep Alive Message */
-			//TODO
 			return;
 		}
 
@@ -842,7 +841,7 @@ public class Client extends Thread{
 			}
 			break;
 		case 8: /* cancel */
-			//TODO: Stop sending the piece if there is one?
+			//RUBT does not support Cancel message. 
 			break;
 		default:
 			System.out.println("Unknown Message");
@@ -918,7 +917,9 @@ public class Client extends Thread{
 	}
 
 	/**
-	 * TODO
+	 * Checks to see if the given pieceIndex is the last piece. If 
+	 * it is the last piece, it returns the size of the last piece. 
+	 * Otherwise, it returns back the default piece size. 
 	 * @param pieceIndex the zero-based piece index
 	 * @return The Torrent Piece Length.
 	 */
@@ -951,7 +952,7 @@ public class Client extends Thread{
 	}
 
 	/**
-	 * TODO
+	 * Find out the number of blocks there are in the torrent file. 
 	 * @param pieceIndex the zero-based piece index
 	 * @return The number of blocks for that one piece.
 	 */
