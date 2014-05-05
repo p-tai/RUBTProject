@@ -555,8 +555,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 				this.outgoing.flush();
 				updateTimer();
 			} catch (SocketException e) {
-				System.err.println(this
-						+ "'s socket was closed. (SocketException)");
+				if(this.keepRunning) {
+					System.err.println(this
+							+ "'s socket closed unexpectedly. Shutting down. (SocketException)");
+				}
 				if(payload.getMessageID() == 6){
 					this.RUBT.getDownloadsInProgess()[payload.getRequestIndex()] = false;
 				}				
@@ -629,8 +631,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 			} catch (InterruptedException ie) {
 				Thread.currentThread().interrupt();
 			}
-			System.out.println(this.peer + " Main Writer thread");
-
+			//System.out.println(this.peer + " Main Writer thread");
 		}// run
 
 	}// peerWriter
@@ -717,10 +718,12 @@ public class Peer extends Thread implements Comparable<Peer> {
 			this.RUBT.removePeer(this);
 			this.shutdownPeer();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-		}// try
-		System.out.println(this + "Main reader thread");
-		
+			if(this.keepRunning) {
+				System.err.println(this
+						+ "'s socket closed. Shutting down this peer.");
+			}
+			//Otherwise, you're shutting down anyway, so ignore exception
+		}// try		
 	}// run
 
 	/**
@@ -728,7 +731,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * sockets.
 	 */
 	protected void shutdownPeer() {
-		System.out.println(this + " at the shutdown method.");
 		this.keepRunning = false;
 		
 		//kill off the writer
@@ -738,7 +740,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 			this.writer.interrupt();
 		}
 		
-		// cancel all the timertasks
+		// cancel all the timer tasks
 		this.peerTimer.cancel();
 
 		
@@ -941,20 +943,26 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 */
 	@Override
 	public int compareTo(Peer peer) {
+		//If the Client is NOT seeding, sort by download speed, then upload speed
 		if(!this.RUBT.isSeeder()) { 
 			if (this.getDownloadRate() > peer.getDownloadRate()) {
 				return -1;
 			} else if (this.getDownloadRate() < peer.getDownloadRate()) {
 				return 1;
 			} else {
+				if (this.getUploadRate() > peer.getUploadRate()) { return -1; }
+				else if (this.getUploadRate() < peer.getUploadRate()) { return 1; }
 				return 0;
 			}
+		//If the client IS seeding, sort by upload speed, then download speed
 		} else {
 			if (this.getUploadRate() > peer.getUploadRate()) {
 				return -1;
 			} else if (this.getUploadRate() < peer.getUploadRate()) {
 				return 1;
 			} else {
+				if (this.getDownloadRate() > peer.getDownloadRate()) { return -1; }
+				else if (this.getDownloadRate() < peer.getDownloadRate()) { return 1; }
 				return 0;
 			}
 		}

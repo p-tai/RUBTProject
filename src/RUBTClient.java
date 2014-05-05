@@ -194,7 +194,7 @@ public class RUBTClient extends Thread{
 		}
 		
 		//If we are seeding, we don't need to do piece requests.
-		if(!client.isSeeder()) {
+		if(client.isSeeder() == false) {
 			System.out.println("Beginning Download Thread...");
 			//Start the piece request thread.
 			client.startPeerDownloads();

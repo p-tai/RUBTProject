@@ -24,7 +24,7 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
  */
 public class Client extends Thread{
 	
-	private final static int MAX_SIMUL_UPLOADS = 3;
+	private final static int MAX_SIMUL_UPLOADS = 2;
 	private final static int MAX_NUM_UNCHOKED = 6;
 	protected final Object counterLock = new Object();
 	private int currentUploads;
@@ -232,6 +232,7 @@ public class Client extends Thread{
 	public boolean isSeeder() {
 		return this.isSeeder;
 	}
+	
 	/**
 	 * Updates the downloaded values, left values, and uploaded values.
 	 * Returns the number of bytes that have been successfully downloaded and confirmed to be correct
@@ -270,6 +271,8 @@ public class Client extends Thread{
 		if(this.left == 0) {
 			this.isSeeder = true;
 		}
+		
+		//System.out.println(this.left + " left " + this.isSeeder);
 	}
 
 	private byte[] convertBooleanBitfield(boolean[] bitfield) {
@@ -529,6 +532,7 @@ public class Client extends Thread{
 				}
 			this.client.updateLeft();
 			this.client.tracker.sendHTTPGet(this.client.uploaded, this.client.downloaded, this.client.left, "completed");
+			
 			return;
 		}//run
 	}//PieceRequester
@@ -569,7 +573,6 @@ public class Client extends Thread{
 
 		//Start the download/upload peer ranker that will decide who gets a TCP connection
 		this.requestTracker.scheduleAtFixedRate(new TimerTask() {
-			
 			/**
 			 * Will sort the Peers based on their upload speed (to us) if we are downloading
 			 * 
@@ -980,30 +983,41 @@ public class Client extends Thread{
 		this.keepReading = false;
 		this.requestTracker.cancel();
 		try{
-			System.out.println("Kill reader");
+			//System.out.println("Kill reader");
 			this.messagesQueue.put(new MessageTask((Peer)null, Message.KILL_PEER_MESSAGE));
 		} catch (InterruptedException ie) {
 			//Don't care, shutting down
 		}
-		//iter all peers, shut down
-		this.pieceRequester.interrupt();
+		
+		//make sure you turn off the pieceRequester
+		if(this.pieceRequester != null) {
+			this.pieceRequester.interrupt();
+		}
+		
+		//iter all peers, shut down if they aren't already
 		synchronized (this.peerHistory) {
 			for(Peer peer: this.peerHistory) {
 				if(peer != null) {
-					System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
-					peer.shutdownPeer();
-					peer.interrupt();
+					if(peer.isRunning()) {
+						System.out.println("Goodbye " + peer);
+						peer.shutdownPeer();
+						peer.interrupt();
+					}
 				}
 			}	
 		}
 		
+		/*
 		for(Peer peer: this.peerList) {
 			if(peer != null) {
-				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
-				peer.shutdownPeer();
-				peer.interrupt();
+				if(peer.isRunning()) {
+					System.out.println("Goodbye " + peer);
+					peer.shutdownPeer();
+					peer.interrupt();
+				}
 			}
 		}
+		*/
 		
 	}
 
