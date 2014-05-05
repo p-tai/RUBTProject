@@ -810,7 +810,7 @@ public class Client extends Thread{
 			Piece piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
 			//Check if the piece is finished
 			if(piece.isFull()) {
-				if(!this.isSeeding) {
+				if(!this.isSeeder) {
 					System.out.println("..........FULL PIECE RECEIVED: " + pieceNo + " " +peer);
 				}
 				//Check if the payload was correct according to the SHA
