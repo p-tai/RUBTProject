@@ -1,6 +1,5 @@
 package gui;
 import java.io.*;
-
 //import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -11,7 +10,7 @@ import javax.swing.event.*;
 import src.*;
 //import gui.Progbar;
 
-public class Display extends JFrame{// implements ActionListener{
+public class Display extends JFrame implements ActionListener{// implements ActionListener{
 	private JTextArea test;
 	private Progbar pb;
 	private Timer timer;
@@ -43,13 +42,7 @@ public class Display extends JFrame{// implements ActionListener{
 		String[] columns = {"IP", "Port", "Download Rate", "Upload Rate", "Percentage"};
 
 		this.quitmebutt = new JButton("QUIT ME");
-		this.quitmebutt.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent e){
-				RUBTClient.shutdown();
-				//shutdown hook
-
-			}//end of actionPerformed
-		});//end of quitmebutt listener
+		this.quitmebutt.addActionListener(this);
 		add(this.quitmebutt);
 		
 		MyTableModel model = new MyTableModel(pt_data, columns);
@@ -79,5 +72,12 @@ public class Display extends JFrame{// implements ActionListener{
 		
 		
 	}//end of display
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		RUBTClient.shutdown();
+		this.dispose();
+	}
 
 }//end of display calss
