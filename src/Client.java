@@ -474,7 +474,8 @@ public class Client extends Thread{
 			try {
 				this.needPiece.put(peer);
 			} catch (InterruptedException ie) {
-				//TODO something with this exception
+				//Peer Writer was shutdown.
+				//Peer cannot continue.
 			}
 		}
 		
@@ -986,12 +987,14 @@ public class Client extends Thread{
 		}
 		//iter all peers, shut down
 		this.pieceRequester.interrupt();
-		for(Peer peer: this.peerHistory) {
-			if(peer != null) {
-				System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
-				peer.shutdownPeer();
-				peer.interrupt();
-			}
+		synchronized (this.peerHistory) {
+			for(Peer peer: this.peerHistory) {
+				if(peer != null) {
+					System.out.println("Goodbye " + peer);System.out.println("Goodbye" + peer);
+					peer.shutdownPeer();
+					peer.interrupt();
+				}
+			}	
 		}
 		
 		for(Peer peer: this.peerList) {

@@ -202,7 +202,7 @@ public class RUBTClient extends Thread{
 
 		createGUI(client);
 		//Start running the shutdown hook as a separate thread.
-		(new RUBTClient()).run(client);
+		//(new RUBTClient()).run(client);
 		return;
 
 

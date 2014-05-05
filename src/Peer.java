@@ -531,12 +531,12 @@ public class Peer extends Thread implements Comparable<Peer> {
 				if (Message.responses[payload.getMessageID()].equals("request")) {
 					synchronized (this.DLCountLock) {
 						this.concurrentRequests += 1;
-						while (this.concurrentRequests > MAX_CONCURRENT_SENDS) {
-							try {
+						try {
+							while (this.concurrentRequests > MAX_CONCURRENT_SENDS && this.keepRunning) {
 								(this.DLCountLock).wait();
-							} catch (InterruptedException ie) {
-								// Whatever
 							}
+						} catch (InterruptedException ie) {
+							// Whatever
 						}
 						if (this.remoteChoking) {
 							this.outgoing.write(Message.unchoke.getBTMessage());
@@ -752,6 +752,12 @@ public class Peer extends Thread implements Comparable<Peer> {
 		} catch (Exception e) {
 			System.out.println("exception");
 			// Doesn't matter because the peer is closing anyway
+		}
+		synchronized (this.ULCountLock) {
+			(this.ULCountLock).notifyAll();	
+		}
+		synchronized (this.DLCountLock) {
+			(this.DLCountLock).notifyAll();	
 		}
 	}
 
