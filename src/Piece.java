@@ -20,7 +20,7 @@ public class Piece {
 	 * @param numBlocks Number of blocks of the piece 
 	 * 			(might not be needed, would be for error-checking purposes)
 	 */
-	public Piece(int pieceNumber, int pieceSize, int numBlocks){
+	protected Piece(int pieceNumber, int pieceSize, int numBlocks){
 		this.pieceNumber = pieceNumber;
 		this.bytesWritten = 0;
 		this.dataBuffer = new byte[pieceSize];
@@ -33,7 +33,7 @@ public class Piece {
 	 * @param length = the length of the array 
 	 * @param dataToWrite = the data that should be written to the buffer
 	 */
-	public void writeToBuffer(int byteOffset, byte[] dataToWrite) {
+	protected void writeToBuffer(int byteOffset, byte[] dataToWrite) {
 		
 		//Error check
 		if(byteOffset+dataToWrite.length > this.dataBuffer.length) {
@@ -51,21 +51,21 @@ public class Piece {
 	/**
 	 * @return Checks if the number of bytes written is equal to the length of the piece
 	 */
-	public boolean isFull(){
+	protected boolean isFull(){
 		return (this.dataBuffer.length==this.bytesWritten);
 	}
 	
 	/**
 	 * @return The zero-based piece index of the current piece
 	 */
-	public int getPieceIndex(){
+	protected int getPieceIndex(){
 		return this.pieceNumber;
 	}
 	
 	/**
 	 * @return The Data Buffer
 	 */
-	public byte[] getData() {
+	protected byte[] getData() {
 		return this.dataBuffer;
 	}
 	

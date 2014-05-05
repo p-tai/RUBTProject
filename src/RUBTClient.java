@@ -77,7 +77,7 @@ public class RUBTClient extends Thread{
 	 * User: David Wallace
 	 * Time: 4, 05, 2014
 	 */
-	private void run(Client client){
+	public void run(Client client){
 		String line = "";
 		String QUIT = "quit";
 

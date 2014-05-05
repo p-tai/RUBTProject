@@ -13,36 +13,37 @@ public class Message {
 	 * Static KILL_PEER_MESSAGE that will be inserted to message queues
 	 * when shutdown methods are called, notifying threads to stop reading
 	 */
-	public static final Message KILL_PEER_MESSAGE = new Message(0,(byte)-1);
+	protected static final Message KILL_PEER_MESSAGE = new Message(0,(byte)-1);
+	
 	/**
 	 * The KeepAlive Message representing a BT Keep-Alive message
 	 */
-	public static final Message keepAlive = new Message(0,(byte)1);
+	protected static final Message keepAlive = new Message(0,(byte)1);
 
 	/**
 	 * The Choke Message representing a BT Choke message
 	 */
-	public static final Message choke = new Message(1,(byte)0); 
+	protected static final Message choke = new Message(1,(byte)0); 
 
 	/**
 	 * The Unchoke Message representing a BT Unchoke message
 	 */
-	public static final Message unchoke = new Message(1,(byte)1);
+	protected static final Message unchoke = new Message(1,(byte)1);
 
 	/**
 	 * The Interested Message representing a BT interested message
 	 */
-	public static final Message interested = new Message(1,(byte)2);
+	protected static final Message interested = new Message(1,(byte)2);
 
 	/**
 	 * The Uninterested Message representing a BT uninterested message
 	 */
-	public static final Message uninterested = new Message(1,(byte)3);
+	protected static final Message uninterested = new Message(1,(byte)3);
 
 	/**
 	 * The List of possible message BT responses
 	 */
-	public static final String[] responses = {"choke", "unchoke", "interested", 
+	protected static final String[] responses = {"choke", "unchoke", "interested", 
 		"uninterested", "have", "bitfield", 
 		"request", "pieces", "cancel"};
 
@@ -57,7 +58,7 @@ public class Message {
 	 * @param length = length of the payload + 1 byte for the class id
 	 * @param id = class ID of the message
 	 */ 
-	public Message(final int length, final byte id) {
+	protected Message(final int length, final byte id) {
 		this.length = length;
 		this.messageID = id;
 		this.payload = null;
@@ -67,14 +68,14 @@ public class Message {
 	 * Setting the Message Payload (everything after the length and class ID in the BT message)
 	 * @param payload The Message Payload
 	 */
-	public void setPayload(final byte[] payload) {
+	protected void setPayload(final byte[] payload) {
 		this.payload = payload;
 	}
 
 	/**
 	 * @return The Peer Message Length (based on how BT Messages define length)
 	 */
-	public int getLength() {
+	protected int getLength() {
 		return this.length;
 	}
 
@@ -82,14 +83,14 @@ public class Message {
 	 * @return The Peer Message Payload 
 	 * (everything after the length and class ID in the BT message)
 	 */
-	public byte[] getPayload() {
+	protected byte[] getPayload() {
 		return this.payload;
 	}
 
 	/**
 	 * @return The Peer message as a byte array (in the format it would be sent across a network)
 	 */
-	public byte[] getBTMessage(){
+	protected byte[] getBTMessage(){
 		//Starting minimum length of a BT message
 		int messageLength = 4;
 		//if this is a keepalive, just return the message immediately
@@ -116,14 +117,14 @@ public class Message {
 	/**
 	 * @return The Message ID.
 	 */
-	public byte getMessageID() {
+	protected byte getMessageID() {
 		return this.messageID;
 	}
 	
 	/**
 	 * @return The index that was requested.
 	 */
-	public int getRequestIndex(){
+	protected int getRequestIndex(){
 		return this.requestIndex;
 	}
 
@@ -132,7 +133,7 @@ public class Message {
 	 * @param x The Message ID
 	 * @return The Message String
 	 */
-	public static String getMessageID(final byte x){
+	protected static String getMessageID(final byte x){
 		if((int)x >= responses.length){
 			return "NOT A VALID MESSAGE";
 		}
@@ -143,7 +144,7 @@ public class Message {
 	 * Generates the Have Message Payload and sets it to the local payload field
 	 * @param piece The piece of the total file.
 	 */
-	public void have(final int piece){
+	protected void have(final int piece){
 		ByteBuffer responseBuff = ByteBuffer.allocate(4);
 		responseBuff.putInt(piece);
 		this.payload = responseBuff.array();
@@ -155,7 +156,7 @@ public class Message {
 	 * @param begin The offset of the data in integer format
 	 * @param length The size of the data in integer format
 	 */
-	public void request(final int index, final int begin, final int length){
+	protected void request(final int index, final int begin, final int length){
 		this.requestIndex = index;
 		ByteBuffer responseBuff = ByteBuffer.allocate(12);
 		responseBuff.putInt(index);
@@ -170,7 +171,7 @@ public class Message {
 	 * @param begin The offset of the data in integer format
 	 * @param length The size of the data in integer format
 	 */
-	public void cancel(final int index, final int begin, final int length){
+	protected void cancel(final int index, final int begin, final int length){
 		ByteBuffer responseBuff = ByteBuffer.allocate(12);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);
@@ -185,7 +186,7 @@ public class Message {
 	 * @param begin The offset of the piece.
 	 * @param block The Data itself.
 	 */
-	public void piece(final int index, final int begin, final byte[] block){
+	protected void piece(final int index, final int begin, final byte[] block){
 		ByteBuffer responseBuff = ByteBuffer.allocate(4+4+block.length);
 		responseBuff.putInt(index);
 		responseBuff.putInt(begin);
@@ -197,7 +198,7 @@ public class Message {
 	 * Generates a Bitfield Message and sets it to the local payload field
 	 * @param bitfield - The bitfield that is a bit array of the pieces
 	 */
-	public void bitfield(final byte[] bitfield) {
+	protected void bitfield(final byte[] bitfield) {
 		ByteBuffer responseBuff = ByteBuffer.allocate(bitfield.length);
 		responseBuff.put(bitfield);
 		this.payload = responseBuff.array();
@@ -209,7 +210,7 @@ public class Message {
 	 * @param peerID : the byte[] containing the LOCAL peer's peerID
 	 * @return byte[] containing a handshake message
 	 */
-	public static byte[] handshakeMessage(final byte[] SHA1, final byte[] peerID) {
+	protected static byte[] handshakeMessage(final byte[] SHA1, final byte[] peerID) {
 		//Set the first bits equal to "BitTorrent protocol" as specified by BT protocol
 		byte[] handshake = new byte[68];
 		handshake[0] = 19;

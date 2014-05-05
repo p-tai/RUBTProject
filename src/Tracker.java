@@ -89,7 +89,7 @@ public class Tracker {
      * @param clientID The Client ID
      * @param listenPort The open socket that takes incoming messages.
      */
-    public Tracker(Client client, URL url, byte[] infoHash, byte[] clientID, int listenPort){ 
+    protected Tracker(Client client, URL url, byte[] infoHash, byte[] clientID, int listenPort){ 
     	this.client = client;
     	this.url = url;
     	this.infoHash = infoHash;
@@ -105,7 +105,7 @@ public class Tracker {
      * @param event i.e. "started", "completed", "stopped", or Empty String
      * @return A List of Peers
      */
-    public ArrayList<Peer> sendHTTPGet(int upload, int download, int left, String event){
+    protected ArrayList<Peer> sendHTTPGet(int upload, int download, int left, String event){
 		//Create a HTTP Get request's URL out of the given inputs
     	String query = "";
 		query = URLify(query,"announce?info_hash", this.infoHash);
@@ -265,7 +265,7 @@ public class Tracker {
 	/**
 	 * @return the number of seconds the client should wait between regular rerequests.
 	 */
-	public int getInterval(){
+	protected int getInterval(){
 		return this.interval;
 	}
 

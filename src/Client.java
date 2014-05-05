@@ -27,8 +27,8 @@ public class Client extends Thread{
 	private final static int MAX_SIMUL_UPLOADS = 3;
 	private final static int MAX_NUM_UNCHOKED = 6;
 	protected final Object counterLock = new Object();
-	int currentUploads;
-	int currentUnchoked;
+	private int currentUploads;
+	private int currentUnchoked;
 	private byte[] clientID;
 	private int[] rarePieces;
 	protected TorrentInfo torrentInfo;
@@ -40,33 +40,33 @@ public class Client extends Thread{
 	/**
 	 * The Maximum Limit of download 
 	 */
-	public final static int MAXIMUMLIMT = 16384;
+	private final static int MAXIMUMLIMT = 16384;
 	
 	private boolean[] bitfield;
 	private boolean[] downloadsInProgress;
-	boolean keepReading;
+	protected boolean keepReading;
 	private boolean isSeeder;
 
 	/**
 	 * The number of bytes download from peers.
 	 */
-	int downloaded;
+	private int downloaded;
 
 	/**
 	 * The number of bytes of what left to download
 	 */
-	int left;
+	protected int left;
 
 	/**
 	 * The number of bytes uploaded to all the peers
 	 */
-	int uploaded;
+	private int uploaded;
 	private final Object ULCountLock = new Object();
 	
 	/**
 	 * The interval of sending the HTTP GET Request to the Tracker
 	 */
-	int interval;
+	private int interval;
 	
 	private ServerSocket listenSocket;
 
@@ -75,7 +75,7 @@ public class Client extends Thread{
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
 	private PieceRequester pieceRequester;
 	private Timer requestTracker = new Timer(true);
-	long lastRequestSent;
+	protected long lastRequestSent;
 
 
 	/**
@@ -83,7 +83,7 @@ public class Client extends Thread{
 	 * @param torrent Source of the torrent file
 	 * @param saveName The file you want to save in.
 	 */
-	public Client(TorrentInfo torrent, String saveName){
+	protected Client(TorrentInfo torrent, String saveName){
 		System.out.println("No output file detected. \n Booting");
 		this.saveName = saveName;
 		this.torrentInfo = torrent;
@@ -111,7 +111,7 @@ public class Client extends Thread{
 	 * @param torrent Source of the torrent file
 	 * @param file The RandomAccessFile file
 	 */
-	public Client(TorrentInfo torrent, RandomAccessFile file){
+	protected Client(TorrentInfo torrent, RandomAccessFile file){
 		System.out.println("Previous file detected. \n Booting");
 		this.torrentInfo = torrent;
 		this.dataFile = file;
@@ -136,7 +136,7 @@ public class Client extends Thread{
 	/**
 	 * @return The Client's ID.
 	 */
-	public byte[] getClientID() {
+	protected byte[] getClientID() {
 		return this.clientID;
 	}
 
@@ -144,7 +144,7 @@ public class Client extends Thread{
 	 * Getter that returns the total number of VALIDATED bytes (in other words bytes of pieces that pass SHA-1 verification)
 	 * @return this.downloaded
 	 */
-	public int getBytesDownloaded() {
+	protected int getBytesDownloaded() {
 		return this.downloaded;
 	}
 	
@@ -152,7 +152,7 @@ public class Client extends Thread{
 	 * Getter that returns the total number of uploaded bytes (in other words bytes of pieces that pass SHA-1 verification)
 	 * @return this.uploaded
 	 */
-	public int getBytesUploaded() {
+	protected int getBytesUploaded() {
 		synchronized (this.ULCountLock) {
 			return this.uploaded;
 		}
@@ -162,7 +162,7 @@ public class Client extends Thread{
 	 * Getter that returns the total number of bytes left
 	 * @return this.left
 	 */
-	public int getBytesLeft() {
+	protected int getBytesLeft() {
 		return this.left;
 	}
 
@@ -170,7 +170,7 @@ public class Client extends Thread{
 	 * Getter that returns the percentage completion of the file
 	 * @return 1.0-(bytes left/file length)
 	 */
-	public double getPercentageCompletion() {
+	protected double getPercentageCompletion() {
 		return (1.0 - (double)this.left/(double)this.torrentInfo.file_length);
 	}
 	
@@ -178,7 +178,7 @@ public class Client extends Thread{
 	 * Removing the peer from the peer history.
 	 * @param peer The Peer Object.
 	 */
-	public void removePeer(Peer peer){
+	protected void removePeer(Peer peer){
 		synchronized (this.peerHistory) {
 			this.peerHistory.remove(peer);
 		}
@@ -188,23 +188,30 @@ public class Client extends Thread{
 	 * Adding a peer to the peer history.
 	 * @param peer The Peer Object.
 	 */
-	public void addPeer(Peer peer){
+	protected void addPeer(Peer peer){
 		synchronized (this.peerHistory) {
 			this.peerHistory.add(peer);
 		}
 	}
 	
 	/**
+	 * @return List of peer currently connected.
+	 */
+	public ArrayList<Peer> getPeerHistory(){
+		return this.peerHistory;
+	}
+	
+	/**
 	 * @return The ServerSocket.
 	 */
-	public ServerSocket getListenSocket(){
+	protected ServerSocket getListenSocket(){
 		return this.listenSocket;
 	}
 	
 	/**
 	 * @return The current download pieces from peers.
 	 */
-	public boolean[] getDownloadsInProgess(){
+	protected boolean[] getDownloadsInProgess(){
 		return this.downloadsInProgress;
 	}
 	
@@ -212,7 +219,7 @@ public class Client extends Thread{
 	 * Makes a bitfield message.
 	 * @return The bitfield message.
 	 */
-	public Message generateBitfieldMessage() {
+	protected Message generateBitfieldMessage() {
 		Message bitfieldMessage = new Message(((int)Math.ceil(this.bitfield.length / 8.0))+1,(byte)5);
 		bitfieldMessage.bitfield(convertBooleanBitfield(this.bitfield));
 		return bitfieldMessage;
@@ -230,7 +237,7 @@ public class Client extends Thread{
 	 * Returns the number of bytes that have been successfully downloaded and confirmed to be correct
 	 * Based on pieces that have been downloaded
 	 **/
-	void updateLeft() {
+	private void updateLeft() {
 		//Nothing to do if you're a seeder already
 		if(this.isSeeder == true) {
 			this.left = 0;
@@ -346,7 +353,7 @@ public class Client extends Thread{
 	 * Adding a message from Peer to the Client's Messages Queue. 
 	 * @param task The message from the Peer. 
 	 */
-	public void queueMessage(MessageTask task) {
+	protected void queueMessage(MessageTask task) {
 		if(task.getMessage() == null){
 			System.out.println("Invalid message from " + task.getPeer());
 			return;
@@ -359,7 +366,7 @@ public class Client extends Thread{
 	 * Attempts to open the socket on port 6881 and continues (on failures) up to port 6889.
 	 * @return Available port number or 0 if port fails to open.
 	 */
-	public int openSocket(){
+	protected int openSocket(){
 		System.out.println("OPENING THE SOCKET: ");
 		for(int i = 1; i < 10; i++){
 			try {
@@ -383,7 +390,7 @@ public class Client extends Thread{
 	 * @return true for success, otherwise false.
 	 */
 
-	public boolean connectToTracker(final int port){
+	protected boolean connectToTracker(final int port){
 		this.tracker = new Tracker(this, this.torrentInfo.announce_url, this.torrentInfo.info_hash.array(), this.clientID, port);
 		this.peerList = this.tracker.sendHTTPGet(this.uploaded, this.downloaded, this.left, "started");
 		this.peerHistory = new ArrayList<Peer>();
@@ -398,7 +405,7 @@ public class Client extends Thread{
 	/**
 	 *	Send a "stopped" event to the tracker, called when shutting down.
 	 */
-	public void disconnectFromTracker(){
+	protected void disconnectFromTracker(){
 		//Make sure our "left" value is correct
 		this.updateLeft();
 		if(this.tracker != null) {
@@ -410,7 +417,7 @@ public class Client extends Thread{
 	/**
 	 * 
 	 */
-	public void startPeerDownloads() {
+	protected void startPeerDownloads() {
 		this.pieceRequester = new PieceRequester(this);
 		for(int i = 0; i < this.peerList.size(); i++){
 			this.pieceRequester.queueForDownload(this.peerList.get(i));
@@ -421,7 +428,7 @@ public class Client extends Thread{
 	/**
 	 * ConnectToPeers will go through the current list of peers and connect to them
 	 */
-	public void connectToPeers(){
+	protected void connectToPeers(){
 		if(this.peerList.isEmpty()){
 			/* DO NOTHING */
 			System.out.println("THERE ARE NO PEERS");
@@ -451,7 +458,7 @@ public class Client extends Thread{
 		 * RequestPiece Constructor
 		 * @param client The client Object
 		 */
-		public PieceRequester(Client client){
+		protected PieceRequester(Client client){
 			this.client = client;
 			this.needPiece = new LinkedBlockingQueue<Peer>();
 			this.keepDownloading = true;
@@ -463,7 +470,7 @@ public class Client extends Thread{
 		 * 		LinkedBlockingQueue that holds all the peers that need to search a piece to download
 		 * @param peer - the peer that needs to get a piece
 		 */
-		public void queueForDownload(Peer peer) {
+		protected void queueForDownload(Peer peer) {
 			try {
 				this.needPiece.put(peer);
 			} catch (InterruptedException ie) {
@@ -561,6 +568,7 @@ public class Client extends Thread{
 
 		//Start the download/upload peer ranker that will decide who gets a TCP connection
 		this.requestTracker.scheduleAtFixedRate(new TimerTask() {
+			
 			/**
 			 * Will sort the Peers based on their upload speed (to us) if we are downloading
 			 * 
@@ -643,7 +651,7 @@ public class Client extends Thread{
 		 * ServerSocketConnection Object.
 		 * @param client The Client Object.
 		 */
-		public ServerSocketConnection(Client client){
+		protected ServerSocketConnection(Client client){
 			this.client = client;
 		}
 		
@@ -666,9 +674,10 @@ public class Client extends Thread{
 			}
 		}
 	}
-	
-	
 
+	/**
+	 * Reading the peer messages.
+	 */
 	private void readQueue(){
 		MessageTask messageFromPeer;
 		try{ 
@@ -896,14 +905,14 @@ public class Client extends Thread{
 	/**
 	 * @return The Torrent Info Hash.
 	 */
-	public byte[] getHash(){
+	protected byte[] getHash(){
 		return this.torrentInfo.info_hash.array();
 	}
 
 	/**
 	 * @return the local bitfield
 	 */
-	public boolean[] getBitfield(){
+	protected boolean[] getBitfield(){
 		return this.bitfield;
 	}
 
@@ -912,7 +921,7 @@ public class Client extends Thread{
 	 * @param pieceIndex the zero-based piece index
 	 * @return The Torrent Piece Length.
 	 */
-	public int getPieceLength(int pieceIndex){
+	protected int getPieceLength(int pieceIndex){
 		//if the piece is the last piece, return the last piece size, otherwise, default piece size.
 		if(pieceIndex == (this.torrentInfo.piece_hashes.length-1)) {
 			int temp = this.torrentInfo.file_length%this.torrentInfo.piece_length;
@@ -945,28 +954,28 @@ public class Client extends Thread{
 	 * @param pieceIndex the zero-based piece index
 	 * @return The number of blocks for that one piece.
 	 */
-	public int getNumBlocks(int pieceIndex) {
+	protected int getNumBlocks(int pieceIndex) {
 		return ((int)(Math.ceil(getPieceLength(pieceIndex)/MAXIMUMLIMT)));
 	}
 
 	/**
 	 * @return The file length as per the torrent info file
 	 */
-	public int getFileLength(){
+	protected int getFileLength(){
 		return this.torrentInfo.file_length;
 	}
 
 	/**
 	 * @return The number of pieces as per the torrent info file
 	 */
-	public int getNumPieces() {
+	protected int getNumPieces() {
 		return this.torrentInfo.piece_hashes.length;
 	}
 
 	/**
 	 * Join all the threads
 	 */
-	public void shutdown() {
+	protected void shutdown() {
 		this.keepReading = false;
 		this.requestTracker.cancel();
 		try{
@@ -1015,7 +1024,7 @@ public class Client extends Thread{
 	 * @param pieceIndex zero based piece index
 	 * @param peer the peer to download from
 	 */
-	synchronized void getPiece(int pieceIndex, Peer remotePeer ) {
+	private synchronized void getPiece(int pieceIndex, Peer remotePeer ) {
 		
 		if(remotePeer.amChoked()) {
 			remotePeer.enqueueMessage(Message.unchoke);

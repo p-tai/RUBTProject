@@ -17,7 +17,7 @@ public class MessageTask {
 	   * @param peer - the peer that is associated with this task
 	   * @param message - the message associated with this task
 	   */
-	  public MessageTask(final Peer peer, final Message message){
+	  protected MessageTask(final Peer peer, final Message message){
 	    this.peer = peer;
 	    this.message = message;
 	  }//MessageTask constructor
@@ -25,14 +25,14 @@ public class MessageTask {
 	  /**
 	   * @return The Peer that associated with this task
 	   */
-	  public Peer getPeer() {
+	  protected Peer getPeer() {
 	    return this.peer;
 	  }//getPeer
 	
 	  /**
 	   * @return The Message associated with this task
 	   */
-	  public Message getMessage() {
+	  protected Message getMessage() {
 	    return this.message;
 	  }//getMessage
 

@@ -74,7 +74,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param peerPort
 	 *            The Peer's Port
 	 */
-	public Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort) {
+	protected Peer(Client RUBT, byte[] peerID, String peerIP, int peerPort) {
 		this.RUBT = RUBT;
 		this.clientID = RUBT.getClientID();
 		this.peerID = peerID;
@@ -110,7 +110,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param socket
 	 *            The connection between the Client and Peer.
 	 */
-	public Peer(Client RUBT, Socket socket) {
+	protected Peer(Client RUBT, Socket socket) {
 		this.RUBT = RUBT;
 		this.clientID = RUBT.getClientID();
 		this.peerID = new byte[20];
@@ -141,7 +141,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param localChoking
 	 *            true = The Peer is Chocking the Client. Otherwise, false.
 	 */
-	public void setLocalChoking(boolean localChoking) {
+	protected void setLocalChoking(boolean localChoking) {
 		this.localChoking = localChoking;
 	}
 
@@ -150,7 +150,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * 
 	 * @param peerConnection
 	 */
-	public void setPeerConnection(Socket peerConnection) {
+	protected void setPeerConnection(Socket peerConnection) {
 		this.peerConnection = peerConnection;
 	}
 
@@ -159,7 +159,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * 
 	 * @param outgoing
 	 */
-	public void setOutgoing(DataOutputStream outgoing) {
+	protected void setOutgoing(DataOutputStream outgoing) {
 		this.outgoing = outgoing;
 	}
 
@@ -168,7 +168,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * 
 	 * @param incoming
 	 */
-	public void setIncoming(DataInputStream incoming) {
+	protected void setIncoming(DataInputStream incoming) {
 		this.incoming = incoming;
 	}
 
@@ -178,7 +178,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param localInterested
 	 *            true = The Client is the Peer. Otherwise, false.
 	 */
-	public void setLocalInterested(boolean localInterested) {
+	protected void setLocalInterested(boolean localInterested) {
 		this.localInterested = localInterested;
 	}
 
@@ -188,7 +188,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param remoteChoking
 	 *            true = Peer is Choking the Client. Otherwise, false.
 	 */
-	public void setRemoteChoking(boolean remoteChoking) {
+	protected void setRemoteChoking(boolean remoteChoking) {
 		this.remoteChoking = remoteChoking;
 	}
 
@@ -198,7 +198,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param remoteInterested
 	 *            true = Peer is interested the Client. Otherwise, false.
 	 */
-	public void setRemoteInterested(boolean remoteInterested) {
+	protected void setRemoteInterested(boolean remoteInterested) {
 		this.remoteInterested = remoteInterested;
 	}
 
@@ -208,7 +208,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param peerBooleanBitField
 	 *            The Peer Boolean Bit Field.
 	 */
-	public void setPeerBooleanBitField(boolean[] peerBooleanBitField) {
+	protected void setPeerBooleanBitField(boolean[] peerBooleanBitField) {
 		this.peerBooleanBitField = peerBooleanBitField;
 	}
 
@@ -226,7 +226,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 *            TODO
 	 * @return The entire contents of the buffer or null.
 	 */
-	public Piece writeToInternalBuffer(byte[] payload, int pieceOffset,
+	protected Piece writeToInternalBuffer(byte[] payload, int pieceOffset,
 			int blockOffset) {
 		if (this.pieceInProgress == null) {
 			this.pieceInProgress = new Piece(pieceOffset,
@@ -245,7 +245,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * Resets the internal piece buffer to null
 	 */
-	public void resetPiece() {
+	protected void resetPiece() {
 		if (this.pieceInProgress.isFull()) {
 			this.pieceInProgress = null;
 		}
@@ -258,14 +258,14 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * @return The Peer's IP
 	 */
-	public String getPeerIP() {
+	protected String getPeerIP() {
 		return this.peerIP;
 	}
 
 	/**
 	 * @return The Current Download Rate
 	 */
-	public double getDownloadRate() {
+	protected double getDownloadRate() {
 		double retVal;
 		synchronized (this.DLCountLock) {
 			retVal = this.downloadRate;
@@ -276,7 +276,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * @return The Current Upload Rate
 	 */
-	public double getUploadRate() {
+	protected double getUploadRate() {
 		double retVal;
 		synchronized (this.ULCountLock) {
 			retVal = this.uploadRate;
@@ -288,63 +288,63 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * @return The Peer's Port
 	 */
-	public int getPeerPort() {
+	protected int getPeerPort() {
 		return this.peerPort;
 	}
 
 	/**
 	 * @return The Peer's ID
 	 */
-	public byte[] getPeerID() {
+	protected byte[] getPeerID() {
 		return this.peerID;
 	}
 
 	/**
 	 * @return The Peer's ID as a String
 	 */
-	public String getPeerIDString() {
+	protected String getPeerIDString() {
 		return this.peerIDString;
 	}
 
 	/**
 	 * @return The status of the Client choking the peer.
 	 */
-	public boolean isChokingLocal() {
+	protected boolean isChokingLocal() {
 		return this.localChoking;
 	}
 
 	/**
 	 * @return The status of Peer interested of the Client.
 	 */
-	public boolean isInterestedLocal() {
+	protected boolean isInterestedLocal() {
 		return this.localInterested;
 	}
 
 	/**
 	 * @return The status of the Client being choking by Peer.
 	 */
-	public boolean amChoked() {
+	protected boolean amChoked() {
 		return this.remoteChoking;
 	}
 
 	/**
 	 * @return Whether or not the peer is still running
 	 */
-	public boolean isRunning() {
+	protected boolean isRunning() {
 		return this.keepRunning;
 	}
 	
 	/**
 	 * @return This peer's bitfield as a boolean array
 	 */
-	public boolean[] getBitfields() {
+	protected boolean[] getBitfields() {
 		return this.peerBooleanBitField;
 	}
 
 	/**
 	 * @return The status of the Client interested of the Peer.
 	 */
-	public boolean amInterested() {
+	protected boolean amInterested() {
 		return this.remoteInterested;
 	}
 
@@ -352,7 +352,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * Getter for the piece in progress.
 	 * @return this.pieceInProgress 
 	 */
-	public Piece getPiece() {
+	protected Piece getPiece() {
 		return this.pieceInProgress;
 	}
 	
@@ -369,7 +369,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * socket creation if we accepted a connection from our server socket) Then
 	 * sets up the input and output streams of the socket.
 	 */
-	public void initializePeerStreams() {
+	protected void initializePeerStreams() {
 		System.out.println("Connecting to " + this);
 
 		try {
@@ -477,7 +477,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param pieceIndex
 	 *            The Piece Index.
 	 */
-	public void updatePeerBitfield(int pieceIndex) {
+	protected void updatePeerBitfield(int pieceIndex) {
 		if (pieceIndex >= this.peerBooleanBitField.length) {
 			System.err.println("ERROR: UPDATING PEER BIT FIELD");
 			System.err.println("INVALID PIECE INDEX");
@@ -494,7 +494,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param message
 	 *            TODO
 	 */
-	public void enqueueMessage(Message message) {
+	protected void enqueueMessage(Message message) {
 		if (this.writer != null) {
 			this.writer.enqueue(message);
 		}
@@ -506,7 +506,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @param payload
 	 *            message to be sent to peer
 	 */
-	public void writeToSocket(Message payload) {
+	protected void writeToSocket(Message payload) {
 		// In case the client, peer, or peerWriter threads wantto write to
 		// socket at the same time
 		synchronized (this.outgoing) {
@@ -587,7 +587,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		 * @param self
 		 *            the stream to write out all data to
 		 */
-		public PeerWriter(Peer self) {
+		protected PeerWriter(Peer self) {
 			this.peer = self;
 			this.messageQueue = new LinkedBlockingQueue<Message>();
 		}// peerWriter constructor
@@ -608,7 +608,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		/**
 		 * Public method to empty the peerWriter's internal queue in the event the socket was closed.
 		 */
-		public void clearQueue(){
+		protected void clearQueue(){
 			this.messageQueue.clear();
 		}
 
@@ -727,7 +727,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * This method is called on shutdown to close all of the data streams and
 	 * sockets.
 	 */
-	public void shutdownPeer() {
+	protected void shutdownPeer() {
 		System.out.println(this + " at the shutdown method.");
 		this.keepRunning = false;
 		
@@ -858,7 +858,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		}
 	}// checkAndSendKeepAlive
 
-	void updateRates() {
+	protected void updateRates() {
 
 		// If we have been downloading consistently...
 		if (this.uploadRate < 1000.0) {
