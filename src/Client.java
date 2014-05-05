@@ -716,6 +716,9 @@ public class Client extends Thread{
 		ByteBuffer pieceBuffer;
 
 		switch(message.getMessageID()){
+		case -1: /* Unofficial quit (poison)*/
+			this.keepReading = false;
+			break;
 		case 0: /* choke */
 			peer.setRemoteChoking(true);
 			if(peer.getPiece() != null ) {
@@ -784,12 +787,16 @@ public class Client extends Thread{
 			pieceBuffer.put(message.getPayload());
 			pieceBuffer.reset();
 			int pieceIndex = pieceBuffer.getInt();
-			peer.updatePeerBitfield(pieceIndex);
+			//If you update the bitfield successfully, update the rare pieces index
+			if(peer.updatePeerBitfield(pieceIndex)) {
+				updateRarePieces(pieceIndex);
+			}
 			break;
 		case 5: /* bitfield */
 			byte[] bitfield = message.getPayload();
 			peer.setPeerBooleanBitField(convert(bitfield));
 			updateRarePieces(peer.getBitfields());
+			//consider case where we get multiple bit fields for some reason...
 			break;
 		case 6: /* request */
 			if(peer.isChokingLocal() == false) {
@@ -967,6 +974,27 @@ public class Client extends Thread{
 			for(int i = 0; i < this.rarePieces.length; i++){
 				if(bitfield[i] == true){
 					this.rarePieces[i] += 1;
+				}
+			}	
+		}
+	}
+	
+	private void updateRarePieces(int pieceIndex) {
+		synchronized(this.rarePieces) {
+			this.rarePieces[pieceIndex]++;
+		}
+	}
+	
+	/**
+	 * Remove a peer from the rarePieces array. 
+	 * Decrement the rarePiece array when the peer have the piece.
+	 * @param bitfield Peer bitfields
+	 */
+	void removePeerFromRarePieces(boolean[] bitfield){
+		synchronized (this.rarePieces) {
+			for(int i = 0; i < this.rarePieces.length; i++){
+				if(bitfield[i] == true){
+					this.rarePieces[i] -= 1;
 				}
 			}	
 		}
@@ -1160,45 +1188,45 @@ public class Client extends Thread{
 	 * @return the zero based index of the piece to download, or -1 if no piece to download
 	 */ 
 	int findPieceToDownload(Peer remote) {
+		boolean[] peerBitfield = remote.getBitfields();
+		int rareIndex = this.torrentInfo.piece_hashes.length;
+		//Holding indexes of the rarePiece indexes.
+		ArrayList<Integer> indexes = new ArrayList<Integer>();
+		
 		synchronized (this.rarePieces) {
-			boolean[] peerBitfield = remote.getBitfields();
-						
-			int rareIndex = this.torrentInfo.piece_hashes.length;
-			//Holding indexes of the rarePiece indexes.
-			ArrayList<Integer> indexes = new ArrayList<Integer>();
 			for(int i = 0; i < this.rarePieces.length; i++){
 				if(peerBitfield[i] == true && 
 						this.bitfield[i] == false &&
 						this.downloadsInProgress[i] == false && 
 						this.rarePieces[i] >= 1 && this.rarePieces[i] < rareIndex){
-					
+
 					rareIndex = this.rarePieces[i];
 					indexes.clear();
 					indexes.add(new Integer(i));
-					
+
 				}else if(peerBitfield[i] == true && 
 						this.bitfield[i] == false &&
 						this.downloadsInProgress[i] == false && 
 						this.rarePieces[i] == this.rarePieces[rareIndex]){
-					
+
 					indexes.add(new Integer(i));
 				}
 			}
-			
-			if(indexes.isEmpty()){
-				/* Pick a piece */
-				for(int i = 0; i < this.rarePieces.length; i++){
-					if(this.bitfield[i] == false && peerBitfield[i] == true){
-						return i;
-					}
-				}
-				//The peer does not have any piece.
-				return -1;
-			}
-			
-			int index = indexes.get((randomWithRange(0, indexes.size()-1))).intValue();
-			return index;
 		}
+			
+		if(indexes.isEmpty()){
+			/* Pick a piece */
+			for(int i = 0; i < this.bitfield.length; i++){
+				if(this.bitfield[i] == false && peerBitfield[i] == true){
+					return i;
+				}
+			}
+			//The peer does not have any piece we want.
+			return -1;
+		}
+
+		int index = indexes.get((randomWithRange(0, indexes.size()-1))).intValue();
+		return index;
 	}
 	
 	/**

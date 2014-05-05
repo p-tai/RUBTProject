@@ -28,7 +28,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 
 	private int concurrentRequests;
 
-	private boolean[] peerBooleanBitField;
+	private boolean[] peerBooleanBitfield;
 
 	private Socket peerConnection;
 	private DataOutputStream outgoing;
@@ -82,7 +82,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 			// FOR DEBUG PURPOSES ONLY (to make peer id human readable)
 			this.peerIDString = new String(peerID, "UTF-8");
 		} catch (UnsupportedEncodingException e) {}
-		this.peerBooleanBitField = new boolean[RUBT.getNumPieces()];
+		this.peerBooleanBitfield = new boolean[RUBT.getNumPieces()];
 		this.peerIP = peerIP;
 		this.peerPort = peerPort;
 		this.localChoking = true;
@@ -111,7 +111,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		this.RUBT = RUBT;
 		this.clientID = RUBT.getClientID();
 		this.peerID = new byte[20];
-		this.peerBooleanBitField = new boolean[RUBT.getNumPieces()];
+		this.peerBooleanBitfield = new boolean[RUBT.getNumPieces()];
 		this.peerIP = (socket.getInetAddress()).getHostAddress();
 		this.peerPort = socket.getPort();
 		this.localChoking = true;
@@ -175,11 +175,11 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * Set the Peer Boolean Bit Field.
 	 * 
-	 * @param peerBooleanBitField
+	 * @param peerBooleanBitfield
 	 *            The Peer Boolean Bit Field.
 	 */
-	protected void setPeerBooleanBitField(boolean[] peerBooleanBitField) {
-		this.peerBooleanBitField = peerBooleanBitField;
+	protected void setPeerBooleanBitField(boolean[] peerBooleanBitfield) {
+		this.peerBooleanBitfield = peerBooleanBitfield;
 	}
 
 	/**
@@ -308,7 +308,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * @return This peer's bitfield as a boolean array
 	 */
 	protected boolean[] getBitfields() {
-		return this.peerBooleanBitField;
+		return this.peerBooleanBitfield;
 	}
 
 	/**
@@ -446,15 +446,20 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * 
 	 * @param pieceIndex
 	 *            The Piece Index.
+	 * @return true if set the field true, false if you can't assign or it was already true
 	 */
-	protected void updatePeerBitfield(int pieceIndex) {
-		if (pieceIndex >= this.peerBooleanBitField.length) {
+	protected boolean updatePeerBitfield(int pieceIndex) {
+		if (pieceIndex >= this.peerBooleanBitfield.length) {
 			System.err.println("ERROR: UPDATING PEER BIT FIELD");
 			System.err.println("INVALID PIECE INDEX");
-			return;
+			return false;
 		}
-
-		this.peerBooleanBitField[pieceIndex] = true;
+		
+		if(this.peerBooleanBitfield[pieceIndex]) {
+			return false;
+		}
+		this.peerBooleanBitfield[pieceIndex] = true;
+		return true;
 	}
 
 	/**
@@ -704,7 +709,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 */
 	protected void shutdownPeer() {
 		this.keepRunning = false;
-		
 		//kill off the writer
 		if(this.writer != null) {
 			this.writer.clearQueue();
@@ -714,13 +718,14 @@ public class Peer extends Thread implements Comparable<Peer> {
 		
 		// cancel all the timer tasks
 		this.peerTimer.cancel();
-
 		
 		// close all input/output streams and then close the socket to peer.
 		try {
 			
 			// kill the socket
 			if(this.peerConnection!= null) {
+				//Remove this peer's bitfield from the rare pieces in client
+				this.RUBT.removePeerFromRarePieces(this.peerBooleanBitfield);
 				this.peerConnection.close();
 			}
 		} catch (Exception e) {
