@@ -558,42 +558,41 @@ public class Client extends Thread{
 		 */
 		public void run(){
 			//Continue until either the user quits or the program finishes downloading
+			while(this.keepDownloading) {
 				try {
-					while(this.keepDownloading) {
-						
-						//If we have nothing left to download, exit the loop and clear the queue
-						if(this.isAllTrue(this.client.getBitfield())) {
-							this.keepDownloading = false;
-							this.needPiece.clear();
-							continue;
-						}
-					
-						//get the next idle peer
-						Peer current = this.needPiece.take();
-						
-						// Confirm we didn't already start downloading a piece for this peer 
-						if(current.getPiece() == null) {
-							//If the peer hasn't been shutdown, search for a piece
-							if(current.isRunning()) {
-								//Find the piece to download
-								int pieceIndex = this.client.findPieceToDownload(current);
-								if(pieceIndex >= 0) {
-									//Tell the client to queue all the piece messages to the given peer's Writer class
-									this.client.getPiece(pieceIndex,current);
-									this.client.bitfield[pieceIndex] = true;
-								} 
-								//In the event there is no piece we want to download, send uninterested if needed
-								else if (current.amInterested()){
-									//an uninterested message
-									current.enqueueMessage(Message.uninterested);
-								}
+					//If we have nothing left to download, exit the loop and clear the queue
+					if(this.isAllTrue(this.client.getBitfield())) {
+						this.keepDownloading = false;
+						this.needPiece.clear();
+						continue;
+					}
+
+					//get the next idle peer
+					Peer current = this.needPiece.take();
+
+					// Confirm we didn't already start downloading a piece for this peer 
+					if(current.getPiece() == null) {
+						//If the peer hasn't been shutdown, search for a piece
+						if(current.isRunning()) {
+							//Find the piece to download
+							int pieceIndex = this.client.findPieceToDownload(current);
+							if(pieceIndex >= 0) {
+								//Tell the client to queue all the piece messages to the given peer's Writer class
+								this.client.getPiece(pieceIndex,current);
+							} 
+							//In the event there is no piece we want to download, send uninterested if needed
+							else if (current.amInterested()){
+								//an uninterested message
+								current.enqueueMessage(Message.uninterested);
 							}
-							//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
 						}
+						//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
 					}
 				} catch (InterruptedException ie) {
 					Thread.currentThread().interrupt();
 				}
+			}
+
 			this.client.updateLeft();
 			this.client.tracker.sendHTTPGet(this.client.uploaded, this.client.downloaded, this.client.left, "completed");
 			
@@ -839,25 +838,25 @@ public class Client extends Thread{
 				}
 				//Check if the payload was correct according to the SHA
 				if(this.checkData(piece.getData(),piece.getPieceIndex())){
-					//System.out.println("...........SHA-SUCCESSFUL");
+					System.out.println("...........SHA-SUCCESSFUL");
 					//if so, write it to the random access file and reset the state of the piece
 					this.writeData(piece.getData(), piece.getPieceIndex());
 					
 					//Update the downloaded bytes count
-					if(this.bitfield[pieceNo]==false) {
+					if(!this.isSeeder()) {
 						this.downloaded+=piece.getData().length;
 					}
 					
 					//update the internal bitfields
 					this.downloadsInProgress[pieceNo]=false;
-					(this.bitfield)[pieceNo]=true;
+					this.bitfield[pieceNo]=true;
 					
 					peer.resetPiece(); //reset piece for the next piece
 					
 					Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
 					haveMessage.have(pieceNo); 
 					broadcastMessage(haveMessage); //write this message to all peers
-							//requeue the peer in the pieceRequestor queue.
+					//requeue the peer in the pieceRequestor queue.
 					this.pieceRequester.queueForDownload(peer);
 				} else {
 					//System.err.println("...........SHA- UNSUCCESSFUL")
@@ -1190,6 +1189,7 @@ public class Client extends Thread{
 	int findPieceToDownload(Peer remote) {
 		boolean[] peerBitfield = remote.getBitfields();
 		int rareIndex = this.torrentInfo.piece_hashes.length;
+		
 		//Holding indexes of the rarePiece indexes.
 		ArrayList<Integer> indexes = new ArrayList<Integer>();
 		
@@ -1198,13 +1198,13 @@ public class Client extends Thread{
 				if(peerBitfield[i] == true && 
 						this.bitfield[i] == false &&
 						this.downloadsInProgress[i] == false && 
-						this.rarePieces[i] >= 1 && this.rarePieces[i] < rareIndex){
+						this.rarePieces[i] >= 1 && this.rarePieces[i] < rareIndex) {
 
 					rareIndex = this.rarePieces[i];
 					indexes.clear();
 					indexes.add(new Integer(i));
-
-				}else if(peerBitfield[i] == true && 
+					
+				} else if(peerBitfield[i] == true && 
 						this.bitfield[i] == false &&
 						this.downloadsInProgress[i] == false && 
 						this.rarePieces[i] == this.rarePieces[rareIndex]){
@@ -1213,7 +1213,7 @@ public class Client extends Thread{
 				}
 			}
 		}
-			
+		
 		if(indexes.isEmpty()){
 			/* Pick a piece */
 			for(int i = 0; i < this.bitfield.length; i++){

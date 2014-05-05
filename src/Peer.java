@@ -513,8 +513,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 							// Whatever
 						}
 						if (this.remoteChoking) {
+							/*
 							this.outgoing.write(Message.unchoke.getBTMessage());
 							this.outgoing.flush();
+							*/
 						}
 					}
 				} else if (Message.responses[payload.getMessageID()]
