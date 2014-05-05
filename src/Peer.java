@@ -937,17 +937,17 @@ public class Peer extends Thread implements Comparable<Peer> {
 	public int compareTo(Peer peer) {
 		if(!this.RUBT.isSeeder()) { 
 			if (this.getDownloadRate() > peer.getDownloadRate()) {
-				return 1;
-			} else if (this.getDownloadRate() < peer.getDownloadRate()) {
 				return -1;
+			} else if (this.getDownloadRate() < peer.getDownloadRate()) {
+				return 1;
 			} else {
 				return 0;
 			}
 		} else {
 			if (this.getUploadRate() > peer.getUploadRate()) {
-				return 1;
-			} else if (this.getUploadRate() < peer.getUploadRate()) {
 				return -1;
+			} else if (this.getUploadRate() < peer.getUploadRate()) {
+				return 1;
 			} else {
 				return 0;
 			}
