@@ -809,39 +809,38 @@ public class Client extends Thread{
 			//Stores this in the peer's internal buffer, but ignores the piece if we're done downloading
 			if(!this.isSeeder) {
 				Piece piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
-			}
-			
-			//Check if the piece is finished
-			if(piece.isFull()) {
-				System.out.println("..........FULL PIECE RECEIVED: " + pieceNo + " " +peer);
-				//Check if the payload was correct according to the SHA
-				if(this.checkData(piece.getData(),piece.getPieceIndex())){
-					//System.out.println("...........SHA-SUCCESSFUL");
-					//if so, write it to the random access file and reset the state of the piece
-					this.writeData(piece.getData(), piece.getPieceIndex());
-					
-					//Update the downloaded bytes count
-					if(this.bitfield[pieceNo]==false) {
-						this.downloaded+=piece.getData().length;
+				//Check if the piece is finished
+				if(piece.isFull()) {
+					System.out.println("..........FULL PIECE RECEIVED: " + pieceNo + " " +peer);
+					//Check if the payload was correct according to the SHA
+					if(this.checkData(piece.getData(),piece.getPieceIndex())){
+						//System.out.println("...........SHA-SUCCESSFUL");
+						//if so, write it to the random access file and reset the state of the piece
+						this.writeData(piece.getData(), piece.getPieceIndex());
+						
+						//Update the downloaded bytes count
+						if(this.bitfield[pieceNo]==false) {
+							this.downloaded+=piece.getData().length;
+						}
+						
+						//update the internal bitfields
+						this.downloadsInProgress[pieceNo]=false;
+						(this.bitfield)[pieceNo]=true;
+						
+						peer.resetPiece(); //reset piece for the next piece
+						
+						Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
+						haveMessage.have(pieceNo); 
+						broadcastMessage(haveMessage); //write this message to all peers
+	
+						//requeue the peer in the pieceRequestor queue.
+						this.pieceRequester.queueForDownload(peer);
+					} else {
+						//System.err.println("...........SHA- UNSUCCESSFUL")
+						this.downloadsInProgress[pieceNo]=false;
+						this.pieceRequester.queueForDownload(peer);
+						peer.resetPiece();
 					}
-					
-					//update the internal bitfields
-					this.downloadsInProgress[pieceNo]=false;
-					(this.bitfield)[pieceNo]=true;
-					
-					peer.resetPiece(); //reset piece for the next piece
-					
-					Message haveMessage = new Message(5,(byte)4); //Create a message with length 5 and classID 4.
-					haveMessage.have(pieceNo); 
-					broadcastMessage(haveMessage); //write this message to all peers
-
-					//requeue the peer in the pieceRequestor queue.
-					this.pieceRequester.queueForDownload(peer);
-				} else {
-					//System.err.println("...........SHA- UNSUCCESSFUL")
-					this.downloadsInProgress[pieceNo]=false;
-					this.pieceRequester.queueForDownload(peer);
-					peer.resetPiece();
 				}
 			}
 			break;
