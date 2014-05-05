@@ -838,7 +838,7 @@ public class Client extends Thread{
 				}
 				//Check if the payload was correct according to the SHA
 				if(this.checkData(piece.getData(),piece.getPieceIndex())){
-					System.out.println("...........SHA-SUCCESSFUL");
+					//System.out.println("...........SHA-SUCCESSFUL");
 					//if so, write it to the random access file and reset the state of the piece
 					this.writeData(piece.getData(), piece.getPieceIndex());
 					
@@ -1188,13 +1188,13 @@ public class Client extends Thread{
 	 */ 
 	int findPieceToDownload(Peer remote) {
 		boolean[] peerBitfield = remote.getBitfields();
-		int rareIndex = this.torrentInfo.piece_hashes.length;
+		int rareIndex = this.peerHistory.size()+1;
 		
 		//Holding indexes of the rarePiece indexes.
-		ArrayList<Integer> indexes = new ArrayList<Integer>();
+		ArrayList<Integer> indexes = new ArrayList<Integer>(this.bitfield.length+1);
 		
 		synchronized (this.rarePieces) {
-			for(int i = 0; i < this.rarePieces.length; i++){
+			for(int i = 0; i < this.bitfield.length; i++){
 				if(peerBitfield[i] == true && 
 						this.bitfield[i] == false &&
 						this.downloadsInProgress[i] == false && 
@@ -1225,7 +1225,8 @@ public class Client extends Thread{
 			return -1;
 		}
 
-		int index = indexes.get((randomWithRange(0, indexes.size()-1))).intValue();
+		Collections.shuffle(indexes);
+		int index = indexes.get(0).intValue();
 		return index;
 	}
 	
