@@ -425,18 +425,18 @@ public class Peer extends Thread implements Comparable<Peer> {
 			// Check the peer's SHA-1 hash matches with local SHA-1 hash
 			for (int i = 0; i < 20; i++) {
 				if (this.torrentSHA[i] != hash[i]) {
-					System.err
-							.println("The Peer's SHA-1 does not match with the Client!");
+					System.err.println("The Peer's SHA-1 does not match with the Client!");
 					return false;
 				}
 			}
 			return true;
 		} catch (EOFException e) {
 			System.err.println("Tracker sending garbage to the server socket");
-			System.out.println();
 			return false;
 		} catch (IOException e) {
-			System.err.println("HANDSHAKE FAILURE!");
+			if(this.RUBT.isRunning()) {
+				System.err.println("HANDSHAKE FAILURE!");
+			}
 			return false;
 		}
 	}
@@ -694,7 +694,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 			// EOFException: The Tracker is sending garbage to the client. 
 			// SocketException: The peer disconnect the client. 
 		}// try
-		System.out.println(this + "Main reader thread");
+		//System.out.println(this + "Main reader thread");
 		
 	}// run
 

@@ -24,7 +24,7 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
  */
 public class Client extends Thread{
 	
-	private final static int MAX_SIMUL_UPLOADS = 2;
+	private final static int MAX_SIMUL_UPLOADS = 3;
 	private final static int MAX_NUM_UNCHOKED = 6;
 	protected final Object counterLock = new Object();
 	private int currentUploads;
@@ -977,6 +977,12 @@ public class Client extends Thread{
 		return this.torrentInfo.piece_hashes.length;
 	}
 
+	/**
+	 * @return Whether or not the client is still running (or has been shut down).
+	 */
+	protected boolean isRunning() {
+		return this.keepReading;
+	}
 	/**
 	 * Join all the threads
 	 */

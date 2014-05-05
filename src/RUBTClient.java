@@ -53,8 +53,10 @@ public class RUBTClient extends Thread{
 	 * Alternative to System.exit(0); for quitting
 	 */
 	public static void shutdown(){
-		client.disconnectFromTracker();
-		client.shutdown();
+		if(client.isAlive()) {
+			client.disconnectFromTracker();
+			client.shutdown();
+		}
 	}
 	
 	/**
@@ -202,7 +204,7 @@ public class RUBTClient extends Thread{
 
 		createGUI(client);
 		//Start running the shutdown hook as a separate thread.
-		(new RUBTClient()).run();
+		//(new RUBTClient()).run();
 		return;
 
 
