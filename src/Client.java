@@ -806,8 +806,10 @@ public class Client extends Thread{
 			int offset = pieceBuffer.getInt();
 			pieceBuffer.get(temp);
 			//System.out.println("PIECE NUMBER " + pieceNo + " BLOCK OFFSET " + offset + " LENGTH " + temp.length);
-			//Stores this in the peer's internal buffer
-			Piece piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
+			//Stores this in the peer's internal buffer, but ignores the piece if we're done downloading
+			if(!this.isSeeder) {
+				Piece piece = peer.writeToInternalBuffer(temp,pieceNo,offset);
+			}
 			
 			//Check if the piece is finished
 			if(piece.isFull()) {
