@@ -322,7 +322,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * Getter for the piece in progress.
 	 * @return this.pieceInProgress 
 	 */
-	protected Piece getPiece() {
+	public Piece getPiece() {
 		return this.pieceInProgress;
 	}
 	
