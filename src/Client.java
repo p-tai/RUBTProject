@@ -587,14 +587,14 @@ public class Client extends Thread{
 					int index = 0;
 					while(index<maxIndex) {
 						Peer current = Client.this.peerHistory.get(index);
-						System.out.println("Currently reconsidering peers " + current);
+						System.out.println("Currently reconsidering peers " + current.getDownloadRate() + "/" + current.getUploadRate() + current);
 						if(current.isInterestedLocal() && !current.isChokingLocal()) {
 							count++;
 							//hang onto the slowest peer...
 							if (count >= MAX_SIMUL_UPLOADS) {
 								slowest = current;
 							} else {
-								System.out.println("Kept " + current.getDownloadRate() + current);
+								System.out.println("Keeping! " + current.getDownloadRate() + " DL / " + current.getUploadRate() +" UL"+ current);
 							}
 						} else if (current.isInterestedLocal()) {
 							interested.add(current);
