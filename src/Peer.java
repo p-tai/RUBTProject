@@ -133,27 +133,27 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 ********************************/
 
 	/**
-	 * The status of the Peer chocking the Client.
+	 * The status of the Client choking the Peer.
 	 * 
 	 * @param localChoking
-	 *            true = The Peer is Chocking the Client. Otherwise, false.
+	 *            true = The Client is Choking the Peer. Otherwise, false.
 	 */
 	protected void setLocalChoking(boolean localChoking) {
 		this.localChoking = localChoking;
 	}
 
 	/**
-	 * The status of the Client being interested of the Peer.
+	 * The status of the Local Client being interested of the Peer.
 	 * 
 	 * @param localInterested
-	 *            true = The Client is the Peer. Otherwise, false.
+	 *            true = The Client is interested in the Peer. Otherwise, false.
 	 */
 	protected void setLocalInterested(boolean localInterested) {
 		this.localInterested = localInterested;
 	}
 
 	/**
-	 * The status of the Peer Choking the Client.
+	 * The status of the Remote Peer Choking the Client.
 	 * 
 	 * @param remoteChoking
 	 *            true = Peer is Choking the Client. Otherwise, false.
@@ -161,9 +161,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 	protected void setRemoteChoking(boolean remoteChoking) {
 		this.remoteChoking = remoteChoking;
 	}
+	
 
 	/**
-	 * The status of the Peer being interested of the Client.
+	 * The status of the Remote Peer being interested of the Client.
 	 * 
 	 * @param remoteInterested
 	 *            true = Peer is interested the Client. Otherwise, false.
@@ -289,6 +290,13 @@ public class Peer extends Thread implements Comparable<Peer> {
 	protected boolean isInterestedLocal() {
 		return this.localInterested;
 	}
+	
+	/**
+	 * @return The status of the Client interest in the remote Peer.
+	 */
+	protected boolean amInterested() {
+		return this.remoteInterested;
+	}
 
 	/**
 	 * @return The status of the Client being choking by Peer.
@@ -309,13 +317,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 */
 	protected boolean[] getBitfields() {
 		return this.peerBooleanBitfield;
-	}
-
-	/**
-	 * @return The status of the Client interested of the Peer.
-	 */
-	protected boolean amInterested() {
-		return this.remoteInterested;
 	}
 
 	/**
@@ -879,8 +880,8 @@ public class Peer extends Thread implements Comparable<Peer> {
 
 		if (this.uploadRate > 1000 || this.downloadRate > 1000.0)
 			System.out.format(
-					"Update rate: %.2f kBps. Download rate: %.2f kBps. %s%n",
-					(new Double(this.uploadRate / 1000.0)), (new Double(this.downloadRate / 1000.0)),
+					"Download rate: %.2f kBps. Upload rate: %.2f kBps. %s%n",
+					(new Double(this.downloadRate / 1000.0)), (new Double(this.uploadRate / 1000.0)),
 					this);
 	}// updateRate
 
