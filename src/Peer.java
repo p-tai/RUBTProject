@@ -39,7 +39,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * Flags for local/remote choking/interested
 	 */
-	private boolean localChoking;
+	private volatile boolean localChoking;
 	private boolean localInterested;
 	private boolean remoteChoking;
 	private boolean remoteInterested;
@@ -849,8 +849,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 
 	protected void checkAndSendKeepAlive() {
 		long now = System.currentTimeMillis();
-		if ((now - Peer.this.lastMessageTime) > KEEP_ALIVE_TIMEOUT * 0.25) {
-			Peer.this.writeToSocket(Message.keepAlive);
+		if(this.isAlive()) {
+			if ((now - Peer.this.lastMessageTime) > KEEP_ALIVE_TIMEOUT * 0.25) {
+				Peer.this.writeToSocket(Message.keepAlive);
+			}
 		}
 	}// checkAndSendKeepAlive
 
