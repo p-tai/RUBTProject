@@ -194,7 +194,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 *            Offset to write into at the buffer - should come from a peer
 	 *            message.
 	 * @param blockOffset
-	 *            TODO
+	 *            Integer specifying the zero-based byte offset within the piece.
 	 * @return The entire contents of the buffer or null.
 	 */
 	protected Piece writeToInternalBuffer(byte[] payload, int pieceOffset,
@@ -262,7 +262,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 			retVal = this.uploadRate;
 		}
 		return retVal;
-
 	}
 
 	/**
@@ -419,7 +418,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 				hash[i] = response[28 + i];
 			}
 
-			// This Peer connect to the Client the Server Socket.
+			// This Peer connect to the Client though the Server Socket.
 			if (this.peerIDString == null) {
 				// Saving the Peer ID.
 				for (int i = 0; i < 20; i++) {
@@ -491,7 +490,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 *            message to be sent to peer
 	 */
 	protected void writeToSocket(Message payload) {
-		// In case the client, peer, or peerWriter threads wantto write to
+		// In case the client, peer, or peerWriter threads want to write to
 		// socket at the same time
 		synchronized (this.outgoing) {
 			try {
@@ -564,7 +563,14 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 */
 	private class PeerWriter extends Thread {
 
+		/**
+		 * The Client LinkedBlockingQueue.
+		 */
 		private LinkedBlockingQueue<Message> messageQueue;
+		
+		/**
+		 * The Peer Object, itself.
+		 */
 		private Peer peer;
 		
 		/**
@@ -601,6 +607,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 		/**
 		 * Main runnable thread for the peerWriter private class
 		 */
+		@Override
 		public void run() {
 			Message current;
 			// if the queue contains a poison, exit the thread, otherwise keep going
@@ -624,6 +631,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 * Main runnable thread process for the peer class. Will connect and
 	 * handshake continuously try to read from the incoming socket.
 	 */
+	@Override
 	public void run() {
 
 		// Check if the peer exists. If not, connect. If it does, just keep the
@@ -658,6 +666,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 		 * @author Rob Moore
 		 */
 		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
+			/**
+			 * Set a timer to send keep alive message.
+			 */
+			@Override
 			public void run() {
 				// Let the peer figure out when to send a keepalive
 				Peer.this.checkAndSendKeepAlive();
@@ -668,6 +680,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 		this.lastMessageTime = System.currentTimeMillis();
 
 		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
+			/**
+			 * Set a timer when the peer times out.
+			 */
+			@Override
 			public void run() {
 				// Let the peer instance figure out when to timeout the remote
 				// peer
@@ -680,6 +696,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 
 		// Checks the upload and download rates every 10 seconds
 		this.peerTimer.scheduleAtFixedRate(new TimerTask() {
+			/**
+			 * Set a timer for the peer upload and download rates.
+			 */
+			@Override
 			public void run() {
 				Peer.this.updateRates();
 			}// run
@@ -751,6 +771,14 @@ public class Peer extends Thread implements Comparable<Peer> {
 		}
 	}
 
+	/**
+	 * Reading the messages from the peer and put it in the 
+	 * LinkedBlockingQueue
+	 * @return true = Message was sent. False = When to disconnect the peer. 
+	 * @throws IOException The peer disconnect the client.
+	 * @throws EOFException The Tracker is sending garbage to the client.
+	 * @throws SocketException The peer disconnect the client. 
+	 */
 	private boolean readSocketInputStream() throws IOException, EOFException, SocketException {
 
 		int length;
@@ -847,6 +875,9 @@ public class Peer extends Thread implements Comparable<Peer> {
 		}
 	}// checkAndSendKeepAlive
 
+	/**
+	 * Checks to see when is if the client should send a keep alive message.
+	 */
 	protected void checkAndSendKeepAlive() {
 		long now = System.currentTimeMillis();
 		if(this.isAlive()) {
@@ -856,8 +887,10 @@ public class Peer extends Thread implements Comparable<Peer> {
 		}
 	}// checkAndSendKeepAlive
 
+	/**
+	 * Update the peer upload and download rates.
+	 */
 	protected void updateRates() {
-
 		// If we have been downloading consistently...
 		if (this.uploadRate < 1000.0) {
 			// if you just started downloading, just set the rate = to the rate/2s
@@ -895,11 +928,17 @@ public class Peer extends Thread implements Comparable<Peer> {
 					this);
 	}// updateRate
 
+	/**
+	 * Update the message timer to current time. 
+	 */
 	private void updateTimer() {
 		// System.out.println("Updating message time");
 		this.lastMessageTime = System.currentTimeMillis();
 	}// updateTimer
 
+	/**
+	 * Update the peer timeout timer.
+	 */
 	private void updatePeerTimeoutTimer() {
 		// System.out.println("Updating last packet from peer time");
 		this.lastPeerTime = System.currentTimeMillis();

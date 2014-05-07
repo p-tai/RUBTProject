@@ -24,17 +24,61 @@ import edu.rutgers.cs.cs352.bt.TorrentInfo;
  */
 public class Client extends Thread{
 	
+	/**
+	 * The Maximum number of peers that can download from the client.
+	 */
 	private final static int MAX_SIMUL_UPLOADS = 3;
+	
+	/**
+	 * The Maxium number of peers that can be unchoked from the client.
+	 */
 	private final static int MAX_NUM_UNCHOKED = 6;
+	
+	/**
+	 * This object is for synchronizing to keeping track of 
+	 * which peers are unchoked/interested in the client.
+	 */
 	protected final Object counterLock = new Object();
+
+	/**
+	 * The total number of bytes that been uploaded to peers.
+	 */
 	protected int currentUploads;
+	
+	/**
+	 * The total number of bytes that been download from peers.
+	 */
 	protected int currentUnchoked;
+	
+	/**
+	 * The Client's ID.
+	 */
 	private byte[] clientID;
+	
+	/**
+	 * A list of peers that have the pieces. This
+	 * is based on bitfields and have messages.
+	 */
 	private int[] rarePieces;
+	
+	/**
+	 * The TorrentInfo
+	 */
 	protected TorrentInfo torrentInfo;
+	
+	/**
+	 * The Tracker Object.
+	 */
 	protected Tracker tracker;
 	
+	/**
+	 * The fileName to save.
+	 */
 	private String saveName;
+	
+	/**
+	 * The tool to save the file.
+	 */
 	private RandomAccessFile dataFile;
 	
 	/**
@@ -42,9 +86,26 @@ public class Client extends Thread{
 	 */
 	private final static int MAXIMUMLIMT = 16384;
 	
-	boolean[] bitfield;
+	/**
+	 * The Client's Bitfield.
+	 */
+	protected boolean[] bitfield;
+	
+	/**
+	 * The current list of pieces that are currently downloading.
+	 */
 	private boolean[] downloadsInProgress;
+	
+	/**
+	 * A boolean flag to tell the client when to stop reading message from
+	 * peers due to shutdown. True when the client should keep reading messages
+	 * from peers. Otherwise false.
+	 */
 	protected boolean keepReading;
+	
+	/**
+	 * True when the client is a seeder. Otherwise, false.
+	 */
 	private boolean isSeeder;
 
 	/**
@@ -61,6 +122,10 @@ public class Client extends Thread{
 	 * The number of bytes uploaded to all the peers
 	 */
 	private int uploaded;
+	
+	/**
+	 * The Object is only for synchronizing the client upload and download rates.
+	 */
 	private final Object ULCountLock = new Object();
 	
 	/**
@@ -68,15 +133,41 @@ public class Client extends Thread{
 	 */
 	private int interval;
 	
+	/**
+	 * The Server Socket to listen peer request.
+	 */
 	private ServerSocket listenSocket;
 
+	/**
+	 * The List of peers from the tracker.
+	 */
 	private ArrayList<Peer> peerList;
+	
+	/**
+	 * The List of active peers.
+	 */
 	protected ArrayList<Peer> peerHistory;
+	
+	/**
+	 * The List of messages from peers.
+	 */
 	private LinkedBlockingQueue<MessageTask> messagesQueue;
+	
+	/**
+	 * This is for keeping track of what piece to request.
+	 */
 	private PieceRequester pieceRequester;
+	
+	/**
+	 * This is use for timer task.
+	 */
 	private Timer requestTracker = new Timer(true);
+	
+	/**
+	 * This keeps of track of when the last request to the tracker
+	 * was last sent. 
+	 */
 	protected long lastRequestSent;
-
 
 	/**
 	 * Client Constructor. Default constructor when the target output file does NOT exist.
@@ -238,7 +329,7 @@ public class Client extends Thread{
 	 * Returns the number of bytes that have been successfully downloaded and confirmed to be correct
 	 * Based on pieces that have been downloaded
 	 **/
-	void updateLeft() {
+	private void updateLeft() {
 		//Nothing to do if you're a seeder already
 		if(this.isSeeder == true) {
 			this.left = 0;
@@ -275,6 +366,11 @@ public class Client extends Thread{
 		//System.out.println(this.left + " left " + this.isSeeder);
 	}
 
+	/**
+	 * Convert the client boolean bitfield into a byte[]
+	 * @param bitfield The Client boolean bitfield.
+	 * @return The byte[] of the Client bitfield. 
+	 */
 	private byte[] convertBooleanBitfield(boolean[] bitfield) {
 		//Calcuate the number of bytes needed to contain the bitfield
 		byte[] bytes = new byte[(int)Math.ceil(bitfield.length / 8.0)];
@@ -298,14 +394,16 @@ public class Client extends Thread{
 		return bytes;
 	}
 
+
 	/**
 	 * verify sha1 hashes right match with torrentinfo.. .match with all pieces
 	 * then set bitfield
 	 * make bitfield
 	 * of things that are donwloaded or not
-	 * RETURNS BITFIELD.
+	 * @param torrent The torrent object.
+	 * @param datafile The actual file name. 
+	 * @return The boolean array of the bitfield.
 	 */
-
 	private boolean[] checkfile(TorrentInfo torrent, RandomAccessFile datafile){
 		//initialize a boolean array with length equal to the number of pieces
 		boolean[] bitfield = new boolean[(this.torrentInfo.piece_hashes).length];
@@ -418,7 +516,7 @@ public class Client extends Thread{
 	}
 
 	/**
-	 * 
+	 * Start the peer download threads.
 	 */
 	protected void startPeerDownloads() {
 		this.pieceRequester = new PieceRequester(this);
@@ -445,6 +543,10 @@ public class Client extends Thread{
 		
 	}
 	
+	/**
+	 * Looks all the peers from the peerHistory and picks a random
+	 * peer to download.
+	 */
 	protected void analyzeAndChokePeers() {
 		//Initialize a list to store interested peers that are not downloading
 		ArrayList<Peer> choked = new ArrayList<Peer>(Client.this.peerHistory.size());
@@ -544,6 +646,9 @@ public class Client extends Thread{
 		System.out.println(Client.this.currentUnchoked + " unchoked peers " + Client.this.currentUploads + " leechers");
 	}
 
+	/**
+	 * This class is for sending request messages to peers.
+	 */
 	private static class PieceRequester extends Thread{
 
 		/**********************************
@@ -594,6 +699,7 @@ public class Client extends Thread{
 		 * Main thread of the PieceRequester
 		 * Responsible for reading the current idle peers and requesting pieces
 		 */
+		@Override
 		public void run(){
 			//Continue until either the user quits or the program finishes downloading
 			try {
@@ -658,6 +764,7 @@ public class Client extends Thread{
 	/**
 	 * Start the thread that reads the messages from the peer
 	 */
+	@Override
 	public void run(){
 		this.keepReading = true;
 		this.lastRequestSent = System.currentTimeMillis();
@@ -706,6 +813,10 @@ public class Client extends Thread{
 		}
 	}
 	
+	/**
+	 * This class is for handling message to the socket
+	 * from peers that are not in the peerHistory. 
+	 */
 	private static class ServerSocketConnection extends Thread{
 		
 		/**
@@ -725,6 +836,7 @@ public class Client extends Thread{
 		 * Checking to see if any peer is connection to the client
 		 * by the server socket.
 		 */
+		@Override
 		public void run(){
 			while(this.client.keepReading){
 				try {
@@ -918,9 +1030,10 @@ public class Client extends Thread{
 	 * Source:
 	 * @author Robert Moore
 	 * Taken from sakai CS352 class resources on 3/29/14
-	 * @param bits
-	 * @param significantBits
-	 * @return
+	 * @param bits Peer Bitfields.
+	 * @param significantBits The size of the bitfields.
+	 * @return The peers bitfields in a boolean array.
+	 * The is useful converting peer bitfields into boolean arrays.
 	 */
 	private boolean[] convert(byte[] bits, int significantBits) {
 		boolean[] retVal = new boolean[significantBits];
@@ -942,8 +1055,9 @@ public class Client extends Thread{
 	 * Source:
 	 * @author Robert Moore
 	 * Taken from sakai CS352 class resources on 3/29/14
-	 * @param bits
-	 * @return
+	 * @param bits The peers bit fields. 
+	 * @return The peers bitfields in a boolean array.
+	 * The is useful converting peer bitfields into boolean arrays.
 	 */
 	private boolean[] convert(byte[] bits) {
 		return this.convert(bits, bits.length * 8);
@@ -954,7 +1068,6 @@ public class Client extends Thread{
 	 * First 3 characters will be AAA, followed by 17 random integers.
 	 * Saved locally, used as an identifier for other peers and tracker.
 	 */
-
 	private void genClientID(){
 		byte[] clientID = new byte[20];
 		clientID[0] = 'A';
@@ -1016,6 +1129,11 @@ public class Client extends Thread{
 		}
 	}
 	
+	/**
+	 * Update the rarePieces fields. This call
+	 * by the peer Have messages.
+	 * @param pieceIndex The index of the file.
+	 */
 	private void updateRarePieces(int pieceIndex) {
 		synchronized(this.rarePieces) {
 			this.rarePieces[pieceIndex]++;
@@ -1027,7 +1145,7 @@ public class Client extends Thread{
 	 * Decrement the rarePiece array when the peer have the piece.
 	 * @param bitfield Peer bitfields
 	 */
-	void removePeerFromRarePieces(boolean[] bitfield){
+	protected void removePeerFromRarePieces(boolean[] bitfield){
 		synchronized (this.rarePieces) {
 			for(int i = 0; i < this.rarePieces.length; i++){
 				if(bitfield[i] == true){
@@ -1066,6 +1184,7 @@ public class Client extends Thread{
 	protected boolean isRunning() {
 		return this.keepReading;
 	}
+	
 	/**
 	 * Join all the threads
 	 */
@@ -1125,7 +1244,7 @@ public class Client extends Thread{
 	 * @param pieceIndex zero based piece index
 	 * @param peer the peer to download from
 	 */
-	synchronized void getPiece(int pieceIndex, Peer remotePeer ) {
+	protected synchronized void getPiece(int pieceIndex, Peer remotePeer ) {
 		
 		if(remotePeer.amChoked()) {
 			remotePeer.enqueueMessage(Message.unchoke);
@@ -1158,8 +1277,6 @@ public class Client extends Thread{
 			remotePeer.enqueueMessage(request);
 		}
 	}
-
-	
 
 	/**
 	 * @return true for success, otherwise false.
