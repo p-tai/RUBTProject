@@ -169,8 +169,6 @@ public class Client extends Thread{
 	 */
 	protected long lastRequestSent;
 
-
-
 	/**
 	 * Client Constructor. Default constructor when the target output file does NOT exist.
 	 * @param torrent Source of the torrent file
@@ -1019,9 +1017,10 @@ public class Client extends Thread{
 	 * Source:
 	 * @author Robert Moore
 	 * Taken from sakai CS352 class resources on 3/29/14
-	 * @param bits
-	 * @param significantBits
+	 * @param bits Peer Bitfields.
+	 * @param significantBits The size of the bitfields.
 	 * @return The peers bitfields in a boolean array.
+	 * The is useful converting peer bitfields into boolean arrays.
 	 */
 	private boolean[] convert(byte[] bits, int significantBits) {
 		boolean[] retVal = new boolean[significantBits];
@@ -1043,8 +1042,9 @@ public class Client extends Thread{
 	 * Source:
 	 * @author Robert Moore
 	 * Taken from sakai CS352 class resources on 3/29/14
-	 * @param bits
+	 * @param bits The peers bit fields. 
 	 * @return The peers bitfields in a boolean array.
+	 * The is useful converting peer bitfields into boolean arrays.
 	 */
 	private boolean[] convert(byte[] bits) {
 		return this.convert(bits, bits.length * 8);

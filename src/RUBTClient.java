@@ -20,6 +20,11 @@ public class RUBTClient extends Thread{
 
 	private static Client client;
 
+	/**
+	 * Open the file and create a torrentInfo Object.
+	 * @param filename The fileName
+	 * @return The TorrentInfo when the file exist. Otherwise null.
+	 */
 	private static TorrentInfo parseTorrentInfo(String filename) {
 		try {
 			//Create input streams and file streams
@@ -61,7 +66,7 @@ public class RUBTClient extends Thread{
 	
 	/**
 	 * Creation of the GUI, basically just starting it. 
-	 *
+	 * @param cli The Client Object.
 	 */
 	private static void createGUI(Client cli){
 		System.out.println("START GUI\n\n\n\n\n\n\n");
@@ -78,6 +83,8 @@ public class RUBTClient extends Thread{
 	 * Cited: http://stackoverflow.com/questions/12234526/java-writing-unittest-for-exiting-a-program-when-user-type-quit-in-the-console
 	 * User: David Wallace
 	 * Time: 4, 05, 2014
+	 * This is for when the user enters quit into the console to
+	 * quit the program. 
 	 */
 	public void run(){
 		String line = "";
@@ -102,8 +109,8 @@ public class RUBTClient extends Thread{
 	}
 	
 	/**
-	 * 
-	 * @param args
+	 * Start the BitTorrent
+	 * @param args arg[0] = torrent file, arg[1] = fileName.
 	 */
 	public static void main(String[] args){
 

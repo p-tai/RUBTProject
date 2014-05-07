@@ -262,7 +262,6 @@ public class Peer extends Thread implements Comparable<Peer> {
 			retVal = this.uploadRate;
 		}
 		return retVal;
-
 	}
 
 	/**
@@ -419,7 +418,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 				hash[i] = response[28 + i];
 			}
 
-			// This Peer connect to the Client the Server Socket.
+			// This Peer connect to the Client though the Server Socket.
 			if (this.peerIDString == null) {
 				// Saving the Peer ID.
 				for (int i = 0; i < 20; i++) {
@@ -491,7 +490,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 *            message to be sent to peer
 	 */
 	protected void writeToSocket(Message payload) {
-		// In case the client, peer, or peerWriter threads wantto write to
+		// In case the client, peer, or peerWriter threads want to write to
 		// socket at the same time
 		synchronized (this.outgoing) {
 			try {
@@ -564,7 +563,14 @@ public class Peer extends Thread implements Comparable<Peer> {
 	 */
 	private class PeerWriter extends Thread {
 
+		/**
+		 * The Client LinkedBlockingQueue.
+		 */
 		private LinkedBlockingQueue<Message> messageQueue;
+		
+		/**
+		 * The Peer Object, itself.
+		 */
 		private Peer peer;
 		
 		/**

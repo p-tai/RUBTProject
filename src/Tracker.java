@@ -144,7 +144,11 @@ public class Tracker {
     
     /**
      * Method will append a queryID and query to a URL using proper URL-encoded format
-     */ 
+     * @param url The announce url.
+     * @param queryID Such as &peer_id, &port, &uploaded, etc..
+     * @param query The values of the queryID.
+     * @return The updated url.
+     */
     private String URLify(String url, String queryID, String query) {
         String base;
 		if(url==null) {
@@ -164,7 +168,11 @@ public class Tracker {
         
     /**
      * Method will append a queryID and a byte array query to a URL using proper URL-encoded format
-     */ 
+     * @param url The announce url.
+     * @param queryID Such as &peer_id, &port, &uploaded, etc..
+     * @param query The values of the queryID.
+     * @return The updated url.
+     */
 	private String URLify(String url, String queryID, byte[] query) {
         String base;
 		if(url==null) {
