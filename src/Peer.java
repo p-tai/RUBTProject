@@ -236,7 +236,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * @return The Current Download Rate
 	 */
-	protected double getDownloadRate() {
+	public double getDownloadRate() {
 		double retVal;
 		synchronized (this.DLCountLock) {
 			retVal = this.downloadRate;
@@ -247,7 +247,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 	/**
 	 * @return The Current Upload Rate
 	 */
-	protected double getUploadRate() {
+	public double getUploadRate() {
 		double retVal;
 		synchronized (this.ULCountLock) {
 			retVal = this.uploadRate;

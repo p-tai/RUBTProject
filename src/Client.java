@@ -152,7 +152,7 @@ public class Client extends Thread{
 	 * Getter that returns the total number of uploaded bytes (in other words bytes of pieces that pass SHA-1 verification)
 	 * @return this.uploaded
 	 */
-	protected int getBytesUploaded() {
+	public int getBytesUploaded() {
 		synchronized (this.ULCountLock) {
 			return this.uploaded;
 		}
@@ -162,7 +162,7 @@ public class Client extends Thread{
 	 * Getter that returns the total number of bytes left
 	 * @return this.left
 	 */
-	protected int getBytesLeft() {
+	public int getBytesLeft() {
 		return this.left;
 	}
 
@@ -859,6 +859,7 @@ public class Client extends Thread{
 					//Update the downloaded bytes count
 					if(!this.bitfield[piece.getPieceIndex()]) {
 						System.out.println("............FULL PIECE RECEIVED: " + pieceNo + " " +peer);
+						updateLeft();
 						this.downloaded+=piece.getData().length;
 					}
 					
