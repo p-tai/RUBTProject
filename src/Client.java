@@ -170,8 +170,8 @@ public class Client extends Thread{
 	 * Getter that returns the percentage completion of the file
 	 * @return 1.0-(bytes left/file length)
 	 */
-	protected double getPercentageCompletion() {
-		return (1.0 - (double)this.left/(double)this.torrentInfo.file_length);
+	public double getPercentageCompletion() {
+		return (1.0 - ((double)this.left/(double)this.torrentInfo.file_length));
 	}
 	
 	/**

@@ -1,5 +1,7 @@
 package gui;
 import java.io.*;
+import java.util.Timer;
+import java.util.TimerTask;
 //import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -26,9 +28,8 @@ public class Display extends JFrame implements ActionListener{// implements Acti
 
 		setLayout(new FlowLayout());
 
-
 		this.pb = new Progbar();
-		this.pb.updateBar(50);
+		this.pb.updateBar((int)(this.cli.getPercentageCompletion() * 100 ));
 		this.setContentPane(this.pb);
 		this.test = new JTextArea("Hi... testing");
 		this.test.setEditable(false); // i think i'm cheating here oh well
@@ -49,35 +50,30 @@ public class Display extends JFrame implements ActionListener{// implements Acti
 		this.table = new JTable(model);	
 		add(new JScrollPane(this.table));
 		
-		/*
-		 * used http://www.math.uni-hamburg.de/doc/java/tutorial/uiswing/components/example-1dot4/ProgressBarDemo.java
-		 * bits and parts
-		 * may 3 14
-		 */
+
 		//Create a timer.
+		this.timer = new Timer(true);
+		this.timer.scheduleAtFixedRate(new TimerTask(){
+
+			/**
+			 * Update the progress bar and peer list.
+			 */
+			@Override
+			public void run() {
+				pb.updateBar((int)(cli.getPercentageCompletion() * 100 ));
+			}
+			
+		}, 1, 1000);
 		
-		this.timer = new Timer(ONE_SECOND, new ActionListener() {
-			public void actionPerformed(ActionEvent evt) {
-				Display.this.pb.updateBar(3);// call the getDownloaded thing here :3 
-				 
-				if (Display.this.cli.isSeeder()) { // if finshed
-					Toolkit.getDefaultToolkit().beep();//idk
-					Display.this.timer.stop();//yes
-					//startButton.setEnabled(true);
-					//setCursor(null); //turn off the wait cursor
-					Display.this.pb.updateBar(Display.this.pb.getMin()); // reset
-				}//end of if done
-			}//end of actionperformed
-		}); // end of timer maker 
 		
 		
 	}//end of display
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		RUBTClient.shutdown();
+		this.timer.cancel();
 		this.dispose();
+		RUBTClient.shutdown();
 	}
 
 }//end of display calss
