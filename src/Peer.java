@@ -234,6 +234,15 @@ public class Peer extends Thread implements Comparable<Peer> {
 	}
 
 	/**
+	 * @return The number of bytes uploaded within the last two seconds
+	 */
+	protected int getRecentUploaded() {
+		synchronized(this.ULCountLock) {
+			return this.recentBytesUploaded;
+		}
+	}
+	
+	/**
 	 * @return The Current Download Rate
 	 */
 	public double getDownloadRate() {
@@ -285,16 +294,16 @@ public class Peer extends Thread implements Comparable<Peer> {
 	}
 
 	/**
-	 * @return The status of Peer interested of the Client.
+	 * @return The status of CLIENT interested of the PEER.
 	 */
 	protected boolean isInterestedLocal() {
 		return this.localInterested;
 	}
 	
 	/**
-	 * @return The status of the Client interest in the remote Peer.
+	 * @return The status of the PEER interest in the CLIENT.
 	 */
-	protected boolean amInterested() {
+	protected boolean peerInterested() {
 		return this.remoteInterested;
 	}
 
@@ -489,8 +498,7 @@ public class Peer extends Thread implements Comparable<Peer> {
 
 				// Keep Alive
 				if (payload.getLength() == 0) {
-					// System.out.println("Sending Keep Alive to " +
-					// this.peerIDString);
+					System.out.println("Sending Keep Alive"+this);
 				} else {
 					/*
 					if( Message.responses[payload.getMessageID()].equals("have")) { 
