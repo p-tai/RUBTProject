@@ -7,3 +7,4 @@ RUN:
 clean:
 	rm -f ./src/*.class
 	rm -f a.img test.avi test.mp3
+	rm -f ./gui/*.class
