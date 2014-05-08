@@ -593,7 +593,7 @@ public class Client extends Thread{
 		Peer slowPeer = null;
 		//pick random peers from the interested peers
 		Collections.shuffle(choked);
-
+		
 		synchronized (this.counterLock) {
 			//choke the worst peers, if they exists
 
@@ -634,7 +634,8 @@ public class Client extends Thread{
 				random = choked.get(index); 
 				//unchoke a random peer
 				System.out.println("Added " + random.getDownloadRate() + random);
-				if(!random.peerInterested()) {
+				random.updateInterested(this.bitfield);
+				if(!random.peerInterested() && random.isInterestedLocal()) {
 					Client.this.currentUnchoked++;
 					random.setLocalChoking(false);
 					random.enqueueMessage(Message.unchoke);
@@ -721,15 +722,6 @@ public class Client extends Thread{
 							//Find the piece to download
 							int pieceIndex = this.client.findPieceToDownload(current);
 							if(pieceIndex >= 0) {
-								//Tell the client to queue all the piece messages to the given peer's Writer class
-								if(!current.peerInterested() && current.isChokingLocal()) {
-									synchronized(this.client.counterLock) {
-										if(this.client.currentUnchoked < MAX_SIMUL_UPLOADS) {
-											this.client.currentUnchoked++;
-											current.enqueueMessage(Message.unchoke);
-										}
-									}
-								}
 								this.client.getPiece(pieceIndex,current);
 							}
 							//In the event there is no piece we want to download, send uninterested if needed
@@ -742,11 +734,10 @@ public class Client extends Thread{
 									}
 									current.enqueueMessage(Message.choke);
 								}
-							}
-						}
-						current.enqueueMessage(Message.choke);
+							}//else
+						}//if is running
 						//System.out.println("GET PIECE INDEX RETURNED: " + pieceIndex + "");
-					}
+					}//if getpiece == null
 				} 
 			} catch (InterruptedException ie) {
 				Thread.currentThread().interrupt();
@@ -899,7 +890,6 @@ public class Client extends Thread{
 			break;
 		case 2: /* interested */
 			//do nothing if we received an extra interested message...
-			//System.out.println("Got some interested message from"+peer);
 			if(peer.peerInterested()) {
 				break;
 			}
@@ -907,10 +897,9 @@ public class Client extends Thread{
 			peer.setRemoteInterested(true);
 			//if we had these guys marked as unchoked but not leechers, update internal state
 			if(!peer.isChokingLocal()) {
-				System.out.println("Got some interested message from"+peer);
 				synchronized(this.counterLock) {
 					this.currentUploads++;
-					if(currentUploads > MAX_SIMUL_UPLOADS) {
+					if(this.currentUploads > MAX_SIMUL_UPLOADS) {
 						this.analyzeAndChokePeers();
 					}
 				}

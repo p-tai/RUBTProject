@@ -307,6 +307,20 @@ public class Peer extends Thread implements Comparable<Peer> {
 	}
 
 	/**
+	 * Updates whether our client is or is not interested in this peer's data
+	 * @param our (client) bitfield
+	 */
+	protected void updateInterested(boolean[] bitfield) {
+		int i = 0;
+		for(;i<bitfield.length;i++) {
+			if(bitfield[i] == false && this.peerBooleanBitfield[i] == true) {
+				this.localInterested=true;
+				return;
+			}
+		}
+		this.localInterested=false;
+	}
+	/**
 	 * @return The status of the Client being choking by Peer.
 	 */
 	protected boolean amChoked() {
